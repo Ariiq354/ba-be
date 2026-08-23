@@ -2,15 +2,23 @@
   "name": "ba-be",
   "version": "1.0.50",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "bun test",
     "dev": "bun run --watch src/index.ts",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "elysia": "^2.0.0-beta.6"
+    "@elysia/cors": "^2.0.0-beta.1",
+    "@elysia/openapi": "^2.0.0-exp.1",
+    "better-auth": "^1.7.1",
+    "drizzle-orm": "^1.0.0-rc.4",
+    "elysia": "^2.0.0-beta.6",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "bun-types": "latest",
+    "drizzle-kit": "^1.0.0-rc.4",
     "typescript": "^7.0.2"
   },
   "module": "src/index.js"

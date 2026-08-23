@@ -1,0 +1,23 @@
+diff --git a/dist/gen/index.js b/dist/gen/index.js
+index 500863734b896bafa4522c9d5f4500b7d9a3d883..a1781e5c316df4f8cb021e897e4e0888ef1299e4 100644
+--- a/dist/gen/index.js
++++ b/dist/gen/index.js
+@@ -1,6 +1,5 @@
+ Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+-const require_script = require('../node_modules/typebox/build/type/script/script.js');
+-require('../node_modules/typebox/build/type/index.js');
++const require_script = require('typebox/type');
+ 
+ //#region src/gen/index.ts
+ const matchRoute = /: Elysia<(.*)>/gs;
+diff --git a/dist/gen/index.mjs b/dist/gen/index.mjs
+index 27baa3f4900963856809d0b13dc49e91f454a1d3..ded1c2166dd124dd95d7b4821a0aa9a628ef478e 100644
+--- a/dist/gen/index.mjs
++++ b/dist/gen/index.mjs
+@@ -1,5 +1,4 @@
+-import { Script } from "../node_modules/typebox/build/type/script/script.mjs";
+-import "../node_modules/typebox/build/type/index.mjs";
++import { Script } from "typebox/type";
+ 
+ //#region src/gen/index.ts
+ const matchRoute = /: Elysia<(.*)>/gs;
