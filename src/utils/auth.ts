@@ -6,11 +6,7 @@ import { relations } from "../database/relations";
 import * as schema from "../database/schema/auth";
 
 export const auth = betterAuth({
-  trustedOrigins: [
-    "https://kompak98.com",
-    "https://*.kompak98.com",
-    "https://kompak98.vercel.app",
-  ],
+  trustedOrigins: ["https://kompak98.com", "https://*.kompak98.com", "https://kompak98.vercel.app"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

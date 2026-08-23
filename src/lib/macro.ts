@@ -7,7 +7,11 @@ export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
       const session = await auth.api.getSession({
         headers,
       });
-      if (!session) return status(401);
+
+      if (!session) {
+        return status(401);
+      }
+
       return {
         user: {
           ...session.user,
@@ -22,9 +26,14 @@ export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
       const session = await auth.api.getSession({
         headers,
       });
-      if (!session) return status(401);
 
-      if (session.user.role !== "admin") return status(403);
+      if (!session) {
+        return status(401);
+      }
+
+      if (session.user.role !== "admin") {
+        return status(403);
+      }
       return {
         user: {
           ...session.user,

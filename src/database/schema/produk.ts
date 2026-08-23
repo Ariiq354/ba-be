@@ -3,11 +3,7 @@ import { user } from "./auth";
 import { createdUpdated } from "./common";
 import { diskon } from "./diskon";
 
-export const produkTypeEnum = pgEnum("produk_type", [
-  "BOOTCAMP",
-  "EBOOK",
-  "COURSE",
-]);
+export const produkTypeEnum = pgEnum("produk_type", ["BOOTCAMP", "EBOOK", "COURSE"]);
 
 export const orderStatusEnum = pgEnum("order_status", [
   "PENDING_PAYMENT",
@@ -27,7 +23,9 @@ export const produk = snakeCase.table("produk", {
 
 export const orders = snakeCase.table("orders", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  userId: integer().notNull().references(() => user.id, { onDelete: "cascade" }),
+  userId: integer()
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   produkId: integer().references(() => produk.id, { onDelete: "cascade" }),
   diskonId: integer().references(() => diskon.id, { onDelete: "cascade" }),
   originalHarga: integer().notNull(),

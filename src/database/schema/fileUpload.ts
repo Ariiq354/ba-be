@@ -1,10 +1,7 @@
 import { integer, pgEnum, snakeCase, text } from "drizzle-orm/pg-core";
 import { createdUpdated } from "./common";
 
-export const fileUploadStatusEnum = pgEnum("file_upload_status", [
-  "pending",
-  "success",
-]);
+export const fileUploadStatusEnum = pgEnum("file_upload_status", ["pending", "success"]);
 
 export const fileUpload = snakeCase.table("file_upload", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),

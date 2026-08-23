@@ -1,15 +1,14 @@
 import { integer, pgEnum, snakeCase, text } from "drizzle-orm/pg-core";
 import { produk } from "./produk";
 
-export const bootcampTypeEnum = pgEnum("bootcamp_type", [
-  "ONLINE",
-  "OFFLINE",
-  "HYBRID",
-]);
+export const bootcampTypeEnum = pgEnum("bootcamp_type", ["ONLINE", "OFFLINE", "HYBRID"]);
 
 export const bootcamp = snakeCase.table("bootcamp", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  produkId: integer().references(() => produk.id, { onDelete: "cascade" }).notNull().unique(),
+  produkId: integer()
+    .references(() => produk.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
   deskripsi: text(),
   konten: text(),
   tipe: bootcampTypeEnum().notNull(),

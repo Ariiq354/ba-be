@@ -41,10 +41,7 @@ export const OpenApiPlugin = new Elysia({ prefix: "api" })
         const authHeader = headers.authorization;
 
         if (authHeader && authHeader.startsWith("Basic ")) {
-          const credentials = Buffer.from(
-            authHeader.slice(6),
-            "base64",
-          ).toString("utf-8");
+          const credentials = Buffer.from(authHeader.slice(6), "base64").toString("utf-8");
           const [reqUser, reqPass] = credentials.split(":");
 
           if (

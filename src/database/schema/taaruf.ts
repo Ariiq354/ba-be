@@ -14,8 +14,12 @@ export const taarufStatusEnum = pgEnum("taaruf_status", [
 
 export const taarufProses = snakeCase.table("taaruf_proses", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  requesterUserId: integer().notNull().references(() => user.id, { onDelete: "cascade" }),
-  targetUserId: integer().notNull().references(() => user.id, { onDelete: "cascade" }),
+  requesterUserId: integer()
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  targetUserId: integer()
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   status: taarufStatusEnum().default("PENDING").notNull(),
   startedAt: date({ mode: "string" }),
   finishedAt: date({ mode: "string" }),
@@ -24,7 +28,9 @@ export const taarufProses = snakeCase.table("taaruf_proses", {
 
 export const taarufProsesLog = snakeCase.table("taaruf_proses_logs", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  prosesId: integer().notNull().references(() => taarufProses.id, { onDelete: "cascade" }),
+  prosesId: integer()
+    .notNull()
+    .references(() => taarufProses.id, { onDelete: "cascade" }),
   status: taarufStatusEnum().notNull(),
   keterangan: text(),
   ...createdUpdated,

@@ -9,5 +9,10 @@
 
     "strict": true,
     "skipLibCheck": true,
-  },
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
+  }
 }

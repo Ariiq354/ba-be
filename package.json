@@ -1,9 +1,12 @@
 {
   "name": "ba-be",
   "version": "1.0.50",
+  "module": "src/index.js",
   "scripts": {
     "test": "bun test",
     "dev": "bun run --watch src/index.ts",
+    "lint": "oxlint --fix",
+    "format": "oxfmt",
     "check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -13,13 +16,17 @@
     "@elysia/openapi": "^2.0.0-exp.1",
     "better-auth": "^1.7.1",
     "drizzle-orm": "^1.0.0-rc.4",
+    "effect": "^4.0.0-rc.111",
     "elysia": "^2.0.0-beta.6",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "@effect/tsgo": "^0.36.5",
     "bun-types": "latest",
     "drizzle-kit": "^1.0.0-rc.4",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2"
-  },
-  "module": "src/index.js"
+  }
 }

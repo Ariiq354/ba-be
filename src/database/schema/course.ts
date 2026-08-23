@@ -4,7 +4,10 @@ import { produk } from "./produk";
 
 export const course = snakeCase.table("course", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  produkId: integer().references(() => produk.id, { onDelete: "cascade" }).notNull().unique(),
+  produkId: integer()
+    .references(() => produk.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
   deskripsi: text(),
   konten: text(),
   namaPublisher: text(),
@@ -28,7 +31,11 @@ export const courseLesson = snakeCase.table("course_lesson", {
 
 export const courseProgress = snakeCase.table("course_progress", {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  userId: integer().notNull().references(() => user.id, { onDelete: "cascade" }),
-  lessonId: integer().notNull().references(() => courseLesson.id),
+  userId: integer()
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  lessonId: integer()
+    .notNull()
+    .references(() => courseLesson.id),
   completedAt: timestamp().defaultNow().notNull(),
 });
