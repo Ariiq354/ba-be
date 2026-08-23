@@ -4,9 +4,9 @@ import { CorsPlugin } from "./lib/cors";
 import { AuthModule } from "./modules/auth";
 
 export const app = new Elysia()
-  .use(AuthModule)
   .use(OpenApiPlugin)
   .use(CorsPlugin)
+  .use(AuthModule)
   .get("/", () => "Hello Elysia")
   .listen(3000);
 
