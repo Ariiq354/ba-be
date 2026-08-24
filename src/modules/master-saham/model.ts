@@ -1,0 +1,35 @@
+import { paginationSchema } from "#/utils/schema";
+import { t, type UnwrapSchema } from "elysia";
+
+const createHargaSahamSchema = t.Object({
+  hargaNominal: t.Integer({ minimum: 0 }),
+  hargaJual: t.Integer({ minimum: 0 }),
+});
+
+const hargaSahamResponseSchema = t.Object({
+  id: t.Number(),
+  hargaNominal: t.Number(),
+  hargaJual: t.Number(),
+  updatedBy: t.Number(),
+  updatedByName: t.Nullable(t.String()),
+  createdAt: t.String({ format: "date-time" }),
+});
+
+export const MasterSahamModel = {
+  getHargaSahamResponseSchema: t.Object({
+    total: t.Number(),
+    data: t.Array(hargaSahamResponseSchema),
+  }),
+
+  getLatestHargaSahamResponseSchema: hargaSahamResponseSchema,
+
+  getHargaSahamQuerySchema: t.Object({
+    ...paginationSchema.properties,
+  }),
+
+  createHargaSahamSchema,
+} as const;
+
+export type MasterSahamModel = {
+  [key in keyof typeof MasterSahamModel]: UnwrapSchema<(typeof MasterSahamModel)[key]>;
+};
