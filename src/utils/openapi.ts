@@ -1,5 +1,5 @@
 import { openapi } from "@elysia/openapi";
-import { auth } from "../utils/auth";
+import { auth } from "./auth";
 import Elysia, { status } from "elysia";
 import { timingSafeEqual } from "node:crypto";
 

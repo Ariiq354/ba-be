@@ -3,7 +3,7 @@ import { MasterAkunModel } from "./model";
 import { MasterAkunService } from "./service";
 import { Effect } from "effect";
 import { deleteBulkSchema, idParamsSchema } from "#/utils/schema";
-import { AuthMacro } from "#/lib/macro";
+import { AuthMacro } from "#/utils/macro";
 import { ErrorSchema, SuccessSchema } from "#/utils/errors";
 
 export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Master Akun"] })

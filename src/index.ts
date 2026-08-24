@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
-import { OpenApiPlugin } from "./lib/openapi";
-import { CorsPlugin } from "./lib/cors";
+import { OpenApiPlugin } from "./utils/openapi";
+import { CorsPlugin } from "./utils/cors";
 import { AuthModule } from "./modules/auth";
 import { Modules } from "./modules";
 
