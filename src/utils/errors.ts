@@ -1,4 +1,5 @@
 import { Data } from "effect";
+import { t } from "elysia";
 
 export class DatabaseError extends Data.TaggedError("DatabaseError")<{
   readonly error: unknown;
@@ -15,3 +16,12 @@ export class ItemsNotFoundError extends Data.TaggedError("ItemsNotFoundError")<{
 export class StorageError extends Data.TaggedError("StorageError")<{
   readonly error: unknown;
 }> {}
+
+export const ErrorSchema = t.Object({
+  code: t.String(),
+  message: t.String(),
+});
+
+export const SuccessSchema = t.Object({
+  message: t.String(),
+});

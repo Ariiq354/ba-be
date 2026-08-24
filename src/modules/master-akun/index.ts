@@ -4,13 +4,14 @@ import { MasterAkunService } from "./service";
 import { Effect } from "effect";
 import { deleteBulkSchema, idParamsSchema } from "#/utils/schema";
 import { AuthMacro } from "#/lib/macro";
+import { ErrorSchema, SuccessSchema } from "#/utils/errors";
 
 export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Master Akun"] })
   .use(AuthMacro)
   .get(
     "/",
-    ({ query }) => {
-      const program: Effect.Effect<unknown, never> = MasterAkunService.getPaginatedAkun(query).pipe(
+    async ({ query }) => {
+      const program = MasterAkunService.getPaginatedAkun(query).pipe(
         Effect.catchTags({
           DatabaseError: (err) => {
             console.error("Database error:", err.error);
@@ -30,17 +31,21 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
     {
       admin: true,
       query: MasterAkunModel.getAkunQuerySchema,
+      response: {
+        200: MasterAkunModel.getAkunResponseSchema,
+        500: ErrorSchema,
+      },
     },
   )
 
   .post(
     "/",
-    ({ body }) => {
-      const program: Effect.Effect<unknown, never> = MasterAkunService.createAkun(body).pipe(
+    async ({ body }) => {
+      const program = MasterAkunService.createAkun(body).pipe(
         Effect.catchTags({
           DuplicateKodeAkunError: (err) => {
             return Effect.succeed(
-              status(500, {
+              status(421, {
                 code: "DUPLICATE_KODE_AKUN_ERROR",
                 message: `Kode akun '${err.kodeAkun}' sudah digunakan`,
               }),
@@ -59,25 +64,29 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
         }),
       );
 
-      return Effect.runPromise(program);
+      await Effect.runPromise(program);
+
+      return status(201, { message: "Success" });
     },
     {
       admin: true,
       body: MasterAkunModel.createAkunSchema,
+      response: {
+        201: SuccessSchema,
+        421: ErrorSchema,
+        500: ErrorSchema,
+      },
     },
   )
 
   .patch(
     "/:id",
-    ({ params, body }) => {
-      const program: Effect.Effect<unknown, never> = MasterAkunService.updateAkun(
-        params.id,
-        body,
-      ).pipe(
+    async ({ params, body }) => {
+      const program = MasterAkunService.updateAkun(params.id, body).pipe(
         Effect.catchTags({
           DuplicateKodeAkunError: (err) => {
             return Effect.succeed(
-              status(500, {
+              status(421, {
                 code: "DUPLICATE_KODE_AKUN_ERROR",
                 message: `Kode akun '${err.kodeAkun}' sudah digunakan`,
               }),
@@ -104,19 +113,27 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
         }),
       );
 
-      return Effect.runPromise(program);
+      await Effect.runPromise(program);
+
+      return status(200, { message: "Success" });
     },
     {
       admin: true,
       params: idParamsSchema,
       body: MasterAkunModel.updateAkunSchema,
+      response: {
+        200: SuccessSchema,
+        421: ErrorSchema,
+        404: ErrorSchema,
+        500: ErrorSchema,
+      },
     },
   )
 
   .delete(
     "/",
-    ({ body }) => {
-      const program: Effect.Effect<unknown, never> = MasterAkunService.deleteAkun(body.ids).pipe(
+    async ({ body }) => {
+      const program = MasterAkunService.deleteAkun(body.ids).pipe(
         Effect.catchTags({
           ItemsNotFoundError: (err) => {
             return Effect.succeed(
@@ -139,10 +156,17 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
         }),
       );
 
-      return Effect.runPromise(program);
+      await Effect.runPromise(program);
+
+      return status(200, { message: "Success" });
     },
     {
       admin: true,
       body: deleteBulkSchema,
+      response: {
+        200: SuccessSchema,
+        404: ErrorSchema,
+        500: ErrorSchema,
+      },
     },
   );

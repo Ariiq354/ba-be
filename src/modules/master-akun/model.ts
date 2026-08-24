@@ -10,6 +10,20 @@ const createAkunSchema = t.Object({
 });
 
 export const MasterAkunModel = {
+  getAkunResponseSchema: t.Object({
+    total: t.Number(),
+    data: t.Array(
+      t.Object({
+        id: t.Number(),
+        kodeAkun: t.String(),
+        namaAkun: t.String(),
+        kategori: t.UnionEnum(["aktiva", "biaya", "pasiva", "pendapatan"]),
+        normalBalance: t.UnionEnum(["debit", "kredit"]),
+        isActive: t.Boolean(),
+      }),
+    ),
+  }),
+
   getAkunQuerySchema: t.Object({
     ...paginationSchema.properties,
     ...searchSchema.properties,
