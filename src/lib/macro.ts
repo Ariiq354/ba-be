@@ -3,7 +3,7 @@ import { auth } from "../utils/auth";
 
 export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
   auth: {
-    async derive({ status, request: { headers } }) {
+    async resolve({ status, request: { headers } }) {
       const session = await auth.api.getSession({
         headers,
       });
@@ -22,7 +22,7 @@ export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
     },
   },
   admin: {
-    async derive({ status, request: { headers } }) {
+    async resolve({ status, request: { headers } }) {
       const session = await auth.api.getSession({
         headers,
       });

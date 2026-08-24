@@ -1,12 +1,12 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth";
 import { admin as adminPlugins, openAPI, username } from "better-auth/plugins";
-import { db } from "../database";
-import { relations } from "../database/relations";
-import * as schema from "../database/schema/auth";
+import { db } from "#/database";
+import { relations } from "#/database/relations";
+import * as schema from "#/database/schema/auth";
 
 export const auth = betterAuth({
-  trustedOrigins: ["https://kompak98.com", "https://*.kompak98.com", "https://kompak98.vercel.app"],
+  trustedOrigins: ["https://ubberkahamanah.my.id"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -28,10 +28,25 @@ export const auth = betterAuth({
       },
     },
   },
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: false,
     minPasswordLength: 7,
+  },
+  user: {
+    additionalFields: {
+      idKelompok: {
+        type: "number",
+        input: true,
+        required: true,
+      },
+    },
   },
   advanced: {
     database: {

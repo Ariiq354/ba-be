@@ -6,13 +6,12 @@
     "types": ["bun-types"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-
+    "paths": {
+      "#/*": ["./src/*"],
+    },
+    "rootDir": ".",
     "strict": true,
     "skipLibCheck": true,
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ]
-  }
+  },
+  "exclude": ["node_modules", ".agents"],
 }
