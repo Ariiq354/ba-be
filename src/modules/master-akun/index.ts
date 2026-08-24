@@ -13,16 +13,15 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
     async ({ query }) => {
       const program = MasterAkunService.getPaginatedAkun(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) => {
-            console.error("Database error:", err.error);
-
-            return Effect.succeed(
-              status(500, {
-                code: "DATABASE_ERROR",
-                message: "Gagal mengambil data akun",
-              }),
-            );
-          },
+          DatabaseError: (err) =>
+            Effect.logError("Database error:", err.error).pipe(
+              Effect.as(
+                status(500, {
+                  code: "DATABASE_ERROR",
+                  message: "Gagal mengambil data akun",
+                }),
+              ),
+            ),
         }),
       );
 
@@ -42,38 +41,35 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
     "/",
     async ({ body }) => {
       const program = MasterAkunService.createAkun(body).pipe(
+        Effect.as(status(201, { message: "Success" })),
         Effect.catchTags({
-          DuplicateKodeAkunError: (err) => {
-            return Effect.succeed(
-              status(421, {
+          DuplicateKodeAkunError: (err) =>
+            Effect.succeed(
+              status(409, {
                 code: "DUPLICATE_KODE_AKUN_ERROR",
                 message: `Kode akun '${err.kodeAkun}' sudah digunakan`,
               }),
-            );
-          },
-          DatabaseError: (err) => {
-            console.error("Database error:", err.error);
-
-            return Effect.succeed(
-              status(500, {
-                code: "DATABASE_ERROR",
-                message: "Gagal membuat akun",
-              }),
-            );
-          },
+            ),
+          DatabaseError: (err) =>
+            Effect.logError("Database error:", err.error).pipe(
+              Effect.as(
+                status(500, {
+                  code: "DATABASE_ERROR",
+                  message: "Gagal membuat akun",
+                }),
+              ),
+            ),
         }),
       );
 
-      await Effect.runPromise(program);
-
-      return status(201, { message: "Success" });
+      return Effect.runPromise(program);
     },
     {
       admin: true,
       body: MasterAkunModel.createAkunSchema,
       response: {
         201: SuccessSchema,
-        421: ErrorSchema,
+        409: ErrorSchema,
         500: ErrorSchema,
       },
     },
@@ -83,39 +79,35 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
     "/:id",
     async ({ params, body }) => {
       const program = MasterAkunService.updateAkun(params.id, body).pipe(
+        Effect.as(status(200, { message: "Success" })),
         Effect.catchTags({
-          DuplicateKodeAkunError: (err) => {
-            return Effect.succeed(
-              status(421, {
+          DuplicateKodeAkunError: (err) =>
+            Effect.succeed(
+              status(409, {
                 code: "DUPLICATE_KODE_AKUN_ERROR",
                 message: `Kode akun '${err.kodeAkun}' sudah digunakan`,
               }),
-            );
-          },
-          ItemNotFoundError: (err) => {
-            return Effect.succeed(
+            ),
+          ItemNotFoundError: (err) =>
+            Effect.succeed(
               status(404, {
                 code: "ITEM_NOT_FOUND_ERROR",
                 message: `Akun dengan ID '${err.id}' tidak ditemukan`,
               }),
-            );
-          },
-          DatabaseError: (err) => {
-            console.error("Database error:", err.error);
-
-            return Effect.succeed(
-              status(500, {
-                code: "DATABASE_ERROR",
-                message: "Gagal memperbarui akun",
-              }),
-            );
-          },
+            ),
+          DatabaseError: (err) =>
+            Effect.logError("Database error:", err.error).pipe(
+              Effect.as(
+                status(500, {
+                  code: "DATABASE_ERROR",
+                  message: "Gagal memperbarui akun",
+                }),
+              ),
+            ),
         }),
       );
 
-      await Effect.runPromise(program);
-
-      return status(200, { message: "Success" });
+      return Effect.runPromise(program);
     },
     {
       admin: true,
@@ -123,7 +115,7 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
       body: MasterAkunModel.updateAkunSchema,
       response: {
         200: SuccessSchema,
-        421: ErrorSchema,
+        409: ErrorSchema,
         404: ErrorSchema,
         500: ErrorSchema,
       },
@@ -134,31 +126,28 @@ export const MasterAkunModules = new Elysia({ prefix: "master-akun", tags: ["Mas
     "/",
     async ({ body }) => {
       const program = MasterAkunService.deleteAkun(body.ids).pipe(
+        Effect.as(status(200, { message: "Success" })),
         Effect.catchTags({
-          ItemsNotFoundError: (err) => {
-            return Effect.succeed(
+          ItemsNotFoundError: (err) =>
+            Effect.succeed(
               status(404, {
                 code: "ITEM_NOT_FOUND_ERROR",
                 message: `Akun dengan ID '${err.ids.join(", ")}' tidak ditemukan`,
               }),
-            );
-          },
-          DatabaseError: (err) => {
-            console.error("Database error:", err.error);
-
-            return Effect.succeed(
-              status(500, {
-                code: "DATABASE_ERROR",
-                message: "Gagal menghapus akun",
-              }),
-            );
-          },
+            ),
+          DatabaseError: (err) =>
+            Effect.logError("Database error:", err.error).pipe(
+              Effect.as(
+                status(500, {
+                  code: "DATABASE_ERROR",
+                  message: "Gagal menghapus akun",
+                }),
+              ),
+            ),
         }),
       );
 
-      await Effect.runPromise(program);
-
-      return status(200, { message: "Success" });
+      return Effect.runPromise(program);
     },
     {
       admin: true,
