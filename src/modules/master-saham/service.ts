@@ -7,20 +7,6 @@ import { Effect } from "effect";
 import { HargaSahamNotFoundError } from "./errors";
 import type { MasterSahamModel } from "./model";
 
-const selectHargaSaham = () =>
-  db
-    .select({
-      id: hargaSaham.id,
-      hargaNominal: hargaSaham.hargaNominal,
-      hargaJual: hargaSaham.hargaJual,
-      updatedBy: hargaSaham.updatedBy,
-      updatedByName: user.name,
-      createdAt: hargaSaham.createdAt,
-    })
-    .from(hargaSaham)
-    .leftJoin(user, eq(user.id, hargaSaham.updatedBy))
-    .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id));
-
 export const MasterSahamService = {
   createHargaSaham: Effect.fn("MasterSahamService.createHargaSaham")(function* (
     userId: number,
@@ -41,13 +27,31 @@ export const MasterSahamService = {
   getLatestHargaSaham: Effect.fn("MasterSahamService.getLatestHargaSaham")(function* () {
     const data = yield* Effect.tryPromise({
       try: async () => {
-        const [row] = await selectHargaSaham().limit(1);
+        const row = await db.query.saham.findFirst({
+          orderBy: {
+            createdAt: "desc",
+            id: "desc",
+          },
+          with: {
+            updater: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        });
 
         if (!row) {
           return undefined;
         }
 
-        return { ...row, createdAt: row.createdAt.toISOString() };
+        return {
+          id: row.id,
+          hargaNominal: row.hargaNominal,
+          hargaJual: row.hargaJual,
+          updatedByName: row.updater?.name ?? "",
+          createdAt: row.createdAt.toISOString(),
+        };
       },
       catch: (error) => new DatabaseError({ error }),
     });
@@ -64,12 +68,26 @@ export const MasterSahamService = {
   ) {
     return yield* Effect.tryPromise({
       try: async () => {
-        const qb = selectHargaSaham();
+        const qb = db
+          .select({
+            id: hargaSaham.id,
+            hargaNominal: hargaSaham.hargaNominal,
+            hargaJual: hargaSaham.hargaJual,
+            updatedByName: user.name,
+            createdAt: hargaSaham.createdAt,
+          })
+          .from(hargaSaham)
+          .leftJoin(user, eq(user.id, hargaSaham.updatedBy))
+          .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id));
 
         const offset = (query.page - 1) * query.limit;
         const total = await db.$count(qb);
         const rows = await qb.limit(query.limit).offset(offset);
-        const data = rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }));
+        const data = rows.map((row) => ({
+          ...row,
+          updatedByName: row.updatedByName ?? "",
+          createdAt: row.createdAt.toISOString(),
+        }));
 
         return { total, data };
       },

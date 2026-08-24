@@ -10,8 +10,7 @@ const hargaSahamResponseSchema = t.Object({
   id: t.Number(),
   hargaNominal: t.Number(),
   hargaJual: t.Number(),
-  updatedBy: t.Number(),
-  updatedByName: t.Nullable(t.String()),
+  updatedByName: t.String(),
   createdAt: t.String({ format: "date-time" }),
 });
 
