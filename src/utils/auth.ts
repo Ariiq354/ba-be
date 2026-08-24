@@ -5,6 +5,17 @@ import { db } from "#/database";
 import { relations } from "#/database/relations";
 import * as schema from "#/database/schema/auth";
 
+export const PENDING_VERIFICATION_BAN_REASON = "Pengguna belum terverifikasi";
+const LEGACY_PENDING_VERIFICATION_BAN_REASON = "Akun belum terverifikasi";
+export const PENDING_VERIFICATION_BAN_REASONS = [
+  PENDING_VERIFICATION_BAN_REASON,
+  LEGACY_PENDING_VERIFICATION_BAN_REASON,
+] as const;
+
+export function isPendingVerificationBanReason(reason: string | null): boolean {
+  return PENDING_VERIFICATION_BAN_REASONS.some((candidate) => candidate === reason);
+}
+
 export const auth = betterAuth({
   trustedOrigins: ["https://ubberkahamanah.my.id"],
   database: drizzleAdapter(db, {
@@ -21,7 +32,7 @@ export const auth = betterAuth({
           data: {
             ...user,
             banned: true,
-            banReason: "Akun belum terverifikasi",
+            banReason: PENDING_VERIFICATION_BAN_REASON,
             banExpires: null,
           },
         }),

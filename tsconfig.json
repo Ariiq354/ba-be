@@ -7,11 +7,11 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-      "#/*": ["./src/*"],
+      "#/*": ["./src/*"]
     },
     "rootDir": ".",
     "strict": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
-  "exclude": ["node_modules", ".agents"],
+  "exclude": ["node_modules", ".agents", "temp"]
 }

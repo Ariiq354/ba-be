@@ -46,3 +46,26 @@ _Avoid_: District
 **Desa/Kelurahan**:
 The administrative level below a Kecamatan.
 _Avoid_: Kelurahan, when referring to both desa and kelurahan
+
+**Pengguna**:
+An identity that can access the application.
+_Avoid_: User, Akun
+
+**Anggota**:
+A verified Pengguna identified by a membership number.
+_Avoid_: Pengguna, when referring specifically to a verified member
+
+**Nomor Anggota**:
+The unique identifier assigned to an Anggota, formatted as `{kodeKelompok}-{MMYY}-{nomor}` with a monthly sequence per Kelompok.
+_Avoid_: User ID
+
+**Profil Pengguna**:
+The personal details associated with a Pengguna.
+_Avoid_: Profil Anggota
+
+**Penanggung Jawab (PJ)**:
+An Anggota responsible for a Kelompok.
+
+**Kelompok**:
+The organizational unit to which each Pengguna belongs and which scopes Nomor Anggota and PJ assignments.
+_Avoid_: Grup
