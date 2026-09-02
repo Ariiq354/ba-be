@@ -3,7 +3,7 @@ import { files } from "#/database/schema/files";
 import { DatabaseError, StorageError } from "#/utils/errors";
 import { deleteFiles, generatePresignedUrl } from "#/utils/file";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 import { PENDING_FILE_MAX_AGE_MS, PRESIGNED_URL_EXPIRY_SECONDS, UPLOAD_CONFIG } from "./config";
 import { FileTooLargeError, InvalidUploadDirectoryError, UnsupportedFileTypeError } from "./errors";
 import type { FilesModel } from "./model";
@@ -56,10 +56,12 @@ export const FilesService = {
 
   cleanupPendingFiles: Effect.fn("FilesService.cleanupPendingFiles")(function* () {
     return yield* Effect.tryPromise({
-      try: async () => {
-        return await db.transaction(async (tx) => {
+      try: () =>
+        db.transaction(async (tx) => {
           const [lock] = await tx.execute<{ acquired: boolean }>(sql`
-            select pg_try_advisory_xact_lock(hashtextextended(${CLEANUP_LOCK_KEY}, 0)) as acquired
+            select pg_try_advisory_xact_lock(
+              hashtextextended(${CLEANUP_LOCK_KEY}, 0)
+            ) as acquired
           `);
 
           if (!lock?.acquired) {
@@ -67,8 +69,11 @@ export const FilesService = {
           }
 
           const cutoff = new Date(Date.now() - PENDING_FILE_MAX_AGE_MS);
+
           const pendingFiles = await tx
-            .select({ publicId: files.publicId })
+            .select({
+              publicId: files.publicId,
+            })
             .from(files)
             .where(and(eq(files.status, "pending"), lte(files.createdAt, cutoff)))
             .for("update");
@@ -78,29 +83,28 @@ export const FilesService = {
           }
 
           const publicIds = pendingFiles.map((file) => file.publicId);
-          const storageResult = await Effect.runPromise(
-            deleteFiles(publicIds).pipe(
-              Effect.map(() => ({ success: true as const })),
-              Effect.catchTag("StorageError", (error) =>
-                Effect.succeed({ success: false as const, error }),
-              ),
-            ),
-          );
 
-          if (!storageResult.success) {
-            throw storageResult.error;
+          const deleteResult = await Effect.runPromise(Effect.result(deleteFiles(publicIds)));
+
+          if (Result.isFailure(deleteResult)) {
+            throw deleteResult.failure;
           }
 
           await tx.delete(files).where(inArray(files.publicId, publicIds));
 
-          return { deletedCount: publicIds.length };
-        });
-      },
+          return {
+            deletedCount: publicIds.length,
+          };
+        }),
+
       catch: (error) => {
         if (error instanceof StorageError) {
           return error;
         }
-        return new DatabaseError({ error });
+
+        return new DatabaseError({
+          error,
+        });
       },
     });
   }),
