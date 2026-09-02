@@ -5,9 +5,9 @@ import { kelompok, kelompokPenanggungJawab } from "#/database/schema/kelompok";
 import { userProfile } from "#/database/schema/users";
 import { DatabaseError, ItemNotFoundError } from "#/utils/errors";
 import { deleteFiles } from "#/utils/file";
-import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASONS } from "#/utils/auth";
+import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASON } from "#/utils/auth";
 import { isUniqueViolation } from "#/utils/pgcode";
-import { and, desc, eq, ilike, inArray, isNull, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, like, or, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import {
   AdminCannotBePjError,
@@ -73,36 +73,45 @@ export const PenggunaService = {
     data: ProfileUpdate,
   ) {
     const imageAction = data.imageAction ?? "keep";
+
     if (imageAction === "update" && !data.image) {
       return yield* new ProfileImageRequiredError();
     }
 
-    const result = yield* Effect.tryPromise({
-      try: async () => {
-        return await db.transaction(async (tx) => {
+    const { oldImageToDelete } = yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
           const [targetPengguna] = await tx
-            .select({ image: user.image })
+            .select({
+              image: user.image,
+            })
             .from(user)
             .where(eq(user.id, penggunaId))
             .for("update");
 
           if (!targetPengguna) {
-            return { type: "not-found" as const };
+            throw new ItemNotFoundError({
+              id: penggunaId,
+            });
           }
 
-          const penggunaData: { name?: string; image?: string | null } = {};
-          if (data.name !== undefined) {
-            penggunaData.name = data.name;
-          }
+          const penggunaData = {
+            name: data.name,
+            image: undefined as string | undefined,
+          };
 
           let oldImageToDelete: string | null = null;
 
           if (imageAction === "remove") {
-            penggunaData.image = null;
+            penggunaData.image = undefined;
             oldImageToDelete = targetPengguna.image;
-          } else if (imageAction === "update") {
+          }
+
+          if (imageAction === "update") {
             const [pendingImage] = await tx
-              .select({ publicId: files.publicId })
+              .select({
+                publicId: files.publicId,
+              })
               .from(files)
               .where(
                 and(
@@ -114,60 +123,47 @@ export const PenggunaService = {
               .for("update");
 
             if (!pendingImage) {
-              return { type: "invalid-image" as const };
+              throw new InvalidProfileImageError();
             }
 
             await tx
               .update(files)
-              .set({ status: "success" })
+              .set({
+                status: "success",
+              })
               .where(eq(files.publicId, pendingImage.publicId));
 
             penggunaData.image = pendingImage.publicId;
+
             if (targetPengguna.image && targetPengguna.image !== pendingImage.publicId) {
               oldImageToDelete = targetPengguna.image;
             }
           }
 
-          if (Object.keys(penggunaData).length > 0) {
+          if (Object.values(penggunaData).some((value) => value !== undefined)) {
             await tx.update(user).set(penggunaData).where(eq(user.id, penggunaId));
           }
 
-          const profileData: Partial<typeof userProfile.$inferInsert> = {};
-          if (data.noHp !== undefined) {
-            profileData.noHp = data.noHp;
-          }
-          if (data.nik !== undefined) {
-            profileData.nik = data.nik;
-          }
-          if (data.namaBank !== undefined) {
-            profileData.namaBank = data.namaBank;
-          }
-          if (data.noRekening !== undefined) {
-            profileData.noRekening = data.noRekening;
-          }
-          if (data.pemilikRekening !== undefined) {
-            profileData.pemilikRekening = data.pemilikRekening;
-          }
-          if (data.jalan !== undefined) {
-            profileData.jalan = data.jalan;
-          }
-          if (data.idProvinsi !== undefined) {
-            profileData.idProvinsi = data.idProvinsi;
-          }
-          if (data.idKabupatenKota !== undefined) {
-            profileData.idKota = data.idKabupatenKota;
-          }
-          if (data.idKecamatan !== undefined) {
-            profileData.idKecamatan = data.idKecamatan;
-          }
-          if (data.idDesaKelurahan !== undefined) {
-            profileData.idKelurahan = data.idDesaKelurahan;
-          }
+          const profileData = {
+            noHp: data.noHp,
+            nik: data.nik,
+            namaBank: data.namaBank,
+            noRekening: data.noRekening,
+            pemilikRekening: data.pemilikRekening,
+            jalan: data.jalan,
+            idProvinsi: data.idProvinsi,
+            idKota: data.idKabupatenKota,
+            idKecamatan: data.idKecamatan,
+            idKelurahan: data.idDesaKelurahan,
+          };
 
-          if (Object.keys(profileData).length > 0) {
+          if (Object.values(profileData).some((value) => value !== undefined)) {
             await tx
               .insert(userProfile)
-              .values({ idUser: penggunaId, ...profileData })
+              .values({
+                idUser: penggunaId,
+                ...profileData,
+              })
               .onConflictDoUpdate({
                 target: userProfile.idUser,
                 set: profileData,
@@ -178,29 +174,32 @@ export const PenggunaService = {
             await tx.delete(files).where(eq(files.publicId, oldImageToDelete));
           }
 
-          return { type: "success" as const, oldImageToDelete };
-        });
-      },
+          return {
+            oldImageToDelete,
+          };
+        }),
+
       catch: (error) => {
-        if (typeof data.nik === "string" && isUniqueViolation(error)) {
-          return new DuplicateNikError({ nik: data.nik });
+        if (error instanceof ItemNotFoundError || error instanceof InvalidProfileImageError) {
+          return error;
         }
-        return new DatabaseError({ error });
+
+        if (typeof data.nik === "string" && isUniqueViolation(error)) {
+          return new DuplicateNikError({
+            nik: data.nik,
+          });
+        }
+
+        return new DatabaseError({
+          error,
+        });
       },
     });
 
-    if (result.type === "not-found") {
-      return yield* new ItemNotFoundError({ id: penggunaId });
-    }
-
-    if (result.type === "invalid-image") {
-      return yield* new InvalidProfileImageError();
-    }
-
-    if (result.oldImageToDelete) {
-      yield* deleteFiles([result.oldImageToDelete]).pipe(
-        Effect.catchTag("StorageError", (err) =>
-          Effect.logError(`Gagal menghapus avatar lama '${result.oldImageToDelete}':`, err.error),
+    if (oldImageToDelete) {
+      yield* deleteFiles([oldImageToDelete]).pipe(
+        Effect.catchTag("StorageError", (error) =>
+          Effect.logError(`Gagal menghapus avatar lama '${oldImageToDelete}':`, error.error),
         ),
       );
     }
@@ -215,10 +214,7 @@ export const PenggunaService = {
 
         if (query.status === "pending") {
           conditions.push(
-            and(
-              eq(user.banned, true),
-              inArray(user.banReason, [...PENDING_VERIFICATION_BAN_REASONS]),
-            ),
+            and(eq(user.banned, true), eq(user.banReason, PENDING_VERIFICATION_BAN_REASON)),
           );
         } else if (query.status === "verified") {
           conditions.push(or(eq(user.banned, false), isNull(user.banned)));
@@ -258,11 +254,7 @@ export const PenggunaService = {
 
         const offset = (query.page - 1) * query.limit;
         const total = await db.$count(qb);
-        const rows = await qb.limit(query.limit).offset(offset);
-        const data = rows.map((row) => ({
-          ...row,
-          createdAt: row.createdAt.toISOString(),
-        }));
+        const data = await qb.limit(query.limit).offset(offset);
 
         return { total, data };
       },
@@ -271,9 +263,9 @@ export const PenggunaService = {
   }),
 
   verifyPengguna: Effect.fn("PenggunaService.verifyPengguna")(function* (penggunaId: number) {
-    const result = yield* Effect.tryPromise({
-      try: async () => {
-        return await db.transaction(async (tx) => {
+    return yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
           const [targetPengguna] = await tx
             .select({
               banned: user.banned,
@@ -285,47 +277,63 @@ export const PenggunaService = {
             .for("update");
 
           if (!targetPengguna) {
-            return { type: "not-found" as const };
+            throw new ItemNotFoundError({
+              id: penggunaId,
+            });
           }
 
           if (targetPengguna.banned !== true) {
-            return { type: "already-verified" as const };
+            throw new PenggunaAlreadyVerifiedError({
+              penggunaId,
+            });
           }
 
           if (!isPendingVerificationBanReason(targetPengguna.banReason)) {
-            return { type: "not-pending-verification" as const };
+            throw new PenggunaNotPendingVerificationError({
+              penggunaId,
+            });
           }
 
           const period = getMembershipPeriod(new Date());
           const lockKey = `nomor-anggota:${targetPengguna.idKelompok}:${period}`;
+
           await tx.execute(sql`
-            select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+            select pg_advisory_xact_lock(
+              hashtextextended(${lockKey}, 0)
+            )
           `);
 
           const [targetKelompok] = await tx
-            .select({ kodeKelompok: kelompok.kodeKelompok })
+            .select({
+              kodeKelompok: kelompok.kodeKelompok,
+            })
             .from(kelompok)
             .where(eq(kelompok.id, targetPengguna.idKelompok));
 
           if (!targetKelompok) {
-            return {
-              type: "kelompok-not-found" as const,
+            throw new KelompokNotFoundError({
               idKelompok: targetPengguna.idKelompok,
-            };
+            });
           }
 
           const prefix = `${targetKelompok.kodeKelompok}-${period}-`;
+
           const existingNumbers = await tx
-            .select({ noAnggota: userProfile.noAnggota })
+            .select({
+              noAnggota: userProfile.noAnggota,
+            })
             .from(userProfile)
             .where(sql`left(${userProfile.noAnggota}, ${prefix.length}) = ${prefix}`);
 
           const maxSequence = existingNumbers.reduce((max, item) => {
             const segments = item.noAnggota?.split("-") ?? [];
             const lastSegment = segments[segments.length - 1] ?? "";
+
             const sequence = /^\d+$/.test(lastSegment) ? Number(lastSegment) : Number.NaN;
+
             return Number.isNaN(sequence) ? max : Math.max(max, sequence);
           }, 0);
+
           const noAnggota = `${prefix}${String(maxSequence + 1).padStart(4, "0")}`;
 
           await tx
@@ -339,39 +347,46 @@ export const PenggunaService = {
 
           await tx
             .insert(userProfile)
-            .values({ idUser: penggunaId, noAnggota })
+            .values({
+              idUser: penggunaId,
+              noAnggota,
+            })
             .onConflictDoUpdate({
               target: userProfile.idUser,
-              set: { noAnggota },
+              set: {
+                noAnggota,
+              },
             });
 
-          return { type: "success" as const, noAnggota };
+          return {
+            noAnggota,
+          };
+        }),
+
+      catch: (error) => {
+        if (
+          error instanceof ItemNotFoundError ||
+          error instanceof PenggunaAlreadyVerifiedError ||
+          error instanceof PenggunaNotPendingVerificationError ||
+          error instanceof KelompokNotFoundError
+        ) {
+          return error;
+        }
+
+        return new DatabaseError({
+          error,
         });
       },
-      catch: (error) => new DatabaseError({ error }),
     });
-
-    switch (result.type) {
-      case "not-found":
-        return yield* new ItemNotFoundError({ id: penggunaId });
-      case "already-verified":
-        return yield* new PenggunaAlreadyVerifiedError({ penggunaId });
-      case "not-pending-verification":
-        return yield* new PenggunaNotPendingVerificationError({ penggunaId });
-      case "kelompok-not-found":
-        return yield* new KelompokNotFoundError({ idKelompok: result.idKelompok });
-      case "success":
-        return { noAnggota: result.noAnggota };
-    }
   }),
 
   setPenggunaPj: Effect.fn("PenggunaService.setPenggunaPj")(function* (
     penggunaId: number,
     isPj: boolean,
   ) {
-    const result = yield* Effect.tryPromise({
-      try: async () => {
-        return await db.transaction(async (tx) => {
+    return yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
           const [targetPengguna] = await tx
             .select({
               role: user.role,
@@ -384,32 +399,50 @@ export const PenggunaService = {
             .for("update");
 
           if (!targetPengguna) {
-            return { type: "not-found" as const };
+            throw new ItemNotFoundError({
+              id: penggunaId,
+            });
           }
 
           if (targetPengguna.role === "admin") {
-            return { type: "admin" as const };
+            throw new AdminCannotBePjError({
+              penggunaId,
+            });
           }
 
           if (targetPengguna.banned) {
-            return {
-              type: isPendingVerificationBanReason(targetPengguna.banReason)
-                ? ("unverified" as const)
-                : ("banned" as const),
-            };
+            if (isPendingVerificationBanReason(targetPengguna.banReason)) {
+              throw new PenggunaUnverifiedError({
+                penggunaId,
+              });
+            }
+
+            throw new PenggunaBannedError({
+              penggunaId,
+            });
           }
 
           const [profile] = await tx
-            .select({ noAnggota: userProfile.noAnggota })
+            .select({
+              noAnggota: userProfile.noAnggota,
+            })
             .from(userProfile)
             .where(eq(userProfile.idUser, penggunaId));
 
           if (!profile?.noAnggota) {
-            return { type: "unverified" as const };
+            throw new PenggunaUnverifiedError({
+              penggunaId,
+            });
           }
 
           if (isPj) {
-            await tx.update(user).set({ role: "pj" }).where(eq(user.id, penggunaId));
+            await tx
+              .update(user)
+              .set({
+                role: "pj",
+              })
+              .where(eq(user.id, penggunaId));
+
             await tx
               .insert(kelompokPenanggungJawab)
               .values({
@@ -418,7 +451,13 @@ export const PenggunaService = {
               })
               .onConflictDoNothing();
           } else {
-            await tx.update(user).set({ role: "user" }).where(eq(user.id, penggunaId));
+            await tx
+              .update(user)
+              .set({
+                role: "user",
+              })
+              .where(eq(user.id, penggunaId));
+
             await tx
               .delete(kelompokPenanggungJawab)
               .where(
@@ -428,24 +467,22 @@ export const PenggunaService = {
                 ),
               );
           }
+        }),
 
-          return { type: "success" as const };
+      catch: (error) => {
+        if (
+          error instanceof ItemNotFoundError ||
+          error instanceof AdminCannotBePjError ||
+          error instanceof PenggunaUnverifiedError ||
+          error instanceof PenggunaBannedError
+        ) {
+          return error;
+        }
+
+        return new DatabaseError({
+          error,
         });
       },
-      catch: (error) => new DatabaseError({ error }),
     });
-
-    switch (result.type) {
-      case "not-found":
-        return yield* new ItemNotFoundError({ id: penggunaId });
-      case "admin":
-        return yield* new AdminCannotBePjError({ penggunaId });
-      case "unverified":
-        return yield* new PenggunaUnverifiedError({ penggunaId });
-      case "banned":
-        return yield* new PenggunaBannedError({ penggunaId });
-      case "success":
-        return;
-    }
   }),
 };
