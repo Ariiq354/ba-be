@@ -6,14 +6,9 @@ import { relations } from '#/database/relations'
 import * as schema from '#/database/schema/auth'
 
 export const PENDING_VERIFICATION_BAN_REASON = 'Pengguna belum terverifikasi'
-const LEGACY_PENDING_VERIFICATION_BAN_REASON = 'Akun belum terverifikasi'
-export const PENDING_VERIFICATION_BAN_REASONS = [
-  PENDING_VERIFICATION_BAN_REASON,
-  LEGACY_PENDING_VERIFICATION_BAN_REASON,
-] as const
 
 export function isPendingVerificationBanReason(reason: string | null): boolean {
-  return PENDING_VERIFICATION_BAN_REASONS.includes(reason)
+  return reason === PENDING_VERIFICATION_BAN_REASON
 }
 
 export const auth = betterAuth({

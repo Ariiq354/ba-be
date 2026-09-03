@@ -2,7 +2,7 @@ import { Effect } from 'effect'
 import Elysia, { status } from 'elysia'
 import { ErrorSchema, SuccessSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
-import { MasterSahamModel } from './model'
+import { masterSahamModel } from './model'
 import { MasterSahamService } from './service'
 
 export const MasterSahamModules = new Elysia({
@@ -31,9 +31,9 @@ export const MasterSahamModules = new Elysia({
     },
     {
       admin: true,
-      query: MasterSahamModel.getHargaSahamQuerySchema,
+      query: masterSahamModel.getHargaSahamQuerySchema,
       response: {
-        200: MasterSahamModel.getHargaSahamResponseSchema,
+        200: masterSahamModel.getHargaSahamResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -68,7 +68,7 @@ export const MasterSahamModules = new Elysia({
     {
       admin: true,
       response: {
-        200: MasterSahamModel.getLatestHargaSahamResponseSchema,
+        200: masterSahamModel.getLatestHargaSahamResponseSchema,
         404: ErrorSchema,
         500: ErrorSchema,
       },
@@ -97,7 +97,7 @@ export const MasterSahamModules = new Elysia({
     },
     {
       admin: true,
-      body: MasterSahamModel.createHargaSahamSchema,
+      body: masterSahamModel.createHargaSahamSchema,
       response: {
         201: SuccessSchema,
         500: ErrorSchema,

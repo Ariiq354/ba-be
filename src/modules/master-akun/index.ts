@@ -3,7 +3,7 @@ import Elysia, { status } from 'elysia'
 import { ErrorSchema, SuccessSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { deleteBulkSchema, idParamsSchema } from '#/utils/schema'
-import { MasterAkunModel } from './model'
+import { masterAkunModel } from './model'
 import { MasterAkunService } from './service'
 
 export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Master Akun'] })
@@ -29,9 +29,9 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
     },
     {
       admin: true,
-      query: MasterAkunModel.getAkunQuerySchema,
+      query: masterAkunModel.getAkunQuerySchema,
       response: {
-        200: MasterAkunModel.getAkunResponseSchema,
+        200: masterAkunModel.getAkunResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -66,7 +66,7 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
     },
     {
       admin: true,
-      body: MasterAkunModel.createAkunSchema,
+      body: masterAkunModel.createAkunSchema,
       response: {
         201: SuccessSchema,
         409: ErrorSchema,
@@ -112,7 +112,7 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
     {
       admin: true,
       params: idParamsSchema,
-      body: MasterAkunModel.updateAkunSchema,
+      body: masterAkunModel.updateAkunSchema,
       response: {
         200: SuccessSchema,
         409: ErrorSchema,

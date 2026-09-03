@@ -3,7 +3,7 @@ import Elysia, { status } from 'elysia'
 import { ErrorSchema, SuccessSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { idParamsSchema } from '#/utils/schema'
-import { PenggunaModel } from './model'
+import { penggunaModel } from './model'
 import { PenggunaService } from './service'
 
 export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'] })
@@ -37,7 +37,7 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
     {
       auth: true,
       response: {
-        200: PenggunaModel.getProfileResponseSchema,
+        200: penggunaModel.getProfileResponseSchema,
         404: ErrorSchema,
         500: ErrorSchema,
       },
@@ -93,7 +93,7 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
     },
     {
       auth: true,
-      body: PenggunaModel.updateProfileSchema,
+      body: penggunaModel.updateProfileSchema,
       response: {
         200: SuccessSchema,
         400: ErrorSchema,
@@ -124,9 +124,9 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
     },
     {
       admin: true,
-      query: PenggunaModel.getPenggunaQuerySchema,
+      query: penggunaModel.getPenggunaQuerySchema,
       response: {
-        200: PenggunaModel.getPenggunaResponseSchema,
+        200: penggunaModel.getPenggunaResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -182,7 +182,7 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
       admin: true,
       params: idParamsSchema,
       response: {
-        200: PenggunaModel.verifyPenggunaResponseSchema,
+        200: penggunaModel.verifyPenggunaResponseSchema,
         404: ErrorSchema,
         409: ErrorSchema,
         500: ErrorSchema,
@@ -240,7 +240,7 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
     {
       admin: true,
       params: idParamsSchema,
-      body: PenggunaModel.setPjSchema,
+      body: penggunaModel.setPjSchema,
       response: {
         200: SuccessSchema,
         400: ErrorSchema,

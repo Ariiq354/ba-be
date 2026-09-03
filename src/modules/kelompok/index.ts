@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import Elysia, { status } from 'elysia'
 import { ErrorSchema } from '#/utils/errors'
-import { KelompokModel } from './model'
+import { kelompokModel } from './model'
 import { KelompokService } from './service'
 
 export const KelompokModules = new Elysia({ prefix: 'kelompok', tags: ['Kelompok'] }).get(
@@ -25,7 +25,7 @@ export const KelompokModules = new Elysia({ prefix: 'kelompok', tags: ['Kelompok
   },
   {
     response: {
-      200: KelompokModel.getKelompokOptionsResponseSchema,
+      200: kelompokModel.getKelompokOptionsResponseSchema,
       500: ErrorSchema,
     },
   },

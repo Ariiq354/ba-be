@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 import Elysia, { status } from 'elysia'
 import { ErrorSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
-import { FilesModel } from './model'
+import { filesModel } from './model'
 import { FilesService } from './service'
 
 export const FilesModules = new Elysia({ prefix: 'files', tags: ['Files'] })
@@ -81,9 +81,9 @@ export const FilesModules = new Elysia({ prefix: 'files', tags: ['Files'] })
     },
     {
       auth: true,
-      body: FilesModel.presignedUploadSchema,
+      body: filesModel.presignedUploadSchema,
       response: {
-        201: FilesModel.presignedUploadResponseSchema,
+        201: filesModel.presignedUploadResponseSchema,
         400: ErrorSchema,
         500: ErrorSchema,
       },

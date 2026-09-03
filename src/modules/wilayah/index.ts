@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import Elysia, { status } from 'elysia'
 import { ErrorSchema } from '#/utils/errors'
-import { WilayahModel } from './model'
+import { wilayahModel } from './model'
 import { WilayahService } from './service'
 
 export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] })
@@ -26,7 +26,7 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
     },
     {
       response: {
-        200: WilayahModel.getProvinsiResponseSchema,
+        200: wilayahModel.getProvinsiResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -52,9 +52,9 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
       return Effect.runPromise(program)
     },
     {
-      query: WilayahModel.getKabupatenKotaQuerySchema,
+      query: wilayahModel.getKabupatenKotaQuerySchema,
       response: {
-        200: WilayahModel.getKabupatenKotaResponseSchema,
+        200: wilayahModel.getKabupatenKotaResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -80,9 +80,9 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
       return Effect.runPromise(program)
     },
     {
-      query: WilayahModel.getKecamatanQuerySchema,
+      query: wilayahModel.getKecamatanQuerySchema,
       response: {
-        200: WilayahModel.getKecamatanResponseSchema,
+        200: wilayahModel.getKecamatanResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -108,9 +108,9 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
       return Effect.runPromise(program)
     },
     {
-      query: WilayahModel.getDesaKelurahanQuerySchema,
+      query: wilayahModel.getDesaKelurahanQuerySchema,
       response: {
-        200: WilayahModel.getDesaKelurahanResponseSchema,
+        200: wilayahModel.getDesaKelurahanResponseSchema,
         500: ErrorSchema,
       },
     },

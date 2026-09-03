@@ -3,7 +3,7 @@ import Elysia, { status } from 'elysia'
 import { ErrorSchema, SuccessSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { deleteBulkSchema, idParamsSchema } from '#/utils/schema'
-import { MasterMarginModel } from './model'
+import { masterMarginModel } from './model'
 import { MasterMarginService } from './service'
 
 export const MasterMarginModules = new Elysia({
@@ -32,9 +32,9 @@ export const MasterMarginModules = new Elysia({
     },
     {
       admin: true,
-      query: MasterMarginModel.getMarginQuerySchema,
+      query: masterMarginModel.getMarginQuerySchema,
       response: {
-        200: MasterMarginModel.getMarginResponseSchema,
+        200: masterMarginModel.getMarginResponseSchema,
         500: ErrorSchema,
       },
     },
@@ -62,7 +62,7 @@ export const MasterMarginModules = new Elysia({
     },
     {
       admin: true,
-      body: MasterMarginModel.createMarginSchema,
+      body: masterMarginModel.createMarginSchema,
       response: {
         201: SuccessSchema,
         500: ErrorSchema,
@@ -100,7 +100,7 @@ export const MasterMarginModules = new Elysia({
     {
       admin: true,
       params: idParamsSchema,
-      body: MasterMarginModel.updateMarginSchema,
+      body: masterMarginModel.updateMarginSchema,
       response: {
         200: SuccessSchema,
         404: ErrorSchema,
