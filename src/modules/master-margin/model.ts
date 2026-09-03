@@ -1,15 +1,16 @@
-import { paginationSchema } from "#/utils/schema";
-import { t, type UnwrapSchema } from "elysia";
+import type { UnwrapSchema } from 'elysia'
+import { t } from 'elysia'
+import { paginationSchema } from '#/utils/schema'
 
 const createMarginSchema = t.Object({
   minNominal: t.Integer({ minimum: 0 }),
   maxNominal: t.Integer({ minimum: 0 }),
   persenMarginTahun: t.Integer({ minimum: 0 }),
-  jaminan: t.UnionEnum(["TIDAK_ADA", "ADA"]),
+  jaminan: t.UnionEnum(['TIDAK_ADA', 'ADA']),
   biayaAkad: t.Integer({ minimum: 0 }),
-});
+})
 
-export const MasterMarginModel = {
+export const masterMarginModel = {
   getMarginResponseSchema: t.Object({
     total: t.Number(),
     data: t.Array(
@@ -18,10 +19,10 @@ export const MasterMarginModel = {
         minNominal: t.Number(),
         maxNominal: t.Number(),
         persenMarginTahun: t.Number(),
-        jaminan: t.UnionEnum(["TIDAK_ADA", "ADA"]),
+        jaminan: t.UnionEnum(['TIDAK_ADA', 'ADA']),
         biayaAkad: t.Number(),
-        createdAt: t.String({ format: "date-time" }),
-        updatedAt: t.String({ format: "date-time" }),
+        createdAt: t.String({ format: 'date-time' }),
+        updatedAt: t.String({ format: 'date-time' }),
       }),
     ),
   }),
@@ -33,8 +34,8 @@ export const MasterMarginModel = {
   createMarginSchema,
 
   updateMarginSchema: t.Partial(createMarginSchema),
-} as const;
+} as const
 
 export type MasterMarginModel = {
-  [key in keyof typeof MasterMarginModel]: UnwrapSchema<(typeof MasterMarginModel)[key]>;
-};
+  [key in keyof typeof masterMarginModel]: UnwrapSchema<(typeof masterMarginModel)[key]>;
+}

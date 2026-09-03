@@ -1,28 +1,28 @@
-import { ErrorSchema } from "#/utils/errors";
-import { Effect } from "effect";
-import Elysia, { status } from "elysia";
-import { WilayahModel } from "./model";
-import { WilayahService } from "./service";
+import { Effect } from 'effect'
+import Elysia, { status } from 'elysia'
+import { ErrorSchema } from '#/utils/errors'
+import { WilayahModel } from './model'
+import { WilayahService } from './service'
 
-export const WilayahModules = new Elysia({ prefix: "wilayah", tags: ["Wilayah"] })
+export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] })
   .get(
-    "/provinsi",
+    '/provinsi',
     async () => {
       const program = WilayahService.getProvinsi().pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil data provinsi",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil data provinsi',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       response: {
@@ -33,23 +33,23 @@ export const WilayahModules = new Elysia({ prefix: "wilayah", tags: ["Wilayah"] 
   )
 
   .get(
-    "/kabupaten-kota",
+    '/kabupaten-kota',
     async ({ query }) => {
       const program = WilayahService.getKabupatenKota(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil data kabupaten/kota",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil data kabupaten/kota',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       query: WilayahModel.getKabupatenKotaQuerySchema,
@@ -61,23 +61,23 @@ export const WilayahModules = new Elysia({ prefix: "wilayah", tags: ["Wilayah"] 
   )
 
   .get(
-    "/kecamatan",
+    '/kecamatan',
     async ({ query }) => {
       const program = WilayahService.getKecamatan(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil data kecamatan",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil data kecamatan',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       query: WilayahModel.getKecamatanQuerySchema,
@@ -89,23 +89,23 @@ export const WilayahModules = new Elysia({ prefix: "wilayah", tags: ["Wilayah"] 
   )
 
   .get(
-    "/desa-kelurahan",
+    '/desa-kelurahan',
     async ({ query }) => {
       const program = WilayahService.getDesaKelurahan(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil data desa/kelurahan",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil data desa/kelurahan',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       query: WilayahModel.getDesaKelurahanQuerySchema,
@@ -114,4 +114,4 @@ export const WilayahModules = new Elysia({ prefix: "wilayah", tags: ["Wilayah"] 
         500: ErrorSchema,
       },
     },
-  );
+  )

@@ -1,38 +1,38 @@
-import { ErrorSchema, SuccessSchema } from "#/utils/errors";
-import { AuthMacro } from "#/utils/macro";
-import { idParamsSchema } from "#/utils/schema";
-import Elysia, { status } from "elysia";
-import { Effect } from "effect";
-import { PenggunaModel } from "./model";
-import { PenggunaService } from "./service";
+import { Effect } from 'effect'
+import Elysia, { status } from 'elysia'
+import { ErrorSchema, SuccessSchema } from '#/utils/errors'
+import { AuthMacro } from '#/utils/macro'
+import { idParamsSchema } from '#/utils/schema'
+import { PenggunaModel } from './model'
+import { PenggunaService } from './service'
 
-export const PenggunaModules = new Elysia({ prefix: "pengguna", tags: ["Pengguna"] })
+export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'] })
   .use(AuthMacro)
   .get(
-    "/profile",
+    '/profile',
     async ({ user }) => {
       const program = PenggunaService.getProfile(user.id).pipe(
         Effect.catchTags({
           ItemNotFoundError: () =>
             Effect.succeed(
               status(404, {
-                code: "ITEM_NOT_FOUND_ERROR",
-                message: "Data profil pengguna tidak ditemukan",
+                code: 'ITEM_NOT_FOUND_ERROR',
+                message: 'Data profil pengguna tidak ditemukan',
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil data profil pengguna",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil data profil pengguna',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       auth: true,
@@ -44,52 +44,52 @@ export const PenggunaModules = new Elysia({ prefix: "pengguna", tags: ["Pengguna
     },
   )
   .patch(
-    "/profile",
+    '/profile',
     async ({ user, body }) => {
       const program = PenggunaService.updateProfile(user.id, body).pipe(
-        Effect.as(status(200, { message: "Success" })),
+        Effect.as(status(200, { message: 'Success' })),
         Effect.catchTags({
           ProfileImageRequiredError: () =>
             Effect.succeed(
               status(400, {
-                code: "PROFILE_IMAGE_REQUIRED_ERROR",
-                message: "Foto profil baru wajib diisi untuk tindakan update",
+                code: 'PROFILE_IMAGE_REQUIRED_ERROR',
+                message: 'Foto profil baru wajib diisi untuk tindakan update',
               }),
             ),
           InvalidProfileImageError: () =>
             Effect.succeed(
               status(400, {
-                code: "INVALID_PROFILE_IMAGE_ERROR",
-                message: "File foto profil tidak valid atau sudah digunakan",
+                code: 'INVALID_PROFILE_IMAGE_ERROR',
+                message: 'File foto profil tidak valid atau sudah digunakan',
               }),
             ),
           ItemNotFoundError: () =>
             Effect.succeed(
               status(404, {
-                code: "ITEM_NOT_FOUND_ERROR",
-                message: "Data pengguna tidak ditemukan",
+                code: 'ITEM_NOT_FOUND_ERROR',
+                message: 'Data pengguna tidak ditemukan',
               }),
             ),
-          DuplicateNikError: (err) =>
+          DuplicateNikError: err =>
             Effect.succeed(
               status(409, {
-                code: "DUPLICATE_NIK_ERROR",
+                code: 'DUPLICATE_NIK_ERROR',
                 message: `NIK '${err.nik}' sudah digunakan`,
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal memperbarui data profil pengguna",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal memperbarui data profil pengguna',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       auth: true,
@@ -104,23 +104,23 @@ export const PenggunaModules = new Elysia({ prefix: "pengguna", tags: ["Pengguna
     },
   )
   .get(
-    "/",
+    '/',
     async ({ query }) => {
       const program = PenggunaService.getPaginatedPengguna(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil daftar pengguna",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil daftar pengguna',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -132,51 +132,51 @@ export const PenggunaModules = new Elysia({ prefix: "pengguna", tags: ["Pengguna
     },
   )
   .patch(
-    "/:id/verifikasi",
+    '/:id/verifikasi',
     async ({ params }) => {
       const program = PenggunaService.verifyPengguna(params.id).pipe(
         Effect.catchTags({
           ItemNotFoundError: () =>
             Effect.succeed(
               status(404, {
-                code: "ITEM_NOT_FOUND_ERROR",
-                message: "Pengguna tidak ditemukan",
+                code: 'ITEM_NOT_FOUND_ERROR',
+                message: 'Pengguna tidak ditemukan',
               }),
             ),
           KelompokNotFoundError: () =>
             Effect.succeed(
               status(404, {
-                code: "KELOMPOK_NOT_FOUND_ERROR",
-                message: "Kelompok pengguna tidak ditemukan",
+                code: 'KELOMPOK_NOT_FOUND_ERROR',
+                message: 'Kelompok pengguna tidak ditemukan',
               }),
             ),
           PenggunaAlreadyVerifiedError: () =>
             Effect.succeed(
               status(409, {
-                code: "PENGGUNA_ALREADY_VERIFIED_ERROR",
-                message: "Pengguna sudah terverifikasi sebelumnya",
+                code: 'PENGGUNA_ALREADY_VERIFIED_ERROR',
+                message: 'Pengguna sudah terverifikasi sebelumnya',
               }),
             ),
           PenggunaNotPendingVerificationError: () =>
             Effect.succeed(
               status(409, {
-                code: "PENGGUNA_NOT_PENDING_VERIFICATION_ERROR",
-                message: "Pengguna sedang diblokir secara administratif",
+                code: 'PENGGUNA_NOT_PENDING_VERIFICATION_ERROR',
+                message: 'Pengguna sedang diblokir secara administratif',
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal memverifikasi pengguna",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal memverifikasi pengguna',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -190,52 +190,52 @@ export const PenggunaModules = new Elysia({ prefix: "pengguna", tags: ["Pengguna
     },
   )
   .patch(
-    "/:id/pj",
+    '/:id/pj',
     async ({ params, body }) => {
       const program = PenggunaService.setPenggunaPj(params.id, body.isPj).pipe(
-        Effect.as(status(200, { message: "Success" })),
+        Effect.as(status(200, { message: 'Success' })),
         Effect.catchTags({
           ItemNotFoundError: () =>
             Effect.succeed(
               status(404, {
-                code: "ITEM_NOT_FOUND_ERROR",
-                message: "Pengguna tidak ditemukan",
+                code: 'ITEM_NOT_FOUND_ERROR',
+                message: 'Pengguna tidak ditemukan',
               }),
             ),
           AdminCannotBePjError: () =>
             Effect.succeed(
               status(400, {
-                code: "ADMIN_CANNOT_BE_PJ_ERROR",
-                message: "Pengguna dengan role admin tidak dapat dijadikan PJ Kelompok",
+                code: 'ADMIN_CANNOT_BE_PJ_ERROR',
+                message: 'Pengguna dengan role admin tidak dapat dijadikan PJ Kelompok',
               }),
             ),
           PenggunaUnverifiedError: () =>
             Effect.succeed(
               status(400, {
-                code: "PENGGUNA_UNVERIFIED_ERROR",
-                message: "Pengguna belum terverifikasi dan tidak dapat dijadikan PJ Kelompok",
+                code: 'PENGGUNA_UNVERIFIED_ERROR',
+                message: 'Pengguna belum terverifikasi dan tidak dapat dijadikan PJ Kelompok',
               }),
             ),
           PenggunaBannedError: () =>
             Effect.succeed(
               status(400, {
-                code: "PENGGUNA_BANNED_ERROR",
-                message: "Pengguna yang sedang diblokir tidak dapat dijadikan PJ Kelompok",
+                code: 'PENGGUNA_BANNED_ERROR',
+                message: 'Pengguna yang sedang diblokir tidak dapat dijadikan PJ Kelompok',
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengubah penanggung jawab Kelompok",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengubah penanggung jawab Kelompok',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -248,4 +248,4 @@ export const PenggunaModules = new Elysia({ prefix: "pengguna", tags: ["Pengguna
         500: ErrorSchema,
       },
     },
-  );
+  )

@@ -1,8 +1,9 @@
-import { t, type UnwrapSchema } from "elysia";
+import type { UnwrapSchema } from 'elysia'
+import { t } from 'elysia'
 
-const wilayahIdSchema = t.String({ minLength: 1, pattern: "\\S" });
+const wilayahIdSchema = t.String({ minLength: 1, pattern: '\\S' })
 
-export const WilayahModel = {
+export const wilayahModel = {
   getProvinsiResponseSchema: t.Object({
     data: t.Array(
       t.Object({
@@ -53,8 +54,8 @@ export const WilayahModel = {
       }),
     ),
   }),
-} as const;
+} as const
 
 export type WilayahModel = {
-  [key in keyof typeof WilayahModel]: UnwrapSchema<(typeof WilayahModel)[key]>;
-};
+  [key in keyof typeof wilayahModel]: UnwrapSchema<(typeof wilayahModel)[key]>;
+}

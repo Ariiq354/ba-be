@@ -1,15 +1,15 @@
-import Elysia from "elysia";
-import { auth } from "./auth";
+import Elysia from 'elysia'
+import { auth } from './auth'
 
-export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
+export const AuthMacro = new Elysia({ name: 'AuthMacro' }).macro({
   auth: {
     async resolve({ status, request: { headers } }) {
       const session = await auth.api.getSession({
         headers,
-      });
+      })
 
       if (!session) {
-        return status(401);
+        return status(401)
       }
 
       return {
@@ -18,21 +18,21 @@ export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
           id: Number(session.user.id),
         },
         session: session.session,
-      };
+      }
     },
   },
   admin: {
     async resolve({ status, request: { headers } }) {
       const session = await auth.api.getSession({
         headers,
-      });
+      })
 
       if (!session) {
-        return status(401);
+        return status(401)
       }
 
-      if (session.user.role !== "admin") {
-        return status(403);
+      if (session.user.role !== 'admin') {
+        return status(403)
       }
       return {
         user: {
@@ -40,7 +40,7 @@ export const AuthMacro = new Elysia({ name: "AuthMacro" }).macro({
           id: Number(session.user.id),
         },
         session: session.session,
-      };
+      }
     },
   },
-});
+})

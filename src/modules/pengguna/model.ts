@@ -1,7 +1,8 @@
-import { paginationSchema, searchSchema } from "#/utils/schema";
-import { t, type UnwrapSchema } from "elysia";
+import type { UnwrapSchema } from 'elysia'
+import { t } from 'elysia'
+import { paginationSchema, searchSchema } from '#/utils/schema'
 
-export const PenggunaModel = {
+export const penggunaModel = {
   getProfileResponseSchema: t.Object({
     id: t.Number(),
     name: t.String(),
@@ -22,7 +23,7 @@ export const PenggunaModel = {
 
   updateProfileSchema: t.Object({
     name: t.Optional(t.String({ minLength: 1 })),
-    imageAction: t.Optional(t.UnionEnum(["keep", "remove", "update"])),
+    imageAction: t.Optional(t.UnionEnum(['keep', 'remove', 'update'])),
     image: t.Optional(t.String({ minLength: 1 })),
     noHp: t.Optional(t.String({ minLength: 1 })),
     nik: t.Optional(t.String({ minLength: 1 })),
@@ -39,7 +40,7 @@ export const PenggunaModel = {
   getPenggunaQuerySchema: t.Object({
     ...paginationSchema.properties,
     ...searchSchema.properties,
-    status: t.UnionEnum(["all", "pending", "verified"], { default: "all" }),
+    status: t.UnionEnum(['all', 'pending', 'verified'], { default: 'all' }),
   }),
 
   getPenggunaResponseSchema: t.Object({
@@ -69,8 +70,8 @@ export const PenggunaModel = {
   verifyPenggunaResponseSchema: t.Object({
     noAnggota: t.String(),
   }),
-} as const;
+} as const
 
 export type PenggunaModel = {
-  [key in keyof typeof PenggunaModel]: UnwrapSchema<(typeof PenggunaModel)[key]>;
-};
+  [key in keyof typeof penggunaModel]: UnwrapSchema<(typeof penggunaModel)[key]>;
+}

@@ -1,13 +1,13 @@
-import { defineRelations } from "drizzle-orm";
-import * as akunSchema from "./schema/akun";
-import * as authSchema from "./schema/auth";
-import * as filesSchema from "./schema/files";
-import * as jurnalSchema from "./schema/jurnal";
-import * as kelompokSchema from "./schema/kelompok";
-import * as masterSchema from "./schema/master";
-import * as simpananSchema from "./schema/simpanan";
-import * as usersSchema from "./schema/users";
-import * as wilayahSchema from "./schema/wilayah";
+import { defineRelations } from 'drizzle-orm'
+import * as akunSchema from './schema/akun'
+import * as authSchema from './schema/auth'
+import * as filesSchema from './schema/files'
+import * as jurnalSchema from './schema/jurnal'
+import * as kelompokSchema from './schema/kelompok'
+import * as masterSchema from './schema/master'
+import * as simpananSchema from './schema/simpanan'
+import * as usersSchema from './schema/users'
+import * as wilayahSchema from './schema/wilayah'
 
 export const relations = defineRelations({
   ...akunSchema,
@@ -262,4 +262,4 @@ export const relations = defineRelations({
       to: r.kecamatan.id,
     }),
   },
-}));
+}))

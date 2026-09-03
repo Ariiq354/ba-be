@@ -1,34 +1,34 @@
-import { ErrorSchema, SuccessSchema } from "#/utils/errors";
-import { AuthMacro } from "#/utils/macro";
-import { deleteBulkSchema, idParamsSchema } from "#/utils/schema";
-import Elysia, { status } from "elysia";
-import { Effect } from "effect";
-import { MasterMarginModel } from "./model";
-import { MasterMarginService } from "./service";
+import { Effect } from 'effect'
+import Elysia, { status } from 'elysia'
+import { ErrorSchema, SuccessSchema } from '#/utils/errors'
+import { AuthMacro } from '#/utils/macro'
+import { deleteBulkSchema, idParamsSchema } from '#/utils/schema'
+import { MasterMarginModel } from './model'
+import { MasterMarginService } from './service'
 
 export const MasterMarginModules = new Elysia({
-  prefix: "master-margin",
-  tags: ["Master Margin"],
+  prefix: 'master-margin',
+  tags: ['Master Margin'],
 })
   .use(AuthMacro)
   .get(
-    "/",
+    '/',
     async ({ query }) => {
       const program = MasterMarginService.getPaginatedMargin(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil data margin",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil data margin',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -41,24 +41,24 @@ export const MasterMarginModules = new Elysia({
   )
 
   .post(
-    "/",
+    '/',
     async ({ body }) => {
       const program = MasterMarginService.createMargin(body).pipe(
-        Effect.as(status(201, { message: "Success" })),
+        Effect.as(status(201, { message: 'Success' })),
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal membuat margin",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal membuat margin',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -71,31 +71,31 @@ export const MasterMarginModules = new Elysia({
   )
 
   .patch(
-    "/:id",
+    '/:id',
     async ({ params, body }) => {
       const program = MasterMarginService.updateMargin(params.id, body).pipe(
-        Effect.as(status(200, { message: "Success" })),
+        Effect.as(status(200, { message: 'Success' })),
         Effect.catchTags({
-          ItemNotFoundError: (err) =>
+          ItemNotFoundError: err =>
             Effect.succeed(
               status(404, {
-                code: "ITEM_NOT_FOUND_ERROR",
+                code: 'ITEM_NOT_FOUND_ERROR',
                 message: `Margin dengan ID '${err.id}' tidak ditemukan`,
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal memperbarui margin",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal memperbarui margin',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -110,31 +110,31 @@ export const MasterMarginModules = new Elysia({
   )
 
   .delete(
-    "/",
+    '/',
     async ({ body }) => {
       const program = MasterMarginService.deleteMargin(body.ids).pipe(
-        Effect.as(status(200, { message: "Success" })),
+        Effect.as(status(200, { message: 'Success' })),
         Effect.catchTags({
-          ItemsNotFoundError: (err) =>
+          ItemsNotFoundError: err =>
             Effect.succeed(
               status(404, {
-                code: "ITEM_NOT_FOUND_ERROR",
-                message: `Margin dengan ID '${err.ids.join(", ")}' tidak ditemukan`,
+                code: 'ITEM_NOT_FOUND_ERROR',
+                message: `Margin dengan ID '${err.ids.join(', ')}' tidak ditemukan`,
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal menghapus margin",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal menghapus margin',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -145,4 +145,4 @@ export const MasterMarginModules = new Elysia({
         500: ErrorSchema,
       },
     },
-  );
+  )

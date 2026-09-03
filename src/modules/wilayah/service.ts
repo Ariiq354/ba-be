@@ -1,17 +1,17 @@
-import { db } from "#/database";
+import type { WilayahModel } from './model'
+import { asc, eq } from 'drizzle-orm'
+import { Effect } from 'effect'
+import { db } from '#/database'
 import {
-  kecamatan,
   kelurahan as desaKelurahan,
   kota as kabupatenKota,
+  kecamatan,
   provinsi,
-} from "#/database/schema/wilayah";
-import { DatabaseError } from "#/utils/errors";
-import { asc, eq } from "drizzle-orm";
-import { Effect } from "effect";
-import type { WilayahModel } from "./model";
+} from '#/database/schema/wilayah'
+import { DatabaseError } from '#/utils/errors'
 
 export const WilayahService = {
-  getProvinsi: Effect.fn("WilayahService.getProvinsi")(function* () {
+  getProvinsi: Effect.fn('WilayahService.getProvinsi')(function* () {
     return yield* Effect.tryPromise({
       try: async () => {
         const data = await db
@@ -20,16 +20,16 @@ export const WilayahService = {
             provinsi: provinsi.provinsi,
           })
           .from(provinsi)
-          .orderBy(asc(provinsi.provinsi));
+          .orderBy(asc(provinsi.provinsi))
 
-        return { data };
+        return { data }
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
   }),
 
-  getKabupatenKota: Effect.fn("WilayahService.getKabupatenKota")(function* (
-    query: WilayahModel["getKabupatenKotaQuerySchema"],
+  getKabupatenKota: Effect.fn('WilayahService.getKabupatenKota')(function* (
+    query: WilayahModel['getKabupatenKotaQuerySchema'],
   ) {
     return yield* Effect.tryPromise({
       try: async () => {
@@ -41,16 +41,16 @@ export const WilayahService = {
           })
           .from(kabupatenKota)
           .where(eq(kabupatenKota.idProvinsi, query.idProvinsi))
-          .orderBy(asc(kabupatenKota.kota));
+          .orderBy(asc(kabupatenKota.kota))
 
-        return { data };
+        return { data }
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
   }),
 
-  getKecamatan: Effect.fn("WilayahService.getKecamatan")(function* (
-    query: WilayahModel["getKecamatanQuerySchema"],
+  getKecamatan: Effect.fn('WilayahService.getKecamatan')(function* (
+    query: WilayahModel['getKecamatanQuerySchema'],
   ) {
     return yield* Effect.tryPromise({
       try: async () => {
@@ -62,16 +62,16 @@ export const WilayahService = {
           })
           .from(kecamatan)
           .where(eq(kecamatan.idKota, query.idKabupatenKota))
-          .orderBy(asc(kecamatan.kecamatan));
+          .orderBy(asc(kecamatan.kecamatan))
 
-        return { data };
+        return { data }
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
   }),
 
-  getDesaKelurahan: Effect.fn("WilayahService.getDesaKelurahan")(function* (
-    query: WilayahModel["getDesaKelurahanQuerySchema"],
+  getDesaKelurahan: Effect.fn('WilayahService.getDesaKelurahan')(function* (
+    query: WilayahModel['getDesaKelurahanQuerySchema'],
   ) {
     return yield* Effect.tryPromise({
       try: async () => {
@@ -83,11 +83,11 @@ export const WilayahService = {
           })
           .from(desaKelurahan)
           .where(eq(desaKelurahan.idKecamatan, query.idKecamatan))
-          .orderBy(asc(desaKelurahan.kelurahan));
+          .orderBy(asc(desaKelurahan.kelurahan))
 
-        return { data };
+        return { data }
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
   }),
-};
+}

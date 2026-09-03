@@ -1,3 +1,3 @@
-import { Data } from "effect";
+import { Data } from 'effect'
 
-export class HargaSahamNotFoundError extends Data.TaggedError("HargaSahamNotFoundError") {}
+export class HargaSahamNotFoundError extends Data.TaggedError('HargaSahamNotFoundError') {}

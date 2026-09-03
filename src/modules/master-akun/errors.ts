@@ -1,5 +1,5 @@
-import { Data } from "effect";
+import { Data } from 'effect'
 
-export class DuplicateKodeAkunError extends Data.TaggedError("DuplicateKodeAkunError")<{
-  readonly kodeAkun: string;
+export class DuplicateKodeAkunError extends Data.TaggedError('DuplicateKodeAkunError')<{
+  readonly kodeAkun: string
 }> {}

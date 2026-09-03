@@ -1,21 +1,21 @@
-import { date, index, integer, pgEnum, snakeCase, text, timestamp } from "drizzle-orm/pg-core";
-import { akun } from "./akun";
-import { user } from "./auth";
-import { createdUpdated } from "./common";
+import { date, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
+import { akun } from './akun'
+import { user } from './auth'
+import { createdUpdated } from './common'
 
-export const jenisTransaksiEnum = pgEnum("jenis_transaksi", ["setoran", "penarikan"]);
-export const approvedStatusEnum = pgEnum("approved_status", ["pending", "approved", "rejected"]);
-export const jenisPemindahbukuanEnum = pgEnum("jenis_pemindahbukuan", ["saham_ke_saham", "tabungan_ke_tabungan", "tabungan_ke_saham"]);
+export const jenisTransaksiEnum = pgEnum('jenis_transaksi', ['setoran', 'penarikan'])
+export const approvedStatusEnum = pgEnum('approved_status', ['pending', 'approved', 'rejected'])
+export const jenisPemindahbukuanEnum = pgEnum('jenis_pemindahbukuan', ['saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham'])
 
-export const saldoSimpanan = snakeCase.table("saldo_simpanan", {
+export const saldoSimpanan = snakeCase.table('saldo_simpanan', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
-  userId: integer().notNull().references(() => user.id, { onDelete: "cascade" }).unique(),
+  userId: integer().notNull().references(() => user.id, { onDelete: 'cascade' }).unique(),
   saldoTabungan: integer().notNull().default(0),
   saldoSaham: integer().notNull().default(0),
   ...createdUpdated,
-});
+})
 
-export const mutasiSimpanan = snakeCase.table("mutasi_simpanan", {
+export const mutasiSimpanan = snakeCase.table('mutasi_simpanan', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   kodeTransaksi: text().notNull().unique(),
   userId: integer().notNull().references(() => user.id),
@@ -25,7 +25,7 @@ export const mutasiSimpanan = snakeCase.table("mutasi_simpanan", {
   agioSaham: integer().notNull().default(0),
   saldoSetelahTransaksi: integer().notNull(),
   tanggalTransaksi: date().notNull(),
-  statusApproved: approvedStatusEnum().notNull().default("pending"),
+  statusApproved: approvedStatusEnum().notNull().default('pending'),
   alasanPenolakan: text(),
   keterangan: text(),
   createdBy: integer().notNull().references(() => user.id),
@@ -33,12 +33,12 @@ export const mutasiSimpanan = snakeCase.table("mutasi_simpanan", {
   approvedAt: timestamp({ withTimezone: true }),
   ...createdUpdated,
 }, table => [
-  index("mutasi_simpanan_user_id_idx").on(table.userId),
-  index("mutasi_simpanan_akun_id_idx").on(table.akunId),
-  index("mutasi_simpanan_tanggal_transaksi_idx").on(table.tanggalTransaksi),
-]);
+  index('mutasi_simpanan_user_id_idx').on(table.userId),
+  index('mutasi_simpanan_akun_id_idx').on(table.akunId),
+  index('mutasi_simpanan_tanggal_transaksi_idx').on(table.tanggalTransaksi),
+])
 
-export const pemindahbukuan = snakeCase.table("pemindahbukuan", {
+export const pemindahbukuan = snakeCase.table('pemindahbukuan', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   kodeTransaksi: text().notNull().unique(),
   idUserSumber: integer().notNull().references(() => user.id),
@@ -48,7 +48,7 @@ export const pemindahbukuan = snakeCase.table("pemindahbukuan", {
   nominal: integer().notNull(),
   tipePemindahbukuan: jenisPemindahbukuanEnum().notNull(),
   tanggalTransaksi: date().notNull(),
-  statusApproved: approvedStatusEnum().notNull().default("pending"),
+  statusApproved: approvedStatusEnum().notNull().default('pending'),
   alasanPenolakan: text(),
   keterangan: text(),
   createdBy: integer().notNull().references(() => user.id),
@@ -56,7 +56,7 @@ export const pemindahbukuan = snakeCase.table("pemindahbukuan", {
   approvedAt: timestamp({ withTimezone: true }),
   ...createdUpdated,
 }, table => [
-  index("pemindahbukuan_user_sumber_idx").on(table.idUserSumber),
-  index("pemindahbukuan_user_tujuan_idx").on(table.idUserTujuan),
-  index("pemindahbukuan_tanggal_transaksi_idx").on(table.tanggalTransaksi),
-]);
+  index('pemindahbukuan_user_sumber_idx').on(table.idUserSumber),
+  index('pemindahbukuan_user_tujuan_idx').on(table.idUserTujuan),
+  index('pemindahbukuan_tanggal_transaksi_idx').on(table.tanggalTransaksi),
+])

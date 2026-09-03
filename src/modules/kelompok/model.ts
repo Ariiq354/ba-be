@@ -1,6 +1,7 @@
-import { t, type UnwrapSchema } from "elysia";
+import type { UnwrapSchema } from 'elysia'
+import { t } from 'elysia'
 
-export const KelompokModel = {
+export const kelompokModel = {
   getKelompokOptionsResponseSchema: t.Object({
     data: t.Array(
       t.Object({
@@ -10,8 +11,8 @@ export const KelompokModel = {
       }),
     ),
   }),
-} as const;
+} as const
 
 export type KelompokModel = {
-  [key in keyof typeof KelompokModel]: UnwrapSchema<(typeof KelompokModel)[key]>;
-};
+  [key in keyof typeof kelompokModel]: UnwrapSchema<(typeof kelompokModel)[key]>;
+}

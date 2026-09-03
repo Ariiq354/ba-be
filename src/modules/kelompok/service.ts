@@ -1,11 +1,11 @@
-import { db } from "#/database";
-import { kelompok } from "#/database/schema/kelompok";
-import { DatabaseError } from "#/utils/errors";
-import { asc } from "drizzle-orm";
-import { Effect } from "effect";
+import { asc } from 'drizzle-orm'
+import { Effect } from 'effect'
+import { db } from '#/database'
+import { kelompok } from '#/database/schema/kelompok'
+import { DatabaseError } from '#/utils/errors'
 
 export const KelompokService = {
-  getKelompokOptions: Effect.fn("KelompokService.getKelompokOptions")(() => {
+  getKelompokOptions: Effect.fn('KelompokService.getKelompokOptions')(() => {
     return Effect.tryPromise({
       try: async () => {
         const data = await db
@@ -15,11 +15,11 @@ export const KelompokService = {
             namaKelompok: kelompok.namaKelompok,
           })
           .from(kelompok)
-          .orderBy(asc(kelompok.namaKelompok), asc(kelompok.kodeKelompok));
+          .orderBy(asc(kelompok.namaKelompok), asc(kelompok.kodeKelompok))
 
-        return { data };
+        return { data }
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
   }),
-};
+}

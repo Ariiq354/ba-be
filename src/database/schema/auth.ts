@@ -5,11 +5,11 @@ import {
   snakeCase,
   text,
   timestamp,
-} from "drizzle-orm/pg-core";
-import { createdUpdated } from "./common";
-import { kelompok } from "./kelompok";
+} from 'drizzle-orm/pg-core'
+import { createdUpdated } from './common'
+import { kelompok } from './kelompok'
 
-export const user = snakeCase.table("user", {
+export const user = snakeCase.table('user', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   name: text().notNull(),
   username: text().unique(),
@@ -26,29 +26,29 @@ export const user = snakeCase.table("user", {
   banExpires: timestamp({ withTimezone: true }),
   ...createdUpdated,
 }, table => [
-  index("user_kelompok_idx").on(table.idKelompok),
-]);
+  index('user_kelompok_idx').on(table.idKelompok),
+])
 
-export const session = snakeCase.table("session", {
+export const session = snakeCase.table('session', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   token: text().notNull().unique(),
   ipAddress: text(),
   userAgent: text(),
-  userId: integer().notNull().references(() => user.id, { onDelete: "cascade" }),
+  userId: integer().notNull().references(() => user.id, { onDelete: 'cascade' }),
   impersonatedBy: text(),
   ...createdUpdated,
 }, table => [
-  index("userid_idx_session").on(table.userId),
-]);
+  index('userid_idx_session').on(table.userId),
+])
 
-export const account = snakeCase.table("account", {
+export const account = snakeCase.table('account', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   accountId: text().notNull(),
   providerId: text().notNull(),
   userId: integer()
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+    .references(() => user.id, { onDelete: 'cascade' }),
   accessToken: text(),
   refreshToken: text(),
   idToken: text(),
@@ -59,15 +59,15 @@ export const account = snakeCase.table("account", {
   password: text(),
   ...createdUpdated,
 }, table => [
-  index("userid_idx").on(table.userId),
-]);
+  index('userid_idx').on(table.userId),
+])
 
-export const verification = snakeCase.table("verification", {
+export const verification = snakeCase.table('verification', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   identifier: text().notNull(),
   value: text().notNull(),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   ...createdUpdated,
 }, table => [
-  index("verification_identifier_idx").on(table.identifier),
-]);
+  index('verification_identifier_idx').on(table.identifier),
+])

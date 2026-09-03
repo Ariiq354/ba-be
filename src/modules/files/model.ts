@@ -1,6 +1,7 @@
-import { t, type UnwrapSchema } from "elysia";
+import type { UnwrapSchema } from 'elysia'
+import { t } from 'elysia'
 
-export const FilesModel = {
+export const filesModel = {
   presignedUploadSchema: t.Object({
     dir: t.String({ minLength: 1 }),
     filename: t.String({ minLength: 1 }),
@@ -12,8 +13,8 @@ export const FilesModel = {
     uploadUrl: t.String(),
     key: t.String(),
   }),
-} as const;
+} as const
 
 export type FilesModel = {
-  [key in keyof typeof FilesModel]: UnwrapSchema<(typeof FilesModel)[key]>;
-};
+  [key in keyof typeof filesModel]: UnwrapSchema<(typeof filesModel)[key]>;
+}

@@ -1,4 +1,4 @@
-import { timestamp } from "drizzle-orm/pg-core";
+import { timestamp } from 'drizzle-orm/pg-core'
 
 export const createdUpdated = {
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -6,4 +6,4 @@ export const createdUpdated = {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
-};
+}

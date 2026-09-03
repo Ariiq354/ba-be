@@ -1,33 +1,33 @@
-import { ErrorSchema, SuccessSchema } from "#/utils/errors";
-import { AuthMacro } from "#/utils/macro";
-import Elysia, { status } from "elysia";
-import { Effect } from "effect";
-import { MasterSahamModel } from "./model";
-import { MasterSahamService } from "./service";
+import { Effect } from 'effect'
+import Elysia, { status } from 'elysia'
+import { ErrorSchema, SuccessSchema } from '#/utils/errors'
+import { AuthMacro } from '#/utils/macro'
+import { MasterSahamModel } from './model'
+import { MasterSahamService } from './service'
 
 export const MasterSahamModules = new Elysia({
-  prefix: "master-saham",
-  tags: ["Master Saham"],
+  prefix: 'master-saham',
+  tags: ['Master Saham'],
 })
   .use(AuthMacro)
   .get(
-    "/",
+    '/',
     async ({ query }) => {
       const program = MasterSahamService.getPaginatedHargaSaham(query).pipe(
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil riwayat harga saham",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil riwayat harga saham',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -40,30 +40,30 @@ export const MasterSahamModules = new Elysia({
   )
 
   .get(
-    "/latest",
+    '/latest',
     async () => {
       const program = MasterSahamService.getLatestHargaSaham().pipe(
         Effect.catchTags({
           HargaSahamNotFoundError: () =>
             Effect.succeed(
               status(404, {
-                code: "HARGA_SAHAM_NOT_FOUND_ERROR",
-                message: "Harga saham belum tersedia",
+                code: 'HARGA_SAHAM_NOT_FOUND_ERROR',
+                message: 'Harga saham belum tersedia',
               }),
             ),
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mengambil harga saham terbaru",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mengambil harga saham terbaru',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -76,24 +76,24 @@ export const MasterSahamModules = new Elysia({
   )
 
   .post(
-    "/",
+    '/',
     async ({ body, user }) => {
       const program = MasterSahamService.createHargaSaham(user.id, body).pipe(
-        Effect.as(status(201, { message: "Success" })),
+        Effect.as(status(201, { message: 'Success' })),
         Effect.catchTags({
-          DatabaseError: (err) =>
-            Effect.logError("Database error:", err.error).pipe(
+          DatabaseError: err =>
+            Effect.logError('Database error:', err.error).pipe(
               Effect.as(
                 status(500, {
-                  code: "DATABASE_ERROR",
-                  message: "Gagal mencatat harga saham",
+                  code: 'DATABASE_ERROR',
+                  message: 'Gagal mencatat harga saham',
                 }),
               ),
             ),
         }),
-      );
+      )
 
-      return Effect.runPromise(program);
+      return Effect.runPromise(program)
     },
     {
       admin: true,
@@ -103,4 +103,4 @@ export const MasterSahamModules = new Elysia({
         500: ErrorSchema,
       },
     },
-  );
+  )

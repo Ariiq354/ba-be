@@ -1,45 +1,45 @@
-import { Effect } from "effect";
-import { DatabaseError, ItemNotFoundError, ItemsNotFoundError } from "#/utils/errors";
-import { DuplicateKodeAkunError } from "./errors";
-import { db } from "#/database";
-import { akun } from "#/database/schema/akun";
-import { isUniqueViolation } from "#/utils/pgcode";
-import { eq, ilike, and, or, asc, inArray } from "drizzle-orm";
-import type { MasterAkunModel } from "./model";
+import type { MasterAkunModel } from './model'
+import { and, asc, eq, ilike, inArray, or } from 'drizzle-orm'
+import { Effect } from 'effect'
+import { db } from '#/database'
+import { akun } from '#/database/schema/akun'
+import { DatabaseError, ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
+import { isUniqueViolation } from '#/utils/pgcode'
+import { DuplicateKodeAkunError } from './errors'
 
 export const MasterAkunService = {
-  createAkun: Effect.fn("MasterAkunService.createAkun")(function* (
-    data: MasterAkunModel["createAkunSchema"],
+  createAkun: Effect.fn('MasterAkunService.createAkun')(function* (
+    data: MasterAkunModel['createAkunSchema'],
   ) {
     return yield* Effect.tryPromise({
       try: async () => {
-        await db.insert(akun).values(data);
+        await db.insert(akun).values(data)
       },
       catch: (error) => {
         if (isUniqueViolation(error)) {
-          return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun });
+          return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
         }
-        return new DatabaseError({ error });
+        return new DatabaseError({ error })
       },
-    });
+    })
   }),
 
-  getPaginatedAkun: Effect.fn("MasterAkunService.getPaginatedAkun")(function* (
-    query: MasterAkunModel["getAkunQuerySchema"],
+  getPaginatedAkun: Effect.fn('MasterAkunService.getPaginatedAkun')(function* (
+    query: MasterAkunModel['getAkunQuerySchema'],
   ) {
     return yield* Effect.tryPromise({
       try: async () => {
-        const conditions = [];
+        const conditions = []
 
-        if (query.kategori && query.kategori !== "all") {
-          conditions.push(eq(akun.kategori, query.kategori));
+        if (query.kategori && query.kategori !== 'all') {
+          conditions.push(eq(akun.kategori, query.kategori))
         }
 
         if (query.search) {
-          const searchPattern = `%${query.search}%`;
+          const searchPattern = `%${query.search}%`
           conditions.push(
             or(ilike(akun.kodeAkun, searchPattern), ilike(akun.namaAkun, searchPattern)),
-          );
+          )
         }
 
         const qb = db
@@ -53,50 +53,50 @@ export const MasterAkunService = {
           })
           .from(akun)
           .where(and(...conditions))
-          .orderBy(asc(akun.kodeAkun));
+          .orderBy(asc(akun.kodeAkun))
 
-        const offset = (query.page - 1) * query.limit;
-        const total = await db.$count(qb);
-        const data = await qb.limit(query.limit).offset(offset);
+        const offset = (query.page - 1) * query.limit
+        const total = await db.$count(qb)
+        const data = await qb.limit(query.limit).offset(offset)
 
-        return { total, data };
+        return { total, data }
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
   }),
 
-  updateAkun: Effect.fn("MasterAkunService.updateAkun")(function* (
+  updateAkun: Effect.fn('MasterAkunService.updateAkun')(function* (
     id: number,
-    data: MasterAkunModel["updateAkunSchema"],
+    data: MasterAkunModel['updateAkunSchema'],
   ) {
     const returning = yield* Effect.tryPromise({
       try: async () => {
-        const rows = await db.update(akun).set(data).where(eq(akun.id, id)).returning();
-        return rows;
+        const rows = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
+        return rows
       },
       catch: (error) => {
         if (isUniqueViolation(error)) {
-          return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun! });
+          return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun! })
         }
-        return new DatabaseError({ error });
+        return new DatabaseError({ error })
       },
-    });
+    })
 
     if (returning.length === 0) {
-      return yield* new ItemNotFoundError({ id });
+      return yield* new ItemNotFoundError({ id })
     }
   }),
 
-  deleteAkun: Effect.fn("MasterAkunService.deleteAkun")(function* (ids: number[]) {
+  deleteAkun: Effect.fn('MasterAkunService.deleteAkun')(function* (ids: number[]) {
     const returning = yield* Effect.tryPromise({
       try: async () => {
-        return await db.delete(akun).where(inArray(akun.id, ids)).returning();
+        return await db.delete(akun).where(inArray(akun.id, ids)).returning()
       },
-      catch: (error) => new DatabaseError({ error }),
-    });
+      catch: error => new DatabaseError({ error }),
+    })
 
     if (returning.length === 0) {
-      return yield* new ItemsNotFoundError({ ids });
+      return yield* new ItemsNotFoundError({ ids })
     }
   }),
-};
+}

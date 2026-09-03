@@ -1,84 +1,88 @@
-import { openapi } from "@elysia/openapi";
-import { auth } from "./auth";
-import Elysia, { status } from "elysia";
-import { timingSafeEqual } from "node:crypto";
+import { Buffer } from 'node:buffer'
+import { timingSafeEqual } from 'node:crypto'
+import process from 'node:process'
+import { openapi } from '@elysia/openapi'
+import Elysia, { status } from 'elysia'
+import { auth } from './auth'
 
 function safeCompare(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
   if (bufA.length !== bufB.length) {
-    return false;
+    return false
   }
-  return timingSafeEqual(bufA, bufB);
+  return timingSafeEqual(bufA, bufB)
 }
 
-let _schema: ReturnType<typeof auth.api.generateOpenAPISchema>;
-const getSchema = async () => (_schema ??= auth.api.generateOpenAPISchema());
+let _schema: ReturnType<typeof auth.api.generateOpenAPISchema>
+const getSchema = async () => (_schema ??= auth.api.generateOpenAPISchema())
 
 export const OpenAPI = {
-  getPaths: (prefix = "/api/auth") =>
+  getPaths: (prefix = '/api/auth') =>
     getSchema().then(({ paths }) => {
-      const reference: typeof paths = Object.create(null);
+      const reference: typeof paths = Object.create(null)
 
       for (const path of Object.keys(paths)) {
-        const key = prefix + path;
-        reference[key] = paths[path];
+        const key = prefix + path
+        reference[key] = paths[path]
 
         for (const method of Object.keys(paths[path])) {
-          const operation = (reference[key] as any)[method];
+          const operation = (reference[key] as any)[method]
 
-          operation.tags = ["Better Auth"];
+          operation.tags = ['Better Auth']
         }
       }
 
-      return reference;
+      return reference
     }) as Promise<any>,
   components: getSchema().then(({ components }) => components) as Promise<any>,
-} as const;
+} as const
 
-export const OpenApiPlugin = new Elysia({ prefix: "api" })
+export const OpenApiPlugin = new Elysia({ prefix: 'api' })
   .onBeforeHandle(({ headers, path, set }) => {
-    if (path.startsWith("/api/docs")) {
-      const username = process.env.DOCS_USERNAME;
-      const password = process.env.DOCS_PASSWORD;
+    if (path.startsWith('/api/docs')) {
+      const username = process.env.DOCS_USERNAME
+      const password = process.env.DOCS_PASSWORD
 
       if (username && password) {
-        const authHeader = headers.authorization;
+        const authHeader = headers.authorization
 
-        if (authHeader && authHeader.startsWith("Basic ")) {
-          const credentials = Buffer.from(authHeader.slice(6), "base64").toString("utf-8");
-          const [reqUser, reqPass] = credentials.split(":");
+        if (authHeader && authHeader.startsWith('Basic ')) {
+          const credentials = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8')
+          const [reqUser, reqPass] = credentials.split(':')
 
           if (
-            reqUser &&
-            reqPass &&
-            safeCompare(reqUser, username) &&
-            safeCompare(reqPass, password)
+            reqUser
+            && reqPass
+            && safeCompare(reqUser, username)
+            && safeCompare(reqPass, password)
           ) {
-            return;
+            return
           }
         }
 
-        set.headers["www-authenticate"] = 'Basic realm="API Documentation"';
-        return status(401, "Unauthorized");
+        set.headers['www-authenticate'] = 'Basic realm="API Documentation"'
+        return status(401, 'Unauthorized')
       }
     }
   })
   .use(
     openapi({
-      specPath: "/docs/json",
-      path: "/docs",
+      specPath: '/docs/json',
+      path: '/docs',
       scalar: {
-        defaultHttpClient: { targetKey: "js", clientKey: "fetch" },
+        defaultHttpClient: { targetKey: 'js', clientKey: 'fetch' },
       },
       documentation: {
         info: {
-          title: "Berkah Amanah Backend Documentation",
-          version: "1.0.0",
-          description: "Berkah Amanah Backend API",
+          title: 'Berkah Amanah Backend Documentation',
+          version: '1.0.0',
+          description: 'Berkah Amanah Backend API',
         },
+        // eslint-disable-next-line antfu/no-top-level-await
         components: await OpenAPI.components,
+        // eslint-disable-next-line antfu/no-top-level-await
         paths: await OpenAPI.getPaths(),
       },
     }),
-  );
+  )

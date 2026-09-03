@@ -1,25 +1,25 @@
-import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { betterAuth } from "better-auth";
-import { admin as adminPlugins, openAPI, username } from "better-auth/plugins";
-import { db } from "#/database";
-import { relations } from "#/database/relations";
-import * as schema from "#/database/schema/auth";
+import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
+import { betterAuth } from 'better-auth'
+import { admin as adminPlugins, openAPI, username } from 'better-auth/plugins'
+import { db } from '#/database'
+import { relations } from '#/database/relations'
+import * as schema from '#/database/schema/auth'
 
-export const PENDING_VERIFICATION_BAN_REASON = "Pengguna belum terverifikasi";
-const LEGACY_PENDING_VERIFICATION_BAN_REASON = "Akun belum terverifikasi";
+export const PENDING_VERIFICATION_BAN_REASON = 'Pengguna belum terverifikasi'
+const LEGACY_PENDING_VERIFICATION_BAN_REASON = 'Akun belum terverifikasi'
 export const PENDING_VERIFICATION_BAN_REASONS = [
   PENDING_VERIFICATION_BAN_REASON,
   LEGACY_PENDING_VERIFICATION_BAN_REASON,
-] as const;
+] as const
 
 export function isPendingVerificationBanReason(reason: string | null): boolean {
-  return PENDING_VERIFICATION_BAN_REASONS.some((candidate) => candidate === reason);
+  return PENDING_VERIFICATION_BAN_REASONS.includes(reason)
 }
 
 export const auth = betterAuth({
-  trustedOrigins: ["https://ubberkahamanah.my.id"],
+  trustedOrigins: ['https://ubberkahamanah.my.id'],
   database: drizzleAdapter(db, {
-    provider: "pg",
+    provider: 'pg',
     schema: {
       ...schema,
       relations,
@@ -28,7 +28,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (user) => ({
+        before: async user => ({
           data: {
             ...user,
             banned: true,
@@ -53,7 +53,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       idKelompok: {
-        type: "number",
+        type: 'number',
         input: true,
         required: true,
       },
@@ -66,8 +66,8 @@ export const auth = betterAuth({
     },
   },
   plugins: [openAPI(), username(), adminPlugins()],
-});
+})
 
-export type UserWithId = Omit<typeof auth.$Infer.Session.user, "id"> & {
-  id: number;
-};
+export type UserWithId = Omit<typeof auth.$Infer.Session.user, 'id'> & {
+  id: number
+}
