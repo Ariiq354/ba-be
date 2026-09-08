@@ -5,6 +5,7 @@ import { db } from '#/database'
 import { user } from '#/database/schema/auth'
 import { saham as hargaSaham } from '#/database/schema/master'
 import { DatabaseError } from '#/utils/errors'
+import { HARGA_NOMINAL_SAHAM } from '#/utils/saham'
 import { HargaSahamNotFoundError } from './errors'
 
 export const MasterSahamService = {
@@ -15,7 +16,7 @@ export const MasterSahamService = {
     return yield* Effect.tryPromise({
       try: async () => {
         await db.insert(hargaSaham).values({
-          hargaNominal: data.hargaNominal,
+          hargaNominal: HARGA_NOMINAL_SAHAM,
           hargaJual: data.hargaJual,
           updatedBy: userId,
         })
@@ -47,7 +48,7 @@ export const MasterSahamService = {
 
         return {
           id: row.id,
-          hargaNominal: row.hargaNominal,
+          hargaNominal: HARGA_NOMINAL_SAHAM,
           hargaJual: row.hargaJual,
           updatedByName: row.updater?.name ?? '',
           createdAt: row.createdAt.toISOString(),
@@ -85,6 +86,7 @@ export const MasterSahamService = {
         const rows = await qb.limit(query.limit).offset(offset)
         const data = rows.map(row => ({
           ...row,
+          hargaNominal: HARGA_NOMINAL_SAHAM,
           updatedByName: row.updatedByName ?? '',
           createdAt: row.createdAt.toISOString(),
         }))

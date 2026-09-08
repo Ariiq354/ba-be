@@ -12,15 +12,15 @@ const createMarginSchema = t.Object({
 
 export const masterMarginModel = {
   getMarginResponseSchema: t.Object({
-    total: t.Number(),
+    total: t.Integer(),
     data: t.Array(
       t.Object({
-        id: t.Number(),
-        minNominal: t.Number(),
-        maxNominal: t.Number(),
-        persenMarginTahun: t.Number(),
+        id: t.Integer(),
+        minNominal: t.Integer(),
+        maxNominal: t.Integer(),
+        persenMarginTahun: t.Integer(),
         jaminan: t.UnionEnum(['TIDAK_ADA', 'ADA']),
-        biayaAkad: t.Number(),
+        biayaAkad: t.Integer(),
         createdAt: t.String({ format: 'date-time' }),
         updatedAt: t.String({ format: 'date-time' }),
       }),

@@ -12,10 +12,10 @@ const createAkunSchema = t.Object({
 
 export const masterAkunModel = {
   getAkunResponseSchema: t.Object({
-    total: t.Number(),
+    total: t.Integer(),
     data: t.Array(
       t.Object({
-        id: t.Number(),
+        id: t.Integer(),
         kodeAkun: t.String(),
         namaAkun: t.String(),
         kategori: t.UnionEnum(['aktiva', 'biaya', 'pasiva', 'pendapatan']),

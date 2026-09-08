@@ -159,6 +159,10 @@ export const relations = defineRelations({
       from: r.jurnal.userId,
       to: r.user.id,
     }),
+    mutasiSimpanan: r.one.mutasiSimpanan({
+      from: r.jurnal.id,
+      to: r.mutasiSimpanan.jurnalId,
+    }),
     details: r.many.jurnalDetail({
       from: r.jurnal.id,
       to: r.jurnalDetail.jurnalId,
@@ -188,6 +192,10 @@ export const relations = defineRelations({
     akun: r.one.akun({
       from: r.mutasiSimpanan.akunId,
       to: r.akun.id,
+    }),
+    jurnal: r.one.jurnal({
+      from: r.mutasiSimpanan.jurnalId,
+      to: r.jurnal.id,
     }),
     creator: r.one.user({
       from: r.mutasiSimpanan.createdBy,

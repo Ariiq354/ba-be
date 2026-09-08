@@ -66,7 +66,7 @@ export const MasterSahamModules = new Elysia({
       return Effect.runPromise(program)
     },
     {
-      admin: true,
+      auth: true,
       response: {
         200: masterSahamModel.getLatestHargaSahamResponseSchema,
         404: ErrorSchema,

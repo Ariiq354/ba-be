@@ -4,7 +4,7 @@ import { paginationSchema, searchSchema } from '#/utils/schema'
 
 export const penggunaModel = {
   getProfileResponseSchema: t.Object({
-    id: t.Number(),
+    id: t.Integer(),
     name: t.String(),
     email: t.String(),
     image: t.Nullable(t.String()),
@@ -44,17 +44,17 @@ export const penggunaModel = {
   }),
 
   getPenggunaResponseSchema: t.Object({
-    total: t.Number(),
+    total: t.Integer(),
     data: t.Array(
       t.Object({
-        id: t.Number(),
+        id: t.Integer(),
         name: t.String(),
         username: t.Nullable(t.String()),
         email: t.String(),
         role: t.Nullable(t.String()),
         banned: t.Nullable(t.Boolean()),
         banReason: t.Nullable(t.String()),
-        idKelompok: t.Number(),
+        idKelompok: t.Integer(),
         namaKelompok: t.String(),
         kodeKelompok: t.String(),
         noAnggota: t.Nullable(t.String()),

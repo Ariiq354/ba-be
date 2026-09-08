@@ -3,21 +3,20 @@ import { t } from 'elysia'
 import { paginationSchema } from '#/utils/schema'
 
 const createHargaSahamSchema = t.Object({
-  hargaNominal: t.Integer({ minimum: 0 }),
-  hargaJual: t.Integer({ minimum: 0 }),
+  hargaJual: t.Integer({ minimum: 1 }),
 })
 
 const hargaSahamResponseSchema = t.Object({
-  id: t.Number(),
-  hargaNominal: t.Number(),
-  hargaJual: t.Number(),
+  id: t.Integer(),
+  hargaNominal: t.Integer(),
+  hargaJual: t.Integer(),
   updatedByName: t.String(),
   createdAt: t.String({ format: 'date-time' }),
 })
 
 export const masterSahamModel = {
   getHargaSahamResponseSchema: t.Object({
-    total: t.Number(),
+    total: t.Integer(),
     data: t.Array(hargaSahamResponseSchema),
   }),
 

@@ -2,16 +2,18 @@ import { date, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzl
 import { akun } from './akun'
 import { user } from './auth'
 import { createdUpdated } from './common'
+import { jurnal } from './jurnal'
 
 export const jenisTransaksiEnum = pgEnum('jenis_transaksi', ['setoran', 'penarikan'])
 export const approvedStatusEnum = pgEnum('approved_status', ['pending', 'approved', 'rejected'])
 export const jenisPemindahbukuanEnum = pgEnum('jenis_pemindahbukuan', ['saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham'])
+export const jenisSimpananEnum = pgEnum('jenis_simpanan', ['tabungan', 'saham'])
 
 export const saldoSimpanan = snakeCase.table('saldo_simpanan', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   userId: integer().notNull().references(() => user.id, { onDelete: 'cascade' }).unique(),
   saldoTabungan: integer().notNull().default(0),
-  saldoSaham: integer().notNull().default(0),
+  jumlahSaham: integer().notNull().default(0),
   ...createdUpdated,
 })
 
@@ -21,9 +23,15 @@ export const mutasiSimpanan = snakeCase.table('mutasi_simpanan', {
   userId: integer().notNull().references(() => user.id),
   akunId: integer().notNull().references(() => akun.id),
   jenisTransaksi: jenisTransaksiEnum().notNull(),
+  jenisSimpanan: jenisSimpananEnum().notNull(),
   nilaiTransaksi: integer().notNull(),
+  jumlahSaham: integer().notNull().default(0),
+  hargaPerSaham: integer().notNull().default(0),
+  hargaNominalPerSaham: integer().notNull().default(0),
   agioSaham: integer().notNull().default(0),
-  saldoSetelahTransaksi: integer().notNull(),
+  saldoSetelahTransaksi: integer(),
+  jumlahSahamSetelahTransaksi: integer(),
+  jurnalId: integer().references(() => jurnal.id).unique(),
   tanggalTransaksi: date().notNull(),
   statusApproved: approvedStatusEnum().notNull().default('pending'),
   alasanPenolakan: text(),
@@ -46,6 +54,8 @@ export const pemindahbukuan = snakeCase.table('pemindahbukuan', {
   idUserTujuan: integer().notNull().references(() => user.id),
   akunIdTujuan: integer().notNull().references(() => akun.id),
   nominal: integer().notNull(),
+  jumlahSaham: integer().notNull().default(0),
+  hargaPerSaham: integer().notNull().default(0),
   tipePemindahbukuan: jenisPemindahbukuanEnum().notNull(),
   tanggalTransaksi: date().notNull(),
   statusApproved: approvedStatusEnum().notNull().default('pending'),

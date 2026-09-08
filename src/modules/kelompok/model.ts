@@ -5,7 +5,7 @@ export const kelompokModel = {
   getKelompokOptionsResponseSchema: t.Object({
     data: t.Array(
       t.Object({
-        id: t.Number(),
+        id: t.Integer(),
         kodeKelompok: t.String(),
         namaKelompok: t.String(),
       }),

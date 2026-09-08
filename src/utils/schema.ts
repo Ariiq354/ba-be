@@ -1,8 +1,8 @@
 import { t } from 'elysia'
 
 export const paginationSchema = t.Object({
-  page: t.Number({ default: 1 }),
-  limit: t.Number({ default: 10 }),
+  page: t.Integer({ default: 1 }),
+  limit: t.Integer({ default: 10 }),
 })
 
 export const searchSchema = t.Object({
@@ -10,9 +10,9 @@ export const searchSchema = t.Object({
 })
 
 export const idParamsSchema = t.Object({
-  id: t.Number(),
+  id: t.Integer({ minimum: 1 }),
 })
 
 export const deleteBulkSchema = t.Object({
-  ids: t.Array(t.Number()),
+  ids: t.Array(t.Integer({ minimum: 1 }), { minItems: 1 }),
 })
