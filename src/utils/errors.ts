@@ -1,4 +1,4 @@
-import { status, t } from 'elysia'
+import { t } from 'elysia'
 
 export interface AppErrorOptions {
   readonly code: string
@@ -18,9 +18,11 @@ export class AppError extends Error {
   }
 
   toResponse() {
-    return status(this.status, {
+    return Response.json({
       code: this.code,
       message: this.message,
+    }, {
+      status: this.status,
     })
   }
 }

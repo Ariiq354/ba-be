@@ -3,33 +3,22 @@ import { and, asc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import { db } from '#/database'
 import { akun } from '#/database/schema/akun'
 import { ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
+import { isUniqueViolation } from '#/utils/pgcode'
 import { DuplicateKodeAkunError } from './errors'
 
 export const MasterAkunService = {
   async createAkun(
     data: MasterAkunModel['createAkunSchema'],
   ) {
-    const kodeAkun = data.kodeAkun
-
-    await db.transaction(async (tx) => {
-      await tx.execute(sql`
-        select pg_advisory_xact_lock(
-          hashtextextended(${`master-akun:${kodeAkun}`}, 0)
-        )
-      `)
-
-      const [existing] = await tx
-        .select({ id: akun.id })
-        .from(akun)
-        .where(eq(akun.kodeAkun, kodeAkun))
-        .limit(1)
-
-      if (existing) {
-        throw new DuplicateKodeAkunError({ kodeAkun })
+    try {
+      await db.insert(akun).values(data)
+    }
+    catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
       }
-
-      await tx.insert(akun).values(data)
-    })
+      throw error
+    }
   },
 
   async getPaginatedAkun(
