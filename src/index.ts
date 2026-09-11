@@ -2,9 +2,13 @@ import { Elysia } from 'elysia'
 import { Modules } from './modules'
 import { AuthModule } from './modules/auth'
 import { CorsPlugin } from './utils/cors'
+import { logUnhandledError } from './utils/errors'
 import { OpenApiPlugin } from './utils/openapi'
 
 export const app = new Elysia()
+  .onError(({ error }) => {
+    logUnhandledError(error)
+  })
   .use(OpenApiPlugin)
   .use(CorsPlugin)
   .use(Modules)

@@ -1,4 +1,3 @@
-import { Effect } from 'effect'
 import Elysia, { status } from 'elysia'
 import { ErrorSchema, SuccessSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
@@ -10,23 +9,7 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
   .use(AuthMacro)
   .get(
     '/',
-    async ({ query }) => {
-      const program = MasterAkunService.getPaginatedAkun(query).pipe(
-        Effect.catchTags({
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal mengambil data akun',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
-    },
+    async ({ query }) => MasterAkunService.getPaginatedAkun(query),
     {
       admin: true,
       query: masterAkunModel.getAkunQuerySchema,
@@ -36,33 +19,11 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
       },
     },
   )
-
   .post(
     '/',
     async ({ body }) => {
-      const program = MasterAkunService.createAkun(body).pipe(
-        Effect.as(status(201, { message: 'Success' })),
-        Effect.catchTags({
-          DuplicateKodeAkunError: err =>
-            Effect.succeed(
-              status(409, {
-                code: 'DUPLICATE_KODE_AKUN_ERROR',
-                message: `Kode akun '${err.kodeAkun}' sudah digunakan`,
-              }),
-            ),
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal membuat akun',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
+      await MasterAkunService.createAkun(body)
+      return status(201, { message: 'Success' })
     },
     {
       admin: true,
@@ -74,40 +35,11 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
       },
     },
   )
-
   .patch(
     '/:id',
     async ({ params, body }) => {
-      const program = MasterAkunService.updateAkun(params.id, body).pipe(
-        Effect.as(status(200, { message: 'Success' })),
-        Effect.catchTags({
-          DuplicateKodeAkunError: err =>
-            Effect.succeed(
-              status(409, {
-                code: 'DUPLICATE_KODE_AKUN_ERROR',
-                message: `Kode akun '${err.kodeAkun}' sudah digunakan`,
-              }),
-            ),
-          ItemNotFoundError: err =>
-            Effect.succeed(
-              status(404, {
-                code: 'ITEM_NOT_FOUND_ERROR',
-                message: `Akun dengan ID '${err.id}' tidak ditemukan`,
-              }),
-            ),
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal memperbarui akun',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
+      await MasterAkunService.updateAkun(params.id, body)
+      return status(200, { message: 'Success' })
     },
     {
       admin: true,
@@ -115,39 +47,17 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
       body: masterAkunModel.updateAkunSchema,
       response: {
         200: SuccessSchema,
-        409: ErrorSchema,
         404: ErrorSchema,
+        409: ErrorSchema,
         500: ErrorSchema,
       },
     },
   )
-
   .delete(
     '/',
     async ({ body }) => {
-      const program = MasterAkunService.deleteAkun(body.ids).pipe(
-        Effect.as(status(200, { message: 'Success' })),
-        Effect.catchTags({
-          ItemsNotFoundError: err =>
-            Effect.succeed(
-              status(404, {
-                code: 'ITEM_NOT_FOUND_ERROR',
-                message: `Akun dengan ID '${err.ids.join(', ')}' tidak ditemukan`,
-              }),
-            ),
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal menghapus akun',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
+      await MasterAkunService.deleteAkun(body.ids)
+      return status(200, { message: 'Success' })
     },
     {
       admin: true,

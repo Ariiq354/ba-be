@@ -1,43 +1,122 @@
-import { Data } from 'effect'
+import { AppError } from '#/utils/errors'
 
-export class NotMemberError extends Data.TaggedError('NotMemberError')<{
+export class NotMemberError extends AppError {
   readonly userId: number
-}> {}
 
-export class InvalidPaymentAccountError extends Data.TaggedError(
-  'InvalidPaymentAccountError',
-)<{
-    readonly akunId: number
-  }> {}
+  constructor({ userId }: { userId: number }) {
+    super({
+      code: 'NOT_MEMBER_ERROR',
+      message: 'Pengguna belum terdaftar sebagai anggota',
+      status: 400,
+    })
+    this.userId = userId
+  }
+}
 
-export class InvalidAccountError extends Data.TaggedError('InvalidAccountError')<{
+export class InvalidPaymentAccountError extends AppError {
   readonly akunId: number
-}> {}
 
-export class AmountOverflowError extends Data.TaggedError('AmountOverflowError') {}
+  constructor({ akunId }: { akunId: number }) {
+    super({
+      code: 'INVALID_PAYMENT_ACCOUNT_ERROR',
+      message: 'Akun pembayaran tidak valid',
+      status: 400,
+    })
+    this.akunId = akunId
+  }
+}
 
-export class HargaSahamNotFoundError extends Data.TaggedError('HargaSahamNotFoundError') {}
+export class InvalidAccountError extends AppError {
+  readonly akunId: number
 
-export class InsufficientBalanceError extends Data.TaggedError('InsufficientBalanceError') {}
+  constructor({ akunId, message = 'Akun pembayaran tidak tersedia' }: {
+    akunId: number
+    message?: string
+  }) {
+    super({
+      code: 'INVALID_ACCOUNT_ERROR',
+      message,
+      status: 400,
+    })
+    this.akunId = akunId
+  }
+}
 
-export class MutasiSimpananNotFoundError extends Data.TaggedError(
-  'MutasiSimpananNotFoundError',
-)<{
-    readonly id: number
-  }> {}
+export class AmountOverflowError extends AppError {
+  constructor(message = 'Nilai transaksi melebihi batas yang diizinkan') {
+    super({
+      code: 'AMOUNT_OVERFLOW_ERROR',
+      message,
+      status: 400,
+    })
+  }
+}
 
-export class MutasiSimpananAlreadyProcessedError extends Data.TaggedError(
-  'MutasiSimpananAlreadyProcessedError',
-)<{
-    readonly id: number
-  }> {}
+export class HargaSahamNotFoundError extends AppError {
+  constructor() {
+    super({
+      code: 'HARGA_SAHAM_NOT_FOUND_ERROR',
+      message: 'Harga saham belum tersedia',
+      status: 404,
+    })
+  }
+}
 
-export class MutasiSimpananNotDeletedError extends Data.TaggedError(
-  'MutasiSimpananNotDeletedError',
-)<{
-    readonly ids: number[]
-  }> {}
+export class InsufficientBalanceError extends AppError {
+  constructor() {
+    super({
+      code: 'INSUFFICIENT_BALANCE_ERROR',
+      message: 'Saldo efektif tidak mencukupi',
+      status: 400,
+    })
+  }
+}
 
-export class InvalidRejectionReasonError extends Data.TaggedError(
-  'InvalidRejectionReasonError',
-) {}
+export class MutasiSimpananNotFoundError extends AppError {
+  readonly id: number
+
+  constructor({ id }: { id: number }) {
+    super({
+      code: 'MUTASI_SIMPANAN_NOT_FOUND_ERROR',
+      message: 'Mutasi simpanan tidak ditemukan',
+      status: 404,
+    })
+    this.id = id
+  }
+}
+
+export class MutasiSimpananAlreadyProcessedError extends AppError {
+  readonly id: number
+
+  constructor({ id }: { id: number }) {
+    super({
+      code: 'MUTASI_SIMPANAN_ALREADY_PROCESSED_ERROR',
+      message: 'Mutasi simpanan sudah diproses',
+      status: 409,
+    })
+    this.id = id
+  }
+}
+
+export class MutasiSimpananNotDeletedError extends AppError {
+  readonly ids: number[]
+
+  constructor({ ids }: { ids: number[] }) {
+    super({
+      code: 'MUTASI_SIMPANAN_NOT_DELETED_ERROR',
+      message: 'Mutasi simpanan pending tidak ditemukan',
+      status: 404,
+    })
+    this.ids = ids
+  }
+}
+
+export class InvalidRejectionReasonError extends AppError {
+  constructor() {
+    super({
+      code: 'INVALID_REJECTION_REASON_ERROR',
+      message: 'Alasan penolakan wajib diisi',
+      status: 400,
+    })
+  }
+}

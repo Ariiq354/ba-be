@@ -1,82 +1,67 @@
 import type { MasterMarginModel } from './model'
 import { desc, eq, inArray } from 'drizzle-orm'
-import { Effect } from 'effect'
 import { db } from '#/database'
 import { margin } from '#/database/schema/master'
-import { DatabaseError, ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
+import { ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
 
 export const MasterMarginService = {
-  createMargin: Effect.fn('MasterMarginService.createMargin')(function* (
+  async createMargin(
     data: MasterMarginModel['createMarginSchema'],
   ) {
-    return yield* Effect.tryPromise({
-      try: async () => {
-        await db.insert(margin).values(data)
-      },
-      catch: error => new DatabaseError({ error }),
-    })
-  }),
+    await db.insert(margin).values(data)
+  },
 
-  getPaginatedMargin: Effect.fn('MasterMarginService.getPaginatedMargin')(function* (
+  async getPaginatedMargin(
     query: MasterMarginModel['getMarginQuerySchema'],
   ) {
-    return yield* Effect.tryPromise({
-      try: async () => {
-        const qb = db
-          .select({
-            id: margin.id,
-            minNominal: margin.minNominal,
-            maxNominal: margin.maxNominal,
-            persenMarginTahun: margin.persenMarginTahun,
-            jaminan: margin.jaminan,
-            biayaAkad: margin.biayaAkad,
-            createdAt: margin.createdAt,
-            updatedAt: margin.updatedAt,
-          })
-          .from(margin)
-          .orderBy(desc(margin.createdAt), desc(margin.id))
+    const qb = db
+      .select({
+        id: margin.id,
+        minNominal: margin.minNominal,
+        maxNominal: margin.maxNominal,
+        persenMarginTahun: margin.persenMarginTahun,
+        jaminan: margin.jaminan,
+        biayaAkad: margin.biayaAkad,
+        createdAt: margin.createdAt,
+        updatedAt: margin.updatedAt,
+      })
+      .from(margin)
+      .orderBy(desc(margin.createdAt), desc(margin.id))
 
-        const offset = (query.page - 1) * query.limit
-        const total = await db.$count(qb)
-        const rows = await qb.limit(query.limit).offset(offset)
-        const data = rows.map(row => ({
-          ...row,
-          createdAt: row.createdAt.toISOString(),
-          updatedAt: row.updatedAt.toISOString(),
-        }))
+    const offset = (query.page - 1) * query.limit
+    const total = await db.$count(qb)
+    const rows = await qb.limit(query.limit).offset(offset)
+    const data = rows.map(row => ({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    }))
 
-        return { total, data }
-      },
-      catch: error => new DatabaseError({ error }),
-    })
-  }),
+    return { total, data }
+  },
 
-  updateMargin: Effect.fn('MasterMarginService.updateMargin')(function* (
+  async updateMargin(
     id: number,
     data: MasterMarginModel['updateMarginSchema'],
   ) {
-    const returning = yield* Effect.tryPromise({
-      try: async () => {
-        return await db.update(margin).set(data).where(eq(margin.id, id)).returning()
-      },
-      catch: error => new DatabaseError({ error }),
-    })
+    const returning = await db.update(margin).set(data).where(eq(margin.id, id)).returning()
 
     if (returning.length === 0) {
-      return yield* new ItemNotFoundError({ id })
+      throw new ItemNotFoundError({
+        id,
+        message: `Margin dengan ID '${id}' tidak ditemukan`,
+      })
     }
-  }),
+  },
 
-  deleteMargin: Effect.fn('MasterMarginService.deleteMargin')(function* (ids: number[]) {
-    const returning = yield* Effect.tryPromise({
-      try: async () => {
-        return await db.delete(margin).where(inArray(margin.id, ids)).returning()
-      },
-      catch: error => new DatabaseError({ error }),
-    })
+  async deleteMargin(ids: number[]) {
+    const returning = await db.delete(margin).where(inArray(margin.id, ids)).returning()
 
     if (returning.length === 0) {
-      return yield* new ItemsNotFoundError({ ids })
+      throw new ItemsNotFoundError({
+        ids,
+        message: `Margin dengan ID '${ids.join(', ')}' tidak ditemukan`,
+      })
     }
-  }),
+  },
 }

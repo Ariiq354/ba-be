@@ -55,8 +55,7 @@ openapi({
 ```typescript
 mapJsonSchema: {
   zod: z.toJSONSchema,  // Zod 4
-  valibot: toJsonSchema,
-  effect: JSONSchema.make
+  valibot: toJsonSchema
 }
 ```
 

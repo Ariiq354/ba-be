@@ -72,7 +72,7 @@ export const OpenApiPlugin = new Elysia({ prefix: 'api' })
       path: '/docs',
       scalar: {
         defaultHttpClient: { targetKey: 'js', clientKey: 'fetch' },
-      },
+      } as unknown as NonNullable<NonNullable<Parameters<typeof openapi>[0]>['scalar']>,
       documentation: {
         info: {
           title: 'Berkah Amanah Backend Documentation',

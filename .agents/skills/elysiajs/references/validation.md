@@ -27,7 +27,7 @@ Third parameter of HTTP method:
 - **response** - Response (per status)
 
 ## Standard Schema Support
-Use Zod, Valibot, ArkType, Effect, Yup, Joi:
+Use Zod, Valibot, ArkType, Yup, Joi:
 ```typescript
 import { z } from 'zod'
 import * as v from 'valibot'

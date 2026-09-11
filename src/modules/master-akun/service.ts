@@ -1,102 +1,97 @@
 import type { MasterAkunModel } from './model'
-import { and, asc, eq, ilike, inArray, or } from 'drizzle-orm'
-import { Effect } from 'effect'
+import { and, asc, eq, ilike, inArray, ne, or } from 'drizzle-orm'
 import { db } from '#/database'
 import { akun } from '#/database/schema/akun'
-import { DatabaseError, ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
-import { isUniqueViolation } from '#/utils/pgcode'
+import { ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
 import { DuplicateKodeAkunError } from './errors'
 
 export const MasterAkunService = {
-  createAkun: Effect.fn('MasterAkunService.createAkun')(function* (
+  async createAkun(
     data: MasterAkunModel['createAkunSchema'],
   ) {
-    return yield* Effect.tryPromise({
-      try: async () => {
-        await db.insert(akun).values(data)
-      },
-      catch: (error) => {
-        if (isUniqueViolation(error)) {
-          return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
-        }
-        return new DatabaseError({ error })
-      },
-    })
-  }),
+    const [existing] = await db
+      .select({ id: akun.id })
+      .from(akun)
+      .where(eq(akun.kodeAkun, data.kodeAkun))
+      .limit(1)
 
-  getPaginatedAkun: Effect.fn('MasterAkunService.getPaginatedAkun')(function* (
+    if (existing) {
+      throw new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
+    }
+
+    await db.insert(akun).values(data)
+  },
+
+  async getPaginatedAkun(
     query: MasterAkunModel['getAkunQuerySchema'],
   ) {
-    return yield* Effect.tryPromise({
-      try: async () => {
-        const conditions = []
+    const conditions = []
 
-        if (query.kategori && query.kategori !== 'all') {
-          conditions.push(eq(akun.kategori, query.kategori))
-        }
+    if (query.kategori && query.kategori !== 'all') {
+      conditions.push(eq(akun.kategori, query.kategori))
+    }
 
-        if (query.search) {
-          const searchPattern = `%${query.search}%`
-          conditions.push(
-            or(ilike(akun.kodeAkun, searchPattern), ilike(akun.namaAkun, searchPattern)),
-          )
-        }
+    if (query.search) {
+      const searchPattern = `%${query.search}%`
+      conditions.push(
+        or(ilike(akun.kodeAkun, searchPattern), ilike(akun.namaAkun, searchPattern)),
+      )
+    }
 
-        const qb = db
-          .select({
-            id: akun.id,
-            kodeAkun: akun.kodeAkun,
-            namaAkun: akun.namaAkun,
-            kategori: akun.kategori,
-            normalBalance: akun.normalBalance,
-            isActive: akun.isActive,
-          })
-          .from(akun)
-          .where(and(...conditions))
-          .orderBy(asc(akun.kodeAkun))
+    const qb = db
+      .select({
+        id: akun.id,
+        kodeAkun: akun.kodeAkun,
+        namaAkun: akun.namaAkun,
+        kategori: akun.kategori,
+        normalBalance: akun.normalBalance,
+        isActive: akun.isActive,
+      })
+      .from(akun)
+      .where(and(...conditions))
+      .orderBy(asc(akun.kodeAkun))
 
-        const offset = (query.page - 1) * query.limit
-        const total = await db.$count(qb)
-        const data = await qb.limit(query.limit).offset(offset)
+    const offset = (query.page - 1) * query.limit
+    const total = await db.$count(qb)
+    const data = await qb.limit(query.limit).offset(offset)
 
-        return { total, data }
-      },
-      catch: error => new DatabaseError({ error }),
-    })
-  }),
+    return { total, data }
+  },
 
-  updateAkun: Effect.fn('MasterAkunService.updateAkun')(function* (
+  async updateAkun(
     id: number,
     data: MasterAkunModel['updateAkunSchema'],
   ) {
-    const returning = yield* Effect.tryPromise({
-      try: async () => {
-        const rows = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
-        return rows
-      },
-      catch: (error) => {
-        if (isUniqueViolation(error)) {
-          return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun! })
-        }
-        return new DatabaseError({ error })
-      },
-    })
+    if (data.kodeAkun) {
+      const [existing] = await db
+        .select({ id: akun.id })
+        .from(akun)
+        .where(and(eq(akun.kodeAkun, data.kodeAkun), ne(akun.id, id)))
+        .limit(1)
+
+      if (existing) {
+        throw new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
+      }
+    }
+
+    const returning = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
 
     if (returning.length === 0) {
-      return yield* new ItemNotFoundError({ id })
+      throw new ItemNotFoundError({
+        id,
+        message: `Akun dengan ID '${id}' tidak ditemukan`,
+      })
     }
-  }),
+  },
 
-  deleteAkun: Effect.fn('MasterAkunService.deleteAkun')(function* (ids: number[]) {
-    const returning = yield* Effect.tryPromise({
-      try: async () => {
-        return await db.delete(akun).where(inArray(akun.id, ids)).returning()
-      },
-      catch: error => new DatabaseError({ error }),
-    })
+  async deleteAkun(ids: number[]) {
+    const returning = await db.delete(akun).where(inArray(akun.id, ids)).returning()
 
     if (returning.length === 0) {
-      return yield* new ItemsNotFoundError({ ids })
+      throw new ItemsNotFoundError({
+        ids,
+        message: `Akun dengan ID '${ids.join(', ')}' tidak ditemukan`,
+      })
     }
-  }),
+  },
 }

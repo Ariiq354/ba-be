@@ -1,4 +1,3 @@
-import { Effect } from 'effect'
 import Elysia, { status } from 'elysia'
 import { ErrorSchema, SuccessSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
@@ -12,23 +11,7 @@ export const MasterSahamModules = new Elysia({
   .use(AuthMacro)
   .get(
     '/',
-    async ({ query }) => {
-      const program = MasterSahamService.getPaginatedHargaSaham(query).pipe(
-        Effect.catchTags({
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal mengambil riwayat harga saham',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
-    },
+    async ({ query }) => MasterSahamService.getPaginatedHargaSaham(query),
     {
       admin: true,
       query: masterSahamModel.getHargaSahamQuerySchema,
@@ -38,33 +21,9 @@ export const MasterSahamModules = new Elysia({
       },
     },
   )
-
   .get(
     '/latest',
-    async () => {
-      const program = MasterSahamService.getLatestHargaSaham().pipe(
-        Effect.catchTags({
-          HargaSahamNotFoundError: () =>
-            Effect.succeed(
-              status(404, {
-                code: 'HARGA_SAHAM_NOT_FOUND_ERROR',
-                message: 'Harga saham belum tersedia',
-              }),
-            ),
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal mengambil harga saham terbaru',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
-    },
+    async () => MasterSahamService.getLatestHargaSaham(),
     {
       auth: true,
       response: {
@@ -74,26 +33,11 @@ export const MasterSahamModules = new Elysia({
       },
     },
   )
-
   .post(
     '/',
     async ({ body, user }) => {
-      const program = MasterSahamService.createHargaSaham(user.id, body).pipe(
-        Effect.as(status(201, { message: 'Success' })),
-        Effect.catchTags({
-          DatabaseError: err =>
-            Effect.logError('Database error:', err.error).pipe(
-              Effect.as(
-                status(500, {
-                  code: 'DATABASE_ERROR',
-                  message: 'Gagal mencatat harga saham',
-                }),
-              ),
-            ),
-        }),
-      )
-
-      return Effect.runPromise(program)
+      await MasterSahamService.createHargaSaham(user.id, body)
+      return status(201, { message: 'Success' })
     },
     {
       admin: true,
