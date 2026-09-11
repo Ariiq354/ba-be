@@ -52,7 +52,6 @@ export const account = snakeCase.table('account', {
   accessToken: text(),
   refreshToken: text(),
   idToken: text(),
-  issuer: text().notNull(),
   accessTokenExpiresAt: timestamp({ withTimezone: true }),
   refreshTokenExpiresAt: timestamp({ withTimezone: true }),
   scope: text(),
