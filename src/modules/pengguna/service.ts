@@ -152,6 +152,12 @@ export const PenggunaService = {
 
       if (Object.values(profileData).some(value => value !== undefined)) {
         if (typeof data.nik === 'string') {
+          await tx.execute(sql`
+            select pg_advisory_xact_lock(
+              hashtextextended(${`user-profile:nik:${data.nik}`}, 0)
+            )
+          `)
+
           const [existingNik] = await tx
             .select({ idUser: userProfile.idUser })
             .from(userProfile)

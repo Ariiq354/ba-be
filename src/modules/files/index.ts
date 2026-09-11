@@ -35,7 +35,6 @@ export const FilesModules = new Elysia({ prefix: 'files', tags: ['Files'] })
       response: {
         201: filesModel.presignedUploadResponseSchema,
         400: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )

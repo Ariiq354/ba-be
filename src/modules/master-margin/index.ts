@@ -18,7 +18,6 @@ export const MasterMarginModules = new Elysia({
       query: masterMarginModel.getMarginQuerySchema,
       response: {
         200: masterMarginModel.getMarginResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -33,7 +32,6 @@ export const MasterMarginModules = new Elysia({
       body: masterMarginModel.createMarginSchema,
       response: {
         201: SuccessSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -50,7 +48,6 @@ export const MasterMarginModules = new Elysia({
       response: {
         200: SuccessSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -66,7 +63,6 @@ export const MasterMarginModules = new Elysia({
       response: {
         200: SuccessSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )

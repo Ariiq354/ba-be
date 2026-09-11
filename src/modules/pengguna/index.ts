@@ -15,7 +15,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
       response: {
         200: penggunaModel.getProfileResponseSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -33,7 +32,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
         400: ErrorSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -45,7 +43,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
       query: penggunaModel.getPenggunaQuerySchema,
       response: {
         200: penggunaModel.getPenggunaResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -59,7 +56,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
         200: penggunaModel.verifyPenggunaResponseSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -77,7 +73,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
         200: SuccessSchema,
         400: ErrorSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )

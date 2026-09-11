@@ -14,7 +14,6 @@ export const JurnalModules = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
       query: jurnalModel.getJurnalQuerySchema,
       response: {
         200: jurnalModel.getJurnalResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -27,7 +26,6 @@ export const JurnalModules = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
       response: {
         200: jurnalModel.getJurnalByIdResponseSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -44,7 +42,6 @@ export const JurnalModules = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
         201: SuccessSchema,
         400: ErrorSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -62,7 +59,6 @@ export const JurnalModules = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
         400: ErrorSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )

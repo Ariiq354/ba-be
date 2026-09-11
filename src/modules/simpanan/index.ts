@@ -14,7 +14,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: simpananModel.getSaldoResponseSchema,
         400: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -27,7 +26,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: simpananModel.getMutasiResponseSchema,
         400: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -44,7 +42,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         201: SuccessSchema,
         400: ErrorSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -60,7 +57,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         201: SuccessSchema,
         400: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -77,7 +73,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         200: SuccessSchema,
         400: ErrorSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -95,7 +90,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         400: ErrorSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -114,7 +108,6 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         400: ErrorSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )

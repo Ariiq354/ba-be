@@ -1,5 +1,4 @@
 import Elysia from 'elysia'
-import { ErrorSchema } from '#/utils/errors'
 import { wilayahModel } from './model'
 import { WilayahService } from './service'
 
@@ -10,7 +9,6 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
     {
       response: {
         200: wilayahModel.getProvinsiResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -21,7 +19,6 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
       query: wilayahModel.getKabupatenKotaQuerySchema,
       response: {
         200: wilayahModel.getKabupatenKotaResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -32,7 +29,6 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
       query: wilayahModel.getKecamatanQuerySchema,
       response: {
         200: wilayahModel.getKecamatanResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -43,7 +39,6 @@ export const WilayahModules = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] 
       query: wilayahModel.getDesaKelurahanQuerySchema,
       response: {
         200: wilayahModel.getDesaKelurahanResponseSchema,
-        500: ErrorSchema,
       },
     },
   )

@@ -15,7 +15,6 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
       query: masterAkunModel.getAkunQuerySchema,
       response: {
         200: masterAkunModel.getAkunResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -31,7 +30,6 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
       response: {
         201: SuccessSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -49,7 +47,6 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
         200: SuccessSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -65,7 +62,6 @@ export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Mas
       response: {
         200: SuccessSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )

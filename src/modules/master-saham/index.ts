@@ -17,7 +17,6 @@ export const MasterSahamModules = new Elysia({
       query: masterSahamModel.getHargaSahamQuerySchema,
       response: {
         200: masterSahamModel.getHargaSahamResponseSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -29,7 +28,6 @@ export const MasterSahamModules = new Elysia({
       response: {
         200: masterSahamModel.getLatestHargaSahamResponseSchema,
         404: ErrorSchema,
-        500: ErrorSchema,
       },
     },
   )
@@ -44,7 +42,6 @@ export const MasterSahamModules = new Elysia({
       body: masterSahamModel.createHargaSahamSchema,
       response: {
         201: SuccessSchema,
-        500: ErrorSchema,
       },
     },
   )
