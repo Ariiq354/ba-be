@@ -12,7 +12,7 @@ export function isPendingVerificationBanReason(reason: string | null): boolean {
 }
 
 export const auth = betterAuth({
-  trustedOrigins: ['https://ubberkahamanah.my.id', 'http://localhost:3000'],
+  trustedOrigins: ['https://ubberkahamanah.my.id', 'http://localhost:3000', 'https://ba-fe-production.up.railway.app'],
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
