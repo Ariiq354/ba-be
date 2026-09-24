@@ -59,6 +59,10 @@ export const auth = betterAuth({
       generateId: false,
       joins: true,
     },
+    defaultCookieAttributes: {
+      sameSite: 'none',
+      secure: true,
+    },
   },
   plugins: [openAPI(), username(), adminPlugins()],
 })
