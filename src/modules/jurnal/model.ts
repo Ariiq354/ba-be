@@ -13,14 +13,19 @@ const jurnalDetailResponseSchema = t.Object({
   kredit: t.Integer(),
 })
 
-const flatJurnalResponseSchema = t.Object({
-  ...jurnalDetailResponseSchema.properties,
+const jurnalHeaderResponseSchema = t.Object({
+  id: t.Integer(),
   kodeTransaksi: t.String(),
   tanggalTransaksi: t.String({ format: 'date' }),
   keterangan: t.Nullable(t.String()),
   userId: t.Integer(),
   userName: t.Nullable(t.String()),
   createdAt: t.String({ format: 'date-time' }),
+})
+
+const flatJurnalResponseSchema = t.Object({
+  ...jurnalHeaderResponseSchema.properties,
+  ...jurnalDetailResponseSchema.properties,
 })
 
 export const jurnalModel = {
@@ -40,13 +45,7 @@ export const jurnalModel = {
   }),
 
   getJurnalByIdResponseSchema: t.Object({
-    id: t.Integer(),
-    kodeTransaksi: t.String(),
-    tanggalTransaksi: t.String({ format: 'date' }),
-    keterangan: t.Nullable(t.String()),
-    userId: t.Integer(),
-    userName: t.Nullable(t.String()),
-    createdAt: t.String({ format: 'date-time' }),
+    ...jurnalHeaderResponseSchema.properties,
     details: t.Array(jurnalDetailResponseSchema),
   }),
 

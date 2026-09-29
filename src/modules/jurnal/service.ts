@@ -7,15 +7,35 @@ import { jurnal, jurnalDetail } from '#/database/schema/jurnal'
 import { mutasiSimpanan } from '#/database/schema/simpanan'
 import { getNextTransactionCode } from '#/utils/transaction'
 import {
-  AccountsNotFoundError,
+  AkunNotFoundError,
   AutoJurnalsImmutableError,
-  InactiveAccountsError,
+  InactiveAkunError,
   InvalidJurnalError,
   InvalidJurnalIdsError,
   JurnalNotFoundError,
   JurnalsNotFoundError,
   UnbalancedJurnalError,
 } from './errors'
+
+const jurnalHeaderSelection = {
+  id: jurnal.id,
+  kodeTransaksi: jurnal.kodeTransaksi,
+  tanggalTransaksi: jurnal.tanggalTransaksi,
+  keterangan: jurnal.keterangan,
+  userId: jurnal.userId,
+  userName: user.name,
+  createdAt: jurnal.createdAt,
+}
+
+const jurnalDetailSelection = {
+  id: jurnalDetail.id,
+  jurnalId: jurnalDetail.jurnalId,
+  akunId: jurnalDetail.akunId,
+  kodeAkun: akun.kodeAkun,
+  namaAkun: akun.namaAkun,
+  debit: jurnalDetail.debit,
+  kredit: jurnalDetail.kredit,
+}
 
 function isValidTransactionDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
@@ -39,6 +59,37 @@ function isValidTransactionDate(value: string) {
     && date.getUTCDate() === day
 }
 
+function validateJurnalInput(data: JurnalModel['createJurnalSchema']) {
+  if (!isValidTransactionDate(data.tanggalTransaksi)) {
+    throw new InvalidJurnalError({ reason: 'invalid_date' })
+  }
+
+  if (
+    data.details.length < 2
+    || data.details.some(detail =>
+      !Number.isInteger(detail.akunId)
+      || detail.akunId < 1
+      || !Number.isInteger(detail.debit)
+      || detail.debit < 0
+      || !Number.isInteger(detail.kredit)
+      || detail.kredit < 0,
+    )
+  ) {
+    throw new InvalidJurnalError({ reason: 'invalid_details' })
+  }
+
+  const totalDebit = data.details.reduce((total, detail) => total + detail.debit, 0)
+  const totalKredit = data.details.reduce((total, detail) => total + detail.kredit, 0)
+
+  if (totalDebit <= 0 || totalKredit <= 0) {
+    throw new InvalidJurnalError({ reason: 'non_positive_totals' })
+  }
+
+  if (totalDebit !== totalKredit) {
+    throw new UnbalancedJurnalError({ totalDebit, totalKredit })
+  }
+}
+
 export const JurnalService = {
   async getPaginatedJurnal(
     query: JurnalModel['getJurnalQuerySchema'],
@@ -51,15 +102,7 @@ export const JurnalService = {
     const [total, headers] = await Promise.all([
       db.$count(jurnal, condition),
       db
-        .select({
-          id: jurnal.id,
-          kodeTransaksi: jurnal.kodeTransaksi,
-          tanggalTransaksi: jurnal.tanggalTransaksi,
-          keterangan: jurnal.keterangan,
-          userId: jurnal.userId,
-          userName: user.name,
-          createdAt: jurnal.createdAt,
-        })
+        .select(jurnalHeaderSelection)
         .from(jurnal)
         .leftJoin(user, eq(user.id, jurnal.userId))
         .where(condition)
@@ -73,15 +116,7 @@ export const JurnalService = {
     }
 
     const details = await db
-      .select({
-        id: jurnalDetail.id,
-        jurnalId: jurnalDetail.jurnalId,
-        akunId: jurnalDetail.akunId,
-        kodeAkun: akun.kodeAkun,
-        namaAkun: akun.namaAkun,
-        debit: jurnalDetail.debit,
-        kredit: jurnalDetail.kredit,
-      })
+      .select(jurnalDetailSelection)
       .from(jurnalDetail)
       .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
       .where(inArray(jurnalDetail.jurnalId, headers.map(header => header.id)))
@@ -121,15 +156,7 @@ export const JurnalService = {
 
   async getJurnalById(id: number) {
     const [header] = await db
-      .select({
-        id: jurnal.id,
-        kodeTransaksi: jurnal.kodeTransaksi,
-        tanggalTransaksi: jurnal.tanggalTransaksi,
-        keterangan: jurnal.keterangan,
-        userId: jurnal.userId,
-        userName: user.name,
-        createdAt: jurnal.createdAt,
-      })
+      .select(jurnalHeaderSelection)
       .from(jurnal)
       .leftJoin(user, eq(user.id, jurnal.userId))
       .where(eq(jurnal.id, id))
@@ -139,15 +166,7 @@ export const JurnalService = {
     }
 
     const details = await db
-      .select({
-        id: jurnalDetail.id,
-        jurnalId: jurnalDetail.jurnalId,
-        akunId: jurnalDetail.akunId,
-        kodeAkun: akun.kodeAkun,
-        namaAkun: akun.namaAkun,
-        debit: jurnalDetail.debit,
-        kredit: jurnalDetail.kredit,
-      })
+      .select(jurnalDetailSelection)
       .from(jurnalDetail)
       .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
       .where(eq(jurnalDetail.jurnalId, id))
@@ -164,55 +183,28 @@ export const JurnalService = {
     userId: number,
     data: JurnalModel['createJurnalSchema'],
   ) {
-    if (!isValidTransactionDate(data.tanggalTransaksi)) {
-      throw new InvalidJurnalError({ reason: 'invalid_date' })
-    }
-
-    if (
-      data.details.length < 2
-      || data.details.some(detail =>
-        !Number.isInteger(detail.akunId)
-        || detail.akunId < 1
-        || !Number.isInteger(detail.debit)
-        || detail.debit < 0
-        || !Number.isInteger(detail.kredit)
-        || detail.kredit < 0,
-      )
-    ) {
-      throw new InvalidJurnalError({ reason: 'invalid_details' })
-    }
-
-    const totalDebit = data.details.reduce((total, detail) => total + detail.debit, 0)
-    const totalKredit = data.details.reduce((total, detail) => total + detail.kredit, 0)
-
-    if (totalDebit <= 0 || totalKredit <= 0) {
-      throw new InvalidJurnalError({ reason: 'non_positive_totals' })
-    }
-
-    if (totalDebit !== totalKredit) {
-      throw new UnbalancedJurnalError({ totalDebit, totalKredit })
-    }
+    validateJurnalInput(data)
 
     await db.transaction(async (tx) => {
-      const accountIds = [...new Set(data.details.map(detail => detail.akunId))]
-      const accounts = await tx
+      const akunIds = [...new Set(data.details.map(detail => detail.akunId))]
+      const akunRows = await tx
         .select({
           id: akun.id,
           isActive: akun.isActive,
         })
         .from(akun)
-        .where(inArray(akun.id, accountIds))
+        .where(inArray(akun.id, akunIds))
         .for('share')
 
-      const accountsById = new Map(accounts.map(account => [account.id, account]))
-      const missingAccountIds = accountIds.filter(id => !accountsById.has(id))
-      if (missingAccountIds.length > 0) {
-        throw new AccountsNotFoundError({ ids: missingAccountIds })
+      const akunById = new Map(akunRows.map(row => [row.id, row]))
+      const missingAkunIds = akunIds.filter(id => !akunById.has(id))
+      if (missingAkunIds.length > 0) {
+        throw new AkunNotFoundError({ ids: missingAkunIds })
       }
 
-      const inactiveAccountIds = accountIds.filter(id => !accountsById.get(id)?.isActive)
-      if (inactiveAccountIds.length > 0) {
-        throw new InactiveAccountsError({ ids: inactiveAccountIds })
+      const inactiveAkunIds = akunIds.filter(id => !akunById.get(id)?.isActive)
+      if (inactiveAkunIds.length > 0) {
+        throw new InactiveAkunError({ ids: inactiveAkunIds })
       }
 
       const dateCode = data.tanggalTransaksi.replaceAll('-', '')

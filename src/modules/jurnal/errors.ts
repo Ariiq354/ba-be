@@ -1,16 +1,20 @@
 import { AppError } from '#/utils/errors'
 
-export class InvalidJurnalError extends AppError {
-  readonly reason: 'invalid_date' | 'invalid_details' | 'non_positive_totals'
+const invalidJurnalMessages = {
+  invalid_date: 'Format tanggal transaksi tidak valid',
+  invalid_details: 'Detail jurnal tidak valid',
+  non_positive_totals: 'Total debit dan kredit harus lebih dari 0',
+} as const
 
-  constructor({ reason }: { reason: 'invalid_date' | 'invalid_details' | 'non_positive_totals' }) {
+type InvalidJurnalReason = keyof typeof invalidJurnalMessages
+
+export class InvalidJurnalError extends AppError {
+  readonly reason: InvalidJurnalReason
+
+  constructor({ reason }: { reason: InvalidJurnalReason }) {
     super({
       code: 'INVALID_JURNAL_ERROR',
-      message: reason === 'invalid_date'
-        ? 'Format tanggal transaksi tidak valid'
-        : reason === 'non_positive_totals'
-          ? 'Total debit dan kredit harus lebih dari 0'
-          : 'Detail jurnal tidak valid',
+      message: invalidJurnalMessages[reason],
       status: 400,
     })
     this.reason = reason
@@ -32,7 +36,7 @@ export class UnbalancedJurnalError extends AppError {
   }
 }
 
-export class AccountsNotFoundError extends AppError {
+export class AkunNotFoundError extends AppError {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
@@ -45,7 +49,7 @@ export class AccountsNotFoundError extends AppError {
   }
 }
 
-export class InactiveAccountsError extends AppError {
+export class InactiveAkunError extends AppError {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
