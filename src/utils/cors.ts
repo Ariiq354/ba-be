@@ -1,11 +1,8 @@
 import { cors } from '@elysia/cors'
+import { FRONTEND_ORIGINS } from './config'
 
 export const CorsPlugin = cors({
-  origin: [
-    'http://localhost:3000',
-    'https://ubberkahamanah.my.id',
-    'https://ba-fe-production.up.railway.app',
-  ],
+  origin: FRONTEND_ORIGINS,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],

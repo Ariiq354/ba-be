@@ -37,7 +37,7 @@ export const MasterAkunService = {
       )
     }
 
-    const qb = db
+    const akunQuery = db
       .select({
         id: akun.id,
         kodeAkun: akun.kodeAkun,
@@ -51,8 +51,8 @@ export const MasterAkunService = {
       .orderBy(asc(akun.kodeAkun))
 
     const offset = (query.page - 1) * query.limit
-    const total = await db.$count(qb)
-    const data = await qb.limit(query.limit).offset(offset)
+    const total = await db.$count(akunQuery)
+    const data = await akunQuery.limit(query.limit).offset(offset)
 
     return { total, data }
   },
@@ -62,9 +62,9 @@ export const MasterAkunService = {
     data: MasterAkunModel['updateAkunSchema'],
   ) {
     if (!data.kodeAkun) {
-      const returning = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
+      const updatedRows = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
 
-      if (returning.length === 0) {
+      if (updatedRows.length === 0) {
         throw new ItemNotFoundError({
           id,
           message: `Akun dengan ID '${id}' tidak ditemukan`,
@@ -93,9 +93,9 @@ export const MasterAkunService = {
         throw new DuplicateKodeAkunError({ kodeAkun })
       }
 
-      const returning = await tx.update(akun).set(data).where(eq(akun.id, id)).returning()
+      const updatedRows = await tx.update(akun).set(data).where(eq(akun.id, id)).returning()
 
-      if (returning.length === 0) {
+      if (updatedRows.length === 0) {
         throw new ItemNotFoundError({
           id,
           message: `Akun dengan ID '${id}' tidak ditemukan`,
@@ -105,9 +105,9 @@ export const MasterAkunService = {
   },
 
   async deleteAkun(ids: number[]) {
-    const returning = await db.delete(akun).where(inArray(akun.id, ids)).returning()
+    const deletedRows = await db.delete(akun).where(inArray(akun.id, ids)).returning()
 
-    if (returning.length === 0) {
+    if (deletedRows.length === 0) {
       throw new ItemsNotFoundError({
         ids,
         message: `Akun dengan ID '${ids.join(', ')}' tidak ditemukan`,

@@ -14,7 +14,7 @@ export const MasterMarginService = {
   async getPaginatedMargin(
     query: MasterMarginModel['getMarginQuerySchema'],
   ) {
-    const qb = db
+    const marginQuery = db
       .select({
         id: margin.id,
         minNominal: margin.minNominal,
@@ -29,8 +29,8 @@ export const MasterMarginService = {
       .orderBy(desc(margin.createdAt), desc(margin.id))
 
     const offset = (query.page - 1) * query.limit
-    const total = await db.$count(qb)
-    const rows = await qb.limit(query.limit).offset(offset)
+    const total = await db.$count(marginQuery)
+    const rows = await marginQuery.limit(query.limit).offset(offset)
     const data = rows.map(row => ({
       ...row,
       createdAt: row.createdAt.toISOString(),
@@ -44,9 +44,9 @@ export const MasterMarginService = {
     id: number,
     data: MasterMarginModel['updateMarginSchema'],
   ) {
-    const returning = await db.update(margin).set(data).where(eq(margin.id, id)).returning()
+    const updatedRows = await db.update(margin).set(data).where(eq(margin.id, id)).returning()
 
-    if (returning.length === 0) {
+    if (updatedRows.length === 0) {
       throw new ItemNotFoundError({
         id,
         message: `Margin dengan ID '${id}' tidak ditemukan`,
@@ -55,9 +55,9 @@ export const MasterMarginService = {
   },
 
   async deleteMargin(ids: number[]) {
-    const returning = await db.delete(margin).where(inArray(margin.id, ids)).returning()
+    const deletedRows = await db.delete(margin).where(inArray(margin.id, ids)).returning()
 
-    if (returning.length === 0) {
+    if (deletedRows.length === 0) {
       throw new ItemsNotFoundError({
         ids,
         message: `Margin dengan ID '${ids.join(', ')}' tidak ditemukan`,

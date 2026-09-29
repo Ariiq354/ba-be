@@ -4,6 +4,7 @@ import { admin as adminPlugins, openAPI, username } from 'better-auth/plugins'
 import { db } from '#/database'
 import { relations } from '#/database/relations'
 import * as schema from '#/database/schema/auth'
+import { FRONTEND_ORIGINS } from './config'
 
 export const PENDING_VERIFICATION_BAN_REASON = 'Pengguna belum terverifikasi'
 
@@ -12,7 +13,7 @@ export function isPendingVerificationBanReason(reason: string | null): boolean {
 }
 
 export const auth = betterAuth({
-  trustedOrigins: ['https://ubberkahamanah.my.id', 'http://localhost:3000', 'https://ba-fe-production.up.railway.app'],
+  trustedOrigins: FRONTEND_ORIGINS,
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {

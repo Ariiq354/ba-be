@@ -2,11 +2,14 @@ import type { UnwrapSchema } from 'elysia'
 import { t } from 'elysia'
 import { paginationSchema, searchSchema } from '#/utils/schema'
 
+const kategoriAkunValues = ['aktiva', 'pasiva', 'pendapatan', 'biaya'] as const
+const normalBalanceValues = ['debit', 'kredit'] as const
+
 const createAkunSchema = t.Object({
   kodeAkun: t.String({ minLength: 1 }),
   namaAkun: t.String({ minLength: 1 }),
-  kategori: t.UnionEnum(['aktiva', 'pasiva', 'pendapatan', 'biaya']),
-  normalBalance: t.UnionEnum(['debit', 'kredit']),
+  kategori: t.UnionEnum(kategoriAkunValues),
+  normalBalance: t.UnionEnum(normalBalanceValues),
   isActive: t.Boolean({ default: true }),
 })
 
@@ -18,8 +21,8 @@ export const masterAkunModel = {
         id: t.Integer(),
         kodeAkun: t.String(),
         namaAkun: t.String(),
-        kategori: t.UnionEnum(['aktiva', 'biaya', 'pasiva', 'pendapatan']),
-        normalBalance: t.UnionEnum(['debit', 'kredit']),
+        kategori: t.UnionEnum(kategoriAkunValues),
+        normalBalance: t.UnionEnum(normalBalanceValues),
         isActive: t.Boolean(),
       }),
     ),
@@ -28,7 +31,7 @@ export const masterAkunModel = {
   getAkunQuerySchema: t.Object({
     ...paginationSchema.properties,
     ...searchSchema.properties,
-    kategori: t.UnionEnum(['all', 'aktiva', 'pasiva', 'pendapatan', 'biaya'], { default: 'all' }),
+    kategori: t.UnionEnum(['all', ...kategoriAkunValues], { default: 'all' }),
   }),
 
   createAkunSchema,
