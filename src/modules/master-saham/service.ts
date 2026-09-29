@@ -49,7 +49,7 @@ export const MasterSahamService = {
   async getPaginatedHargaSaham(
     query: MasterSahamModel['getHargaSahamQuerySchema'],
   ) {
-    const qb = db
+    const hargaSahamQuery = db
       .select({
         id: hargaSaham.id,
         hargaNominal: hargaSaham.hargaNominal,
@@ -62,8 +62,8 @@ export const MasterSahamService = {
       .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id))
 
     const offset = (query.page - 1) * query.limit
-    const total = await db.$count(qb)
-    const rows = await qb.limit(query.limit).offset(offset)
+    const total = await db.$count(hargaSahamQuery)
+    const rows = await hargaSahamQuery.limit(query.limit).offset(offset)
     const data = rows.map(row => ({
       ...row,
       hargaNominal: HARGA_NOMINAL_SAHAM,
