@@ -59,6 +59,16 @@ export class ItemsNotFoundError extends AppError {
   }
 }
 
+export class PenggunaAccessDeniedError extends AppError {
+  constructor() {
+    super({
+      code: 'PENGGUNA_ACCESS_DENIED_ERROR',
+      message: 'Tidak memiliki akses ke pengguna tersebut',
+      status: 403,
+    })
+  }
+}
+
 export const ErrorSchema = t.Object({
   code: t.String(),
   message: t.String(),

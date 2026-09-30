@@ -1,5 +1,5 @@
 import type { PenggunaModel } from './model'
-import { and, desc, eq, ilike, isNull, like, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, isNull, like, ne, or, sql } from 'drizzle-orm'
 import { db } from '#/database'
 import { user } from '#/database/schema/auth'
 import { files } from '#/database/schema/files'
@@ -9,6 +9,7 @@ import { kecamatan, kelurahan, kota, provinsi } from '#/database/schema/wilayah'
 import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASON } from '#/utils/auth'
 import { ItemNotFoundError, logUnhandledError } from '#/utils/errors'
 import { deleteFiles } from '#/utils/file'
+import { getPenggunaAccessCondition } from '#/utils/penggunaAccess'
 import {
   AdminCannotBePjError,
   DuplicateNikError,
@@ -82,6 +83,25 @@ function getMembershipPeriod(date: Date) {
 }
 
 export const PenggunaService = {
+  async getPenggunaOptions(actorId: number) {
+    const condition = await getPenggunaAccessCondition(db, actorId)
+    const data = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        noAnggota: userProfile.noAnggota,
+        idKelompok: user.idKelompok,
+        namaKelompok: kelompok.namaKelompok,
+      })
+      .from(user)
+      .leftJoin(userProfile, eq(userProfile.idUser, user.id))
+      .innerJoin(kelompok, eq(kelompok.id, user.idKelompok))
+      .where(condition)
+      .orderBy(asc(user.name), asc(user.id))
+
+    return { data }
+  },
+
   async getProfile(penggunaId: number) {
     const [profile] = await db
       .select({

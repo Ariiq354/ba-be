@@ -7,20 +7,38 @@ import { SimpananService } from './service'
 export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'] })
   .use(AuthMacro)
   .get(
-    '/saldo',
-    ({ user }) => SimpananService.getSaldo(user.id),
+    '/akun-pembayaran/options',
+    () => SimpananService.getPaymentAccountOptions(),
     {
       auth: true,
+      response: {
+        200: simpananModel.getPaymentAccountOptionsResponseSchema,
+        401: UnauthorizedSchema,
+      },
+      detail: {
+        description: 'Pilihan akun kas/bank aktif yang dapat digunakan untuk setoran dan penarikan simpanan.',
+      },
+    },
+  )
+  .get(
+    '/saldo',
+    ({ user, query }) => SimpananService.getSaldo(user.id, query.userId),
+    {
+      auth: true,
+      query: simpananModel.getSaldoQuerySchema,
       response: {
         200: simpananModel.getSaldoResponseSchema,
         400: ErrorSchema,
         401: UnauthorizedSchema,
+        403: ErrorSchema,
+        404: ErrorSchema,
+        422: ValidationErrorSchema,
       },
     },
   )
   .get(
     '/mutasi',
-    ({ user, query }) => SimpananService.getMutasi(user.id, user.role === 'admin', query),
+    ({ user, query }) => SimpananService.getMutasi(user.id, query),
     {
       auth: true,
       query: simpananModel.getMutasiQuerySchema,
@@ -28,7 +46,12 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         200: simpananModel.getMutasiResponseSchema,
         400: ErrorSchema,
         401: UnauthorizedSchema,
+        403: ErrorSchema,
+        404: ErrorSchema,
         422: ValidationErrorSchema,
+      },
+      detail: {
+        description: 'Admin melihat semua mutasi; PJ melihat mutasi kelompok yang ditanggung dan dirinya sendiri; anggota biasa hanya miliknya. userId memfilter anggota dalam cakupan akses tersebut.',
       },
     },
   )
@@ -45,6 +68,7 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         201: SuccessSchema,
         400: ErrorSchema,
         401: UnauthorizedSchema,
+        403: ErrorSchema,
         404: ErrorSchema,
         422: ValidationErrorSchema,
       },
@@ -63,6 +87,8 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         201: SuccessSchema,
         400: ErrorSchema,
         401: UnauthorizedSchema,
+        403: ErrorSchema,
+        404: ErrorSchema,
         422: ValidationErrorSchema,
       },
     },
@@ -82,6 +108,9 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         401: UnauthorizedSchema,
         404: ErrorSchema,
         422: ValidationErrorSchema,
+      },
+      detail: {
+        description: 'Membatalkan pengajuan pending milik sendiri atau yang dibuat sendiri untuk anggota yang masih berada dalam cakupan akses. Seluruh ID harus valid; jika satu gagal, seluruh penghapusan dibatalkan.',
       },
     },
   )
