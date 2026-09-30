@@ -190,6 +190,13 @@ export const PenggunaService = {
         await tx.update(user).set(penggunaData).where(eq(user.id, penggunaId))
       }
 
+      const wilayahUpdates: Partial<ProfileWilayah> = {
+        idProvinsi: data.idProvinsi,
+        idKota: data.idKabupatenKota,
+        idKecamatan: data.idKecamatan,
+        idKelurahan: data.idDesaKelurahan,
+      }
+
       const profileData = {
         noHp: data.noHp,
         nik: data.nik,
@@ -197,10 +204,7 @@ export const PenggunaService = {
         noRekening: data.noRekening,
         pemilikRekening: data.pemilikRekening,
         jalan: data.jalan,
-        idProvinsi: data.idProvinsi,
-        idKota: data.idKabupatenKota,
-        idKecamatan: data.idKecamatan,
-        idKelurahan: data.idDesaKelurahan,
+        ...wilayahUpdates,
       }
 
       if (Object.values(profileData).some(value => value !== undefined)) {
@@ -215,12 +219,29 @@ export const PenggunaService = {
             .from(userProfile)
             .where(eq(userProfile.idUser, penggunaId))
 
-          await validateProfileWilayah(tx, {
-            idProvinsi: data.idProvinsi ?? currentWilayah?.idProvinsi ?? null,
-            idKota: data.idKabupatenKota ?? currentWilayah?.idKota ?? null,
-            idKecamatan: data.idKecamatan ?? currentWilayah?.idKecamatan ?? null,
-            idKelurahan: data.idDesaKelurahan ?? currentWilayah?.idKelurahan ?? null,
-          })
+          const nextWilayah: ProfileWilayah = {
+            idProvinsi: currentWilayah?.idProvinsi ?? null,
+            idKota: currentWilayah?.idKota ?? null,
+            idKecamatan: currentWilayah?.idKecamatan ?? null,
+            idKelurahan: currentWilayah?.idKelurahan ?? null,
+          }
+          const fields = ['idProvinsi', 'idKota', 'idKecamatan', 'idKelurahan'] as const
+          let ancestorChanged = false
+
+          for (const field of fields) {
+            const value = wilayahUpdates[field]
+            if (value !== undefined) {
+              ancestorChanged ||= value !== nextWilayah[field]
+              nextWilayah[field] = value
+            }
+            else if (ancestorChanged) {
+              wilayahUpdates[field] = null
+              nextWilayah[field] = null
+            }
+          }
+
+          await validateProfileWilayah(tx, nextWilayah)
+          Object.assign(profileData, wilayahUpdates)
         }
 
         if (typeof data.nik === 'string') {
