@@ -1,5 +1,5 @@
 import type { FilesModel } from './model'
-import { and, eq, inArray, lte, sql } from 'drizzle-orm'
+import { and, eq, inArray, lte, or, sql } from 'drizzle-orm'
 import { db } from '#/database'
 import { files } from '#/database/schema/files'
 import { deleteFiles, generatePresignedUrl } from '#/utils/file'
@@ -66,7 +66,10 @@ export const FilesService = {
           publicId: files.publicId,
         })
         .from(files)
-        .where(and(eq(files.status, 'pending'), lte(files.createdAt, cutoff)))
+        .where(or(
+          eq(files.status, 'pending_delete'),
+          and(eq(files.status, 'pending'), lte(files.createdAt, cutoff)),
+        ))
         .for('update')
 
       if (pendingFiles.length === 0) {
