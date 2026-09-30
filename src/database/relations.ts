@@ -6,6 +6,7 @@ import * as jurnalSchema from './schema/jurnal'
 import * as kelompokSchema from './schema/kelompok'
 import * as masterSchema from './schema/master'
 import * as simpananSchema from './schema/simpanan'
+import * as transactionSchema from './schema/transaction'
 import * as usersSchema from './schema/users'
 import * as wilayahSchema from './schema/wilayah'
 
@@ -17,6 +18,7 @@ export const relations = defineRelations({
   ...kelompokSchema,
   ...masterSchema,
   ...simpananSchema,
+  ...transactionSchema,
   ...usersSchema,
   ...wilayahSchema,
 }, r => ({

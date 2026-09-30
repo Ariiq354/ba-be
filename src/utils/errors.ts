@@ -64,6 +64,20 @@ export const ErrorSchema = t.Object({
   message: t.String(),
 })
 
+export const UnauthorizedSchema = t.Literal('Unauthorized')
+export const ForbiddenSchema = t.Literal('Forbidden')
+
+export const ValidationErrorSchema = t.Object({
+  type: t.Literal('validation'),
+  on: t.String(),
+  property: t.Optional(t.String()),
+  message: t.Optional(t.String()),
+  summary: t.Optional(t.String()),
+  expected: t.Optional(t.Unknown()),
+  found: t.Optional(t.Unknown()),
+  errors: t.Optional(t.Array(t.Unknown())),
+})
+
 export const SuccessSchema = t.Object({
   message: t.String(),
 })

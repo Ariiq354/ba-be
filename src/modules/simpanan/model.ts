@@ -1,18 +1,13 @@
 import type { UnwrapSchema } from 'elysia'
 import { t } from 'elysia'
-import { AkunId } from '#/utils/akunId'
 import { searchSchema } from '#/utils/schema'
+import { PAYMENT_ACCOUNT_IDS } from './constants'
 
 const postgresIntegerMax = 2_147_483_647
 const databaseIdSchema = t.Integer({ minimum: 1, maximum: postgresIntegerMax })
 const positiveIntegerSchema = t.Integer({ minimum: 1, maximum: postgresIntegerMax })
 
-const paymentAccountSchema = t.Union([
-  t.Literal(AkunId.KAS),
-  t.Literal(AkunId.BANKMUAMALAT),
-  t.Literal(AkunId.BANKBSM),
-  t.Literal(AkunId.BANKBCA),
-])
+const paymentAccountSchema = t.UnionEnum(PAYMENT_ACCOUNT_IDS)
 
 const nullableDescriptionSchema = t.Optional(t.Nullable(t.String()))
 
