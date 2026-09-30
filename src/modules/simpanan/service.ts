@@ -10,7 +10,8 @@ import { mutasiSimpanan, saldoSimpanan } from '#/database/schema/simpanan'
 import { userProfile } from '#/database/schema/users'
 import { AkunId } from '#/utils/akunId'
 import { calculateSahamAmounts, HARGA_NOMINAL_SAHAM } from '#/utils/saham'
-import { getJakartaDate, getNextTransactionCode } from '#/utils/transaction'
+import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/utils/transaction'
+import { PAYMENT_ACCOUNT_IDS } from './constants'
 import {
   AmountOverflowError,
   HargaSahamNotFoundError,
@@ -24,12 +25,18 @@ import {
   NotMemberError,
 } from './errors'
 
-const PAYMENT_ACCOUNT_IDS = [
-  AkunId.KAS,
-  AkunId.BANKMUAMALAT,
-  AkunId.BANKBSM,
-  AkunId.BANKBCA,
-] as const
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+async function assertMember(connection: typeof db | Transaction, userId: number) {
+  const [profile] = await connection
+    .select({ noAnggota: userProfile.noAnggota })
+    .from(userProfile)
+    .where(eq(userProfile.idUser, userId))
+
+  if (!profile?.noAnggota?.trim()) {
+    throw new NotMemberError({ userId })
+  }
+}
 
 const member = alias(user, 'member')
 const creator = alias(user, 'creator')
@@ -122,14 +129,7 @@ export const SimpananService = {
     query: SimpananModel['getMutasiQuerySchema'],
   ) {
     if (!isAdmin) {
-      const [profile] = await db
-        .select({ noAnggota: userProfile.noAnggota })
-        .from(userProfile)
-        .where(eq(userProfile.idUser, userId))
-
-      if (!profile?.noAnggota?.trim()) {
-        throw new NotMemberError({ userId })
-      }
+      await assertMember(db, userId)
     }
 
     const conditions = []
@@ -216,14 +216,7 @@ export const SimpananService = {
     await db.transaction(async (tx) => {
       assertPaymentAccount(data.akunId)
 
-      const [profile] = await tx
-        .select({ noAnggota: userProfile.noAnggota })
-        .from(userProfile)
-        .where(eq(userProfile.idUser, userId))
-
-      if (!profile?.noAnggota?.trim()) {
-        throw new NotMemberError({ userId })
-      }
+      await assertMember(tx, userId)
 
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
       await tx
@@ -277,24 +270,7 @@ export const SimpananService = {
       }
 
       const tanggalTransaksi = getJakartaDate()
-      const dateSegment = tanggalTransaksi.replaceAll('-', '')
-      const prefix = `STR-${dateSegment}-`
-      const lockKey = `simpanan-code:${dateSegment}`
-
-      await tx.execute(sql`
-            select pg_advisory_xact_lock(
-              hashtextextended(${lockKey}, 0)
-            )
-          `)
-
-      const existingCodes = await tx
-        .select({ kodeTransaksi: mutasiSimpanan.kodeTransaksi })
-        .from(mutasiSimpanan)
-        .where(sql`left(${mutasiSimpanan.kodeTransaksi}, ${prefix.length}) = ${prefix}`)
-      const kodeTransaksi = getNextTransactionCode(
-        prefix,
-        existingCodes.map(item => item.kodeTransaksi),
-      )
+      const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
 
       await tx.insert(mutasiSimpanan).values({
         kodeTransaksi,
@@ -311,7 +287,7 @@ export const SimpananService = {
         jumlahSahamSetelahTransaksi: null,
         tanggalTransaksi,
         statusApproved: 'pending',
-        keterangan: data.keterangan ?? null,
+        keterangan: data.keterangan?.trim() || null,
         createdBy: userId,
       })
     })
@@ -325,14 +301,7 @@ export const SimpananService = {
       assertPaymentAccount(data.akunId)
       const nilaiTransaksi = assertInputInteger(data.nilaiTransaksi)
 
-      const [profile] = await tx
-        .select({ noAnggota: userProfile.noAnggota })
-        .from(userProfile)
-        .where(eq(userProfile.idUser, userId))
-
-      if (!profile?.noAnggota?.trim()) {
-        throw new NotMemberError({ userId })
-      }
+      await assertMember(tx, userId)
 
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
       const [balance] = await tx
@@ -371,24 +340,7 @@ export const SimpananService = {
       }
 
       const tanggalTransaksi = getJakartaDate()
-      const dateSegment = tanggalTransaksi.replaceAll('-', '')
-      const prefix = `STR-${dateSegment}-`
-      const lockKey = `simpanan-code:${dateSegment}`
-
-      await tx.execute(sql`
-            select pg_advisory_xact_lock(
-              hashtextextended(${lockKey}, 0)
-            )
-          `)
-
-      const existingCodes = await tx
-        .select({ kodeTransaksi: mutasiSimpanan.kodeTransaksi })
-        .from(mutasiSimpanan)
-        .where(sql`left(${mutasiSimpanan.kodeTransaksi}, ${prefix.length}) = ${prefix}`)
-      const kodeTransaksi = getNextTransactionCode(
-        prefix,
-        existingCodes.map(item => item.kodeTransaksi),
-      )
+      const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
 
       await tx.insert(mutasiSimpanan).values({
         kodeTransaksi,
@@ -415,29 +367,33 @@ export const SimpananService = {
     userId: number,
     ids: number[],
   ) {
-    const [profile] = await db
-      .select({ noAnggota: userProfile.noAnggota })
-      .from(userProfile)
-      .where(eq(userProfile.idUser, userId))
+    await db.transaction(async (tx) => {
+      await assertMember(tx, userId)
 
-    if (!profile?.noAnggota?.trim()) {
-      throw new NotMemberError({ userId })
-    }
+      const deleted = await tx
+        .delete(mutasiSimpanan)
+        .where(
+          and(
+            inArray(mutasiSimpanan.id, ids),
+            eq(mutasiSimpanan.userId, userId),
+            eq(mutasiSimpanan.statusApproved, 'pending'),
+          ),
+        )
+        .returning({
+          id: mutasiSimpanan.id,
+          kodeTransaksi: mutasiSimpanan.kodeTransaksi,
+          tanggalTransaksi: mutasiSimpanan.tanggalTransaksi,
+        })
 
-    const deleted = await db
-      .delete(mutasiSimpanan)
-      .where(
-        and(
-          inArray(mutasiSimpanan.id, ids),
-          eq(mutasiSimpanan.userId, userId),
-          eq(mutasiSimpanan.statusApproved, 'pending'),
-        ),
-      )
-      .returning({ id: mutasiSimpanan.id })
+      const deletedIds = new Set(deleted.map(item => item.id))
+      const invalidIds = ids.filter(id => !deletedIds.has(id))
 
-    if (deleted.length === 0) {
-      throw new MutasiSimpananNotDeletedError({ ids })
-    }
+      if (deleted.length === 0 || invalidIds.length > 0) {
+        throw new MutasiSimpananNotDeletedError({ ids: invalidIds })
+      }
+
+      await retainTransactionCodes(tx, 'simpanan', deleted)
+    })
   },
 
   async approveMutasi(
@@ -529,24 +485,7 @@ export const SimpananService = {
       }
 
       const tanggalJurnal = target.tanggalTransaksi
-      const dateSegment = tanggalJurnal.replaceAll('-', '')
-      const jurnalPrefix = `TRX-${dateSegment}-`
-      const jurnalLockKey = `jurnal-code:${dateSegment}`
-
-      await tx.execute(sql`
-            select pg_advisory_xact_lock(
-              hashtextextended(${jurnalLockKey}, 0)
-            )
-          `)
-
-      const existingJournalCodes = await tx
-        .select({ kodeTransaksi: jurnal.kodeTransaksi })
-        .from(jurnal)
-        .where(sql`left(${jurnal.kodeTransaksi}, ${jurnalPrefix.length}) = ${jurnalPrefix}`)
-      const kodeJurnal = getNextTransactionCode(
-        jurnalPrefix,
-        existingJournalCodes.map(item => item.kodeTransaksi),
-      )
+      const kodeJurnal = await allocateTransactionCode(tx, 'jurnal', tanggalJurnal)
 
       const requiredAccountIds = target.jenisSimpanan === 'tabungan'
         ? [target.akunId, AkunId.SIMPANANBERJANGKA]

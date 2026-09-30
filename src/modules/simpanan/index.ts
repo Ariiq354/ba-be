@@ -1,5 +1,5 @@
 import Elysia, { status } from 'elysia'
-import { ErrorSchema, SuccessSchema } from '#/utils/errors'
+import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { simpananModel } from './model'
 import { SimpananService } from './service'
@@ -14,6 +14,7 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: simpananModel.getSaldoResponseSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
       },
     },
   )
@@ -26,6 +27,8 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: simpananModel.getMutasiResponseSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
+        422: ValidationErrorSchema,
       },
     },
   )
@@ -41,7 +44,9 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         201: SuccessSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
         404: ErrorSchema,
+        422: ValidationErrorSchema,
       },
     },
   )
@@ -57,6 +62,8 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         201: SuccessSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
+        422: ValidationErrorSchema,
       },
     },
   )
@@ -72,7 +79,9 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: SuccessSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
         404: ErrorSchema,
+        422: ValidationErrorSchema,
       },
     },
   )
@@ -88,8 +97,11 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: SuccessSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
+        403: ForbiddenSchema,
         404: ErrorSchema,
         409: ErrorSchema,
+        422: ValidationErrorSchema,
       },
     },
   )
@@ -106,8 +118,11 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
       response: {
         200: SuccessSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
+        403: ForbiddenSchema,
         404: ErrorSchema,
         409: ErrorSchema,
+        422: ValidationErrorSchema,
       },
     },
   )

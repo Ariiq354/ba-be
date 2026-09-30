@@ -1,11 +1,11 @@
 import type { JurnalModel } from './model'
-import { asc, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
+import { asc, desc, eq, ilike, inArray } from 'drizzle-orm'
 import { db } from '#/database'
 import { akun } from '#/database/schema/akun'
 import { user } from '#/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/database/schema/jurnal'
 import { mutasiSimpanan } from '#/database/schema/simpanan'
-import { getNextTransactionCode } from '#/utils/transaction'
+import { allocateTransactionCode, retainTransactionCodes } from '#/utils/transaction'
 import {
   AkunNotFoundError,
   AutoJurnalsImmutableError,
@@ -207,23 +207,7 @@ export const JurnalService = {
         throw new InactiveAkunError({ ids: inactiveAkunIds })
       }
 
-      const dateCode = data.tanggalTransaksi.replaceAll('-', '')
-      const codePrefix = `TRX-${dateCode}-`
-      await tx.execute(sql`
-            select pg_advisory_xact_lock(
-              hashtextextended(${`jurnal-code:${dateCode}`}, 0)
-            )
-          `)
-
-      const existingCodes = await tx
-        .select({ kodeTransaksi: jurnal.kodeTransaksi })
-        .from(jurnal)
-        .where(ilike(jurnal.kodeTransaksi, `${codePrefix}%`))
-
-      const kodeTransaksi = getNextTransactionCode(
-        codePrefix,
-        existingCodes.map(item => item.kodeTransaksi),
-      )
+      const kodeTransaksi = await allocateTransactionCode(tx, 'jurnal', data.tanggalTransaksi)
       const [header] = await tx
         .insert(jurnal)
         .values({
@@ -258,7 +242,11 @@ export const JurnalService = {
 
     await db.transaction(async (tx) => {
       const existing = await tx
-        .select({ id: jurnal.id })
+        .select({
+          id: jurnal.id,
+          kodeTransaksi: jurnal.kodeTransaksi,
+          tanggalTransaksi: jurnal.tanggalTransaksi,
+        })
         .from(jurnal)
         .where(inArray(jurnal.id, uniqueIds))
         .for('update')
@@ -280,6 +268,7 @@ export const JurnalService = {
         throw new AutoJurnalsImmutableError({ ids: protectedIds })
       }
 
+      await retainTransactionCodes(tx, 'jurnal', existing)
       await tx.delete(jurnal).where(inArray(jurnal.id, uniqueIds))
     })
   },
