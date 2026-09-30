@@ -3,6 +3,16 @@ import { t } from 'elysia'
 import { paginationSchema, searchSchema } from '#/utils/schema'
 
 export const penggunaModel = {
+  getPenggunaOptionsResponseSchema: t.Object({
+    data: t.Array(t.Object({
+      id: t.Integer(),
+      name: t.String(),
+      noAnggota: t.Nullable(t.String()),
+      idKelompok: t.Integer(),
+      namaKelompok: t.String(),
+    })),
+  }),
+
   getProfileResponseSchema: t.Object({
     id: t.Integer(),
     name: t.String(),

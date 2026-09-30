@@ -1,5 +1,5 @@
 import Elysia, { status } from 'elysia'
-import { ErrorSchema, SuccessSchema } from '#/utils/errors'
+import { ErrorSchema, SuccessSchema, UnauthorizedSchema } from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { idParamsSchema } from '#/utils/schema'
 import { penggunaModel } from './model'
@@ -7,6 +7,21 @@ import { PenggunaService } from './service'
 
 export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'] })
   .use(AuthMacro)
+  .get(
+    '/options',
+    ({ user }) => PenggunaService.getPenggunaOptions(user.id),
+    {
+      auth: true,
+      response: {
+        200: penggunaModel.getPenggunaOptionsResponseSchema,
+        401: UnauthorizedSchema,
+        404: ErrorSchema,
+      },
+      detail: {
+        description: 'Admin melihat semua pengguna; PJ melihat pengguna dalam kelompok yang ditanggung dan dirinya sendiri; pengguna biasa hanya dirinya sendiri.',
+      },
+    },
+  )
   .get(
     '/profile',
     ({ user }) => PenggunaService.getProfile(user.id),

@@ -1,5 +1,5 @@
 import type { SimpananModel } from './model'
-import { and, desc, eq, ilike, inArray, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '#/database'
 import { akun } from '#/database/schema/akun'
@@ -9,6 +9,7 @@ import { saham as hargaSaham } from '#/database/schema/master'
 import { mutasiSimpanan, saldoSimpanan } from '#/database/schema/simpanan'
 import { userProfile } from '#/database/schema/users'
 import { AkunId } from '#/utils/akunId'
+import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/utils/penggunaAccess'
 import { calculateSahamAmounts, HARGA_NOMINAL_SAHAM } from '#/utils/saham'
 import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/utils/transaction'
 import { PAYMENT_ACCOUNT_IDS } from './constants'
@@ -80,7 +81,23 @@ function assertPaymentAccount(akunId: number) {
 }
 
 export const SimpananService = {
-  async getSaldo(userId: number) {
+  async getPaymentAccountOptions() {
+    const data = await db
+      .select({
+        id: akun.id,
+        kodeAkun: akun.kodeAkun,
+        namaAkun: akun.namaAkun,
+      })
+      .from(akun)
+      .where(and(inArray(akun.id, PAYMENT_ACCOUNT_IDS), eq(akun.isActive, true)))
+      .orderBy(asc(akun.namaAkun), asc(akun.id))
+
+    return { data }
+  },
+
+  async getSaldo(actorId: number, userId = actorId) {
+    await assertPenggunaAccess(db, actorId, userId)
+
     const [result] = await db
       .select({
         noAnggota: userProfile.noAnggota,
@@ -124,23 +141,29 @@ export const SimpananService = {
   },
 
   async getMutasi(
-    userId: number,
-    isAdmin: boolean,
+    actorId: number,
     query: SimpananModel['getMutasiQuerySchema'],
   ) {
-    if (!isAdmin) {
-      await assertMember(db, userId)
+    const accessCondition = await getPenggunaAccessCondition(db, actorId)
+
+    if (accessCondition !== undefined) {
+      await assertMember(db, actorId)
     }
 
     const conditions = []
 
-    if (isAdmin) {
-      if (query.userId !== undefined) {
-        conditions.push(eq(mutasiSimpanan.userId, query.userId))
-      }
+    if (accessCondition !== undefined) {
+      const accessibleUsers = db
+        .select({ id: user.id })
+        .from(user)
+        .where(accessCondition)
+
+      conditions.push(inArray(mutasiSimpanan.userId, accessibleUsers))
     }
-    else {
-      conditions.push(eq(mutasiSimpanan.userId, userId))
+
+    if (query.userId !== undefined) {
+      await assertPenggunaAccess(db, actorId, query.userId)
+      conditions.push(eq(mutasiSimpanan.userId, query.userId))
     }
 
     if (query.status !== 'all') {
@@ -210,12 +233,15 @@ export const SimpananService = {
   },
 
   async createSetoran(
-    userId: number,
+    actorId: number,
     data: SimpananModel['createSetoranSchema'],
   ) {
+    const userId = data.userId ?? actorId
+
     await db.transaction(async (tx) => {
       assertPaymentAccount(data.akunId)
 
+      await assertPenggunaAccess(tx, actorId, userId)
       await assertMember(tx, userId)
 
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
@@ -288,19 +314,22 @@ export const SimpananService = {
         tanggalTransaksi,
         statusApproved: 'pending',
         keterangan: data.keterangan?.trim() || null,
-        createdBy: userId,
+        createdBy: actorId,
       })
     })
   },
 
   async createPenarikan(
-    userId: number,
+    actorId: number,
     data: SimpananModel['createPenarikanSchema'],
   ) {
+    const userId = data.userId ?? actorId
+
     await db.transaction(async (tx) => {
       assertPaymentAccount(data.akunId)
       const nilaiTransaksi = assertInputInteger(data.nilaiTransaksi)
 
+      await assertPenggunaAccess(tx, actorId, userId)
       await assertMember(tx, userId)
 
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
@@ -358,24 +387,32 @@ export const SimpananService = {
         tanggalTransaksi,
         statusApproved: 'pending',
         keterangan: data.keterangan?.trim() || null,
-        createdBy: userId,
+        createdBy: actorId,
       })
     })
   },
 
   async deleteMutasi(
-    userId: number,
+    actorId: number,
     ids: number[],
   ) {
     await db.transaction(async (tx) => {
-      await assertMember(tx, userId)
+      const accessCondition = await getPenggunaAccessCondition(tx, actorId)
+      const accessibleUsers = tx
+        .select({ id: user.id })
+        .from(user)
+        .where(accessCondition)
 
       const deleted = await tx
         .delete(mutasiSimpanan)
         .where(
           and(
             inArray(mutasiSimpanan.id, ids),
-            eq(mutasiSimpanan.userId, userId),
+            or(
+              eq(mutasiSimpanan.userId, actorId),
+              eq(mutasiSimpanan.createdBy, actorId),
+            ),
+            inArray(mutasiSimpanan.userId, accessibleUsers),
             eq(mutasiSimpanan.statusApproved, 'pending'),
           ),
         )
