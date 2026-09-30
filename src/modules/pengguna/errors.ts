@@ -85,6 +85,16 @@ export class InvalidProfileImageError extends AppError {
   }
 }
 
+export class InvalidProfileWilayahError extends AppError {
+  constructor() {
+    super({
+      code: 'INVALID_PROFILE_WILAYAH_ERROR',
+      message: 'Wilayah alamat tidak ditemukan atau tidak sesuai hierarki',
+      status: 400,
+    })
+  }
+}
+
 export class KelompokNotFoundError extends AppError {
   readonly idKelompok: number
 

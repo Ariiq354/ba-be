@@ -1,8 +1,8 @@
 import { t } from 'elysia'
 
 export const paginationSchema = t.Object({
-  page: t.Integer({ default: 1 }),
-  limit: t.Integer({ default: 10 }),
+  page: t.Integer({ default: 1, minimum: 1 }),
+  limit: t.Integer({ default: 10, minimum: 1 }),
 })
 
 export const searchSchema = t.Object({

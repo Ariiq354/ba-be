@@ -31,9 +31,18 @@ export const penggunaModel = {
     noRekening: t.Optional(t.String({ minLength: 1 })),
     pemilikRekening: t.Optional(t.String({ minLength: 1 })),
     jalan: t.Optional(t.String({ minLength: 1 })),
-    idProvinsi: t.Optional(t.String({ minLength: 1 })),
-    idKabupatenKota: t.Optional(t.String({ minLength: 1 })),
-    idKecamatan: t.Optional(t.String({ minLength: 1 })),
+    idProvinsi: t.Optional(t.String({
+      minLength: 1,
+      description: 'Jika berubah, kabupaten/kota, kecamatan, dan desa/kelurahan yang tidak dikirim akan dikosongkan.',
+    })),
+    idKabupatenKota: t.Optional(t.String({
+      minLength: 1,
+      description: 'Jika berubah, kecamatan dan desa/kelurahan yang tidak dikirim akan dikosongkan.',
+    })),
+    idKecamatan: t.Optional(t.String({
+      minLength: 1,
+      description: 'Jika berubah, desa/kelurahan yang tidak dikirim akan dikosongkan.',
+    })),
     idDesaKelurahan: t.Optional(t.String({ minLength: 1 })),
   }),
 

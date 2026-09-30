@@ -5,13 +5,15 @@ import { user } from '#/database/schema/auth'
 import { files } from '#/database/schema/files'
 import { kelompok, kelompokPenanggungJawab } from '#/database/schema/kelompok'
 import { userProfile } from '#/database/schema/users'
+import { kecamatan, kelurahan, kota, provinsi } from '#/database/schema/wilayah'
 import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASON } from '#/utils/auth'
-import { ItemNotFoundError } from '#/utils/errors'
+import { ItemNotFoundError, logUnhandledError } from '#/utils/errors'
 import { deleteFiles } from '#/utils/file'
 import {
   AdminCannotBePjError,
   DuplicateNikError,
   InvalidProfileImageError,
+  InvalidProfileWilayahError,
   KelompokNotFoundError,
   PenggunaAlreadyVerifiedError,
   PenggunaBannedError,
@@ -21,6 +23,57 @@ import {
 } from './errors'
 
 type ProfileUpdate = PenggunaModel['updateProfileSchema']
+type ProfileWilayah = Pick<typeof userProfile.$inferSelect, 'idProvinsi' | 'idKota' | 'idKecamatan' | 'idKelurahan'>
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+async function validateProfileWilayah(tx: Transaction, wilayah: ProfileWilayah) {
+  let hierarchy: Partial<ProfileWilayah> | undefined
+
+  if (wilayah.idKelurahan) {
+    [hierarchy] = await tx
+      .select({
+        idProvinsi: kota.idProvinsi,
+        idKota: kecamatan.idKota,
+        idKecamatan: kelurahan.idKecamatan,
+        idKelurahan: kelurahan.id,
+      })
+      .from(kelurahan)
+      .innerJoin(kecamatan, eq(kecamatan.id, kelurahan.idKecamatan))
+      .innerJoin(kota, eq(kota.id, kecamatan.idKota))
+      .where(eq(kelurahan.id, wilayah.idKelurahan))
+  }
+  else if (wilayah.idKecamatan) {
+    [hierarchy] = await tx
+      .select({
+        idProvinsi: kota.idProvinsi,
+        idKota: kecamatan.idKota,
+        idKecamatan: kecamatan.id,
+      })
+      .from(kecamatan)
+      .innerJoin(kota, eq(kota.id, kecamatan.idKota))
+      .where(eq(kecamatan.id, wilayah.idKecamatan))
+  }
+  else if (wilayah.idKota) {
+    [hierarchy] = await tx
+      .select({ idProvinsi: kota.idProvinsi, idKota: kota.id })
+      .from(kota)
+      .where(eq(kota.id, wilayah.idKota))
+  }
+  else if (wilayah.idProvinsi) {
+    [hierarchy] = await tx
+      .select({ idProvinsi: provinsi.id })
+      .from(provinsi)
+      .where(eq(provinsi.id, wilayah.idProvinsi))
+  }
+  else {
+    return
+  }
+
+  const fields = ['idProvinsi', 'idKota', 'idKecamatan', 'idKelurahan'] as const
+  if (!hierarchy || fields.some(field => wilayah[field] !== null && wilayah[field] !== hierarchy[field])) {
+    throw new InvalidProfileWilayahError()
+  }
+}
 
 function getMembershipPeriod(date: Date) {
   const month = String(date.getUTCMonth() + 1).padStart(2, '0')
@@ -90,13 +143,13 @@ export const PenggunaService = {
 
       const penggunaData = {
         name: data.name,
-        image: undefined as string | undefined,
+        image: undefined as string | null | undefined,
       }
 
       let oldImageToDelete: string | null = null
 
       if (imageAction === 'remove') {
-        penggunaData.image = undefined
+        penggunaData.image = null
         oldImageToDelete = targetPengguna.image
       }
 
@@ -137,6 +190,13 @@ export const PenggunaService = {
         await tx.update(user).set(penggunaData).where(eq(user.id, penggunaId))
       }
 
+      const wilayahUpdates: Partial<ProfileWilayah> = {
+        idProvinsi: data.idProvinsi,
+        idKota: data.idKabupatenKota,
+        idKecamatan: data.idKecamatan,
+        idKelurahan: data.idDesaKelurahan,
+      }
+
       const profileData = {
         noHp: data.noHp,
         nik: data.nik,
@@ -144,13 +204,46 @@ export const PenggunaService = {
         noRekening: data.noRekening,
         pemilikRekening: data.pemilikRekening,
         jalan: data.jalan,
-        idProvinsi: data.idProvinsi,
-        idKota: data.idKabupatenKota,
-        idKecamatan: data.idKecamatan,
-        idKelurahan: data.idDesaKelurahan,
+        ...wilayahUpdates,
       }
 
       if (Object.values(profileData).some(value => value !== undefined)) {
+        if ([data.idProvinsi, data.idKabupatenKota, data.idKecamatan, data.idDesaKelurahan].some(value => value !== undefined)) {
+          const [currentWilayah] = await tx
+            .select({
+              idProvinsi: userProfile.idProvinsi,
+              idKota: userProfile.idKota,
+              idKecamatan: userProfile.idKecamatan,
+              idKelurahan: userProfile.idKelurahan,
+            })
+            .from(userProfile)
+            .where(eq(userProfile.idUser, penggunaId))
+
+          const nextWilayah: ProfileWilayah = {
+            idProvinsi: currentWilayah?.idProvinsi ?? null,
+            idKota: currentWilayah?.idKota ?? null,
+            idKecamatan: currentWilayah?.idKecamatan ?? null,
+            idKelurahan: currentWilayah?.idKelurahan ?? null,
+          }
+          const fields = ['idProvinsi', 'idKota', 'idKecamatan', 'idKelurahan'] as const
+          let ancestorChanged = false
+
+          for (const field of fields) {
+            const value = wilayahUpdates[field]
+            if (value !== undefined) {
+              ancestorChanged ||= value !== nextWilayah[field]
+              nextWilayah[field] = value
+            }
+            else if (ancestorChanged) {
+              wilayahUpdates[field] = null
+              nextWilayah[field] = null
+            }
+          }
+
+          await validateProfileWilayah(tx, nextWilayah)
+          Object.assign(profileData, wilayahUpdates)
+        }
+
         if (typeof data.nik === 'string') {
           await tx.execute(sql`
             select pg_advisory_xact_lock(
@@ -182,7 +275,10 @@ export const PenggunaService = {
       }
 
       if (oldImageToDelete) {
-        await tx.delete(files).where(eq(files.publicId, oldImageToDelete))
+        await tx
+          .update(files)
+          .set({ status: 'pending_delete' })
+          .where(eq(files.publicId, oldImageToDelete))
       }
 
       return {
@@ -191,7 +287,15 @@ export const PenggunaService = {
     })
 
     if (oldImageToDelete) {
-      await deleteFiles([oldImageToDelete])
+      try {
+        await deleteFiles([oldImageToDelete])
+        await db
+          .delete(files)
+          .where(and(eq(files.publicId, oldImageToDelete), eq(files.status, 'pending_delete')))
+      }
+      catch (error) {
+        logUnhandledError(error)
+      }
     }
   },
 
