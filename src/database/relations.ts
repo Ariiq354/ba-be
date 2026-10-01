@@ -39,9 +39,9 @@ export const relations = defineRelations({
       from: r.user.id,
       to: r.userProfile.idUser,
     }),
-    jurnal: r.many.jurnal({
+    jurnalDetails: r.many.jurnalDetail({
       from: r.user.id,
-      to: r.jurnal.userId,
+      to: r.jurnalDetail.userId,
     }),
     saldoSimpanan: r.one.saldoSimpanan({
       from: r.user.id,
@@ -157,13 +157,13 @@ export const relations = defineRelations({
     }),
   },
   jurnal: {
-    user: r.one.user({
-      from: r.jurnal.userId,
-      to: r.user.id,
-    }),
     mutasiSimpanan: r.one.mutasiSimpanan({
       from: r.jurnal.id,
       to: r.mutasiSimpanan.jurnalId,
+    }),
+    pemindahbukuan: r.one.pemindahbukuan({
+      from: r.jurnal.id,
+      to: r.pemindahbukuan.jurnalId,
     }),
     details: r.many.jurnalDetail({
       from: r.jurnal.id,
@@ -171,6 +171,10 @@ export const relations = defineRelations({
     }),
   },
   jurnalDetail: {
+    user: r.one.user({
+      from: r.jurnalDetail.userId,
+      to: r.user.id,
+    }),
     jurnal: r.one.jurnal({
       from: r.jurnalDetail.jurnalId,
       to: r.jurnal.id,
@@ -209,6 +213,10 @@ export const relations = defineRelations({
     }),
   },
   pemindahbukuan: {
+    jurnal: r.one.jurnal({
+      from: r.pemindahbukuan.jurnalId,
+      to: r.jurnal.id,
+    }),
     userSumber: r.one.user({
       from: r.pemindahbukuan.idUserSumber,
       to: r.user.id,

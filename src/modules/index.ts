@@ -5,6 +5,7 @@ import { KelompokModules } from './kelompok'
 import { MasterAkunModules } from './master-akun'
 import { MasterMarginModules } from './master-margin'
 import { MasterSahamModules } from './master-saham'
+import { PemindahbukuanModules } from './pemindahbukuan'
 import { PenggunaModules } from './pengguna'
 import { SimpananModules } from './simpanan'
 import { WilayahModules } from './wilayah'
@@ -17,5 +18,6 @@ export const Modules = new Elysia({ prefix: 'api/v1' })
   .use(MasterSahamModules)
   .use(KelompokModules)
   .use(PenggunaModules)
+  .use(PemindahbukuanModules)
   .use(SimpananModules)
   .use(WilayahModules)

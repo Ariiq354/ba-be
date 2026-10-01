@@ -9,6 +9,8 @@ const jurnalDetailResponseSchema = t.Object({
   akunId: t.Integer(),
   kodeAkun: t.String(),
   namaAkun: t.String(),
+  userId: t.Integer(),
+  userName: t.String(),
   debit: t.Integer(),
   kredit: t.Integer(),
 })
@@ -18,8 +20,6 @@ const jurnalHeaderResponseSchema = t.Object({
   kodeTransaksi: t.String(),
   tanggalTransaksi: t.String({ format: 'date' }),
   keterangan: t.Nullable(t.String()),
-  userId: t.Integer(),
-  userName: t.Nullable(t.String()),
   createdAt: t.String({ format: 'date-time' }),
 })
 

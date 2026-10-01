@@ -42,16 +42,6 @@ export class InvalidAccountError extends AppError {
   }
 }
 
-export class AmountOverflowError extends AppError {
-  constructor(message = 'Nilai transaksi melebihi batas yang diizinkan') {
-    super({
-      code: 'AMOUNT_OVERFLOW_ERROR',
-      message,
-      status: 400,
-    })
-  }
-}
-
 export class HargaSahamNotFoundError extends AppError {
   constructor() {
     super({

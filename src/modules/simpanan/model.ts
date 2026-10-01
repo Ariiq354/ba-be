@@ -67,7 +67,10 @@ export const simpananModel = {
     saldoTabungan: t.Integer(),
     jumlahSaham: t.Integer(),
     totalPenarikanPending: t.Integer(),
+    totalPemindahbukuanPending: t.Integer(),
+    totalSahamPending: t.Integer(),
     saldoEfektif: t.Integer(),
+    jumlahSahamEfektif: t.Integer(),
   }),
 
   getMutasiQuerySchema: t.Object({
