@@ -1,5 +1,5 @@
 import type { SimpananModel } from './model'
-import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db } from '#/database'
 import { akun } from '#/database/schema/akun'
@@ -9,12 +9,13 @@ import { saham as hargaSaham } from '#/database/schema/master'
 import { mutasiSimpanan, saldoSimpanan } from '#/database/schema/simpanan'
 import { userProfile } from '#/database/schema/users'
 import { AkunId } from '#/utils/akunId'
+import { assertInputInteger, toPostgresInteger } from '#/utils/amount'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/utils/penggunaAccess'
 import { calculateSahamAmounts, HARGA_NOMINAL_SAHAM } from '#/utils/saham'
+import { getPendingSimpanan } from '#/utils/simpananBalance'
 import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/utils/transaction'
 import { PAYMENT_ACCOUNT_IDS } from './constants'
 import {
-  AmountOverflowError,
   HargaSahamNotFoundError,
   InsufficientBalanceError,
   InvalidAccountError,
@@ -43,37 +44,6 @@ const member = alias(user, 'member')
 const creator = alias(user, 'creator')
 const approver = alias(user, 'approver')
 
-const POSTGRES_INTEGER_MIN = -2_147_483_648n
-const POSTGRES_INTEGER_MAX = 2_147_483_647n
-
-function assertInputInteger(value: number) {
-  if (
-    !Number.isSafeInteger(value)
-    || BigInt(value) < 0n
-    || BigInt(value) > POSTGRES_INTEGER_MAX
-  ) {
-    throw new AmountOverflowError()
-  }
-
-  return value
-}
-
-function toPostgresInteger(
-  value: number | bigint,
-  message = 'Nilai transaksi melebihi batas yang diizinkan',
-) {
-  if (typeof value === 'number' && !Number.isSafeInteger(value)) {
-    throw new AmountOverflowError(message)
-  }
-
-  const integer = BigInt(value)
-  if (integer < POSTGRES_INTEGER_MIN || integer > POSTGRES_INTEGER_MAX) {
-    throw new AmountOverflowError(message)
-  }
-
-  return Number(integer)
-}
-
 function assertPaymentAccount(akunId: number) {
   if (!(PAYMENT_ACCOUNT_IDS as readonly number[]).includes(akunId)) {
     throw new InvalidPaymentAccountError({ akunId })
@@ -96,48 +66,41 @@ export const SimpananService = {
   },
 
   async getSaldo(actorId: number, userId = actorId) {
-    await assertPenggunaAccess(db, actorId, userId)
+    // Read balances and reservations from the same snapshot during approvals.
+    return db.transaction(async (tx) => {
+      await assertPenggunaAccess(tx, actorId, userId)
 
-    const [result] = await db
-      .select({
-        noAnggota: userProfile.noAnggota,
-        saldoTabungan: saldoSimpanan.saldoTabungan,
-        jumlahSaham: saldoSimpanan.jumlahSaham,
-        totalPenarikanPending:
-              sql<string>`coalesce(sum(${mutasiSimpanan.nilaiTransaksi}), 0)::text`,
-      })
-      .from(userProfile)
-      .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, userProfile.idUser))
-      .leftJoin(
-        mutasiSimpanan,
-        and(
-          eq(mutasiSimpanan.userId, userProfile.idUser),
-          eq(mutasiSimpanan.jenisSimpanan, 'tabungan'),
-          eq(mutasiSimpanan.jenisTransaksi, 'penarikan'),
-          eq(mutasiSimpanan.statusApproved, 'pending'),
-        ),
-      )
-      .where(eq(userProfile.idUser, userId))
-      .groupBy(
-        userProfile.noAnggota,
-        saldoSimpanan.saldoTabungan,
-        saldoSimpanan.jumlahSaham,
-      )
+      const [result] = await tx
+        .select({
+          noAnggota: userProfile.noAnggota,
+          saldoTabungan: saldoSimpanan.saldoTabungan,
+          jumlahSaham: saldoSimpanan.jumlahSaham,
+        })
+        .from(userProfile)
+        .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, userProfile.idUser))
+        .where(eq(userProfile.idUser, userId))
 
-    if (!result?.noAnggota?.trim()) {
-      throw new NotMemberError({ userId })
-    }
+      if (!result?.noAnggota?.trim()) {
+        throw new NotMemberError({ userId })
+      }
 
-    const saldoTabungan = result.saldoTabungan ?? 0
-    const jumlahSaham = result.jumlahSaham ?? 0
-    const totalPenarikanPending = Number(BigInt(result.totalPenarikanPending))
+      const saldoTabungan = result.saldoTabungan ?? 0
+      const jumlahSaham = result.jumlahSaham ?? 0
+      const pending = await getPendingSimpanan(tx, userId)
+      const totalPenarikanPending = Number(pending.penarikan)
+      const totalPemindahbukuanPending = Number(pending.pemindahbukuanTabungan)
+      const totalSahamPending = Number(pending.pemindahbukuanSaham)
 
-    return {
-      saldoTabungan,
-      jumlahSaham,
-      totalPenarikanPending,
-      saldoEfektif: Math.max(0, saldoTabungan - totalPenarikanPending),
-    }
+      return {
+        saldoTabungan,
+        jumlahSaham,
+        totalPenarikanPending,
+        totalPemindahbukuanPending,
+        totalSahamPending,
+        saldoEfektif: Math.max(0, saldoTabungan - totalPenarikanPending - totalPemindahbukuanPending),
+        jumlahSahamEfektif: Math.max(0, jumlahSaham - totalSahamPending),
+      }
+    }, { isolationLevel: 'repeatable read' })
   },
 
   async getMutasi(
@@ -349,20 +312,9 @@ export const SimpananService = {
         throw new InvalidAccountError({ akunId: data.akunId })
       }
 
-      const [pending] = await tx
-        .select({
-          total: sql<string>`coalesce(sum(${mutasiSimpanan.nilaiTransaksi}), 0)::text`,
-        })
-        .from(mutasiSimpanan)
-        .where(
-          and(
-            eq(mutasiSimpanan.userId, userId),
-            eq(mutasiSimpanan.jenisSimpanan, 'tabungan'),
-            eq(mutasiSimpanan.jenisTransaksi, 'penarikan'),
-            eq(mutasiSimpanan.statusApproved, 'pending'),
-          ),
-        )
-      const available = BigInt(balance?.saldoTabungan ?? 0) - BigInt(pending?.total ?? '0')
+      const pending = await getPendingSimpanan(tx, userId)
+      const available = BigInt(balance?.saldoTabungan ?? 0)
+        - pending.penarikan - pending.pemindahbukuanTabungan
 
       if (available < BigInt(nilaiTransaksi)) {
         throw new InsufficientBalanceError()
@@ -469,22 +421,9 @@ export const SimpananService = {
         let nextSaldo: number
 
         if (target.jenisTransaksi === 'penarikan') {
-          const [otherPending] = await tx
-            .select({
-              total: sql<string>`coalesce(sum(${mutasiSimpanan.nilaiTransaksi}), 0)::text`,
-            })
-            .from(mutasiSimpanan)
-            .where(
-              and(
-                eq(mutasiSimpanan.userId, target.userId),
-                eq(mutasiSimpanan.jenisSimpanan, 'tabungan'),
-                eq(mutasiSimpanan.jenisTransaksi, 'penarikan'),
-                eq(mutasiSimpanan.statusApproved, 'pending'),
-                ne(mutasiSimpanan.id, target.id),
-              ),
-            )
+          const otherPending = await getPendingSimpanan(tx, target.userId, { mutasiId: target.id })
           const available = BigInt(balance?.saldoTabungan ?? 0)
-            - BigInt(otherPending?.total ?? '0')
+            - otherPending.penarikan - otherPending.pemindahbukuanTabungan
 
           if (available < BigInt(target.nilaiTransaksi)) {
             throw new InsufficientBalanceError()
@@ -555,7 +494,6 @@ export const SimpananService = {
         .values({
           kodeTransaksi: kodeJurnal,
           tanggalTransaksi: tanggalJurnal,
-          userId: target.userId,
           keterangan: target.keterangan,
         })
         .returning({ id: jurnal.id })
@@ -571,12 +509,14 @@ export const SimpananService = {
           {
             jurnalId: createdJournal.id,
             akunId: target.akunId,
+            userId: target.userId,
             debit: isSetoran ? target.nilaiTransaksi : 0,
             kredit: isSetoran ? 0 : target.nilaiTransaksi,
           },
           {
             jurnalId: createdJournal.id,
             akunId: AkunId.SIMPANANBERJANGKA,
+            userId: target.userId,
             debit: isSetoran ? 0 : target.nilaiTransaksi,
             kredit: isSetoran ? target.nilaiTransaksi : 0,
           },
@@ -596,12 +536,14 @@ export const SimpananService = {
           {
             jurnalId: createdJournal.id,
             akunId: target.akunId,
+            userId: target.userId,
             debit: target.nilaiTransaksi,
             kredit: 0,
           },
           {
             jurnalId: createdJournal.id,
             akunId: AkunId.SAHAM50,
+            userId: target.userId,
             debit: 0,
             kredit: nominalTotal,
           },
@@ -611,6 +553,7 @@ export const SimpananService = {
           details.push({
             jurnalId: createdJournal.id,
             akunId: AkunId.AGIOSAHAM,
+            userId: target.userId,
             debit: 0,
             kredit: target.agioSaham,
           })
@@ -619,6 +562,7 @@ export const SimpananService = {
           details.push({
             jurnalId: createdJournal.id,
             akunId: AkunId.AGIOSAHAM,
+            userId: target.userId,
             debit: target.agioSaham,
             kredit: 0,
           })

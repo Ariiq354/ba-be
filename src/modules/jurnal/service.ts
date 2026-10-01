@@ -4,7 +4,7 @@ import { db } from '#/database'
 import { akun } from '#/database/schema/akun'
 import { user } from '#/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/database/schema/jurnal'
-import { mutasiSimpanan } from '#/database/schema/simpanan'
+import { mutasiSimpanan, pemindahbukuan } from '#/database/schema/simpanan'
 import { allocateTransactionCode, retainTransactionCodes } from '#/utils/transaction'
 import {
   AkunNotFoundError,
@@ -22,8 +22,6 @@ const jurnalHeaderSelection = {
   kodeTransaksi: jurnal.kodeTransaksi,
   tanggalTransaksi: jurnal.tanggalTransaksi,
   keterangan: jurnal.keterangan,
-  userId: jurnal.userId,
-  userName: user.name,
   createdAt: jurnal.createdAt,
 }
 
@@ -33,6 +31,8 @@ const jurnalDetailSelection = {
   akunId: jurnalDetail.akunId,
   kodeAkun: akun.kodeAkun,
   namaAkun: akun.namaAkun,
+  userId: jurnalDetail.userId,
+  userName: user.name,
   debit: jurnalDetail.debit,
   kredit: jurnalDetail.kredit,
 }
@@ -104,7 +104,6 @@ export const JurnalService = {
       db
         .select(jurnalHeaderSelection)
         .from(jurnal)
-        .leftJoin(user, eq(user.id, jurnal.userId))
         .where(condition)
         .orderBy(desc(jurnal.tanggalTransaksi), desc(jurnal.id))
         .limit(query.limit)
@@ -119,6 +118,7 @@ export const JurnalService = {
       .select(jurnalDetailSelection)
       .from(jurnalDetail)
       .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
+      .innerJoin(user, eq(user.id, jurnalDetail.userId))
       .where(inArray(jurnalDetail.jurnalId, headers.map(header => header.id)))
       .orderBy(asc(jurnalDetail.id))
 
@@ -140,8 +140,8 @@ export const JurnalService = {
         kodeTransaksi: header.kodeTransaksi,
         tanggalTransaksi: header.tanggalTransaksi,
         keterangan: header.keterangan,
-        userId: header.userId,
-        userName: header.userName,
+        userId: detail.userId,
+        userName: detail.userName,
         akunId: detail.akunId,
         kodeAkun: detail.kodeAkun,
         namaAkun: detail.namaAkun,
@@ -158,7 +158,6 @@ export const JurnalService = {
     const [header] = await db
       .select(jurnalHeaderSelection)
       .from(jurnal)
-      .leftJoin(user, eq(user.id, jurnal.userId))
       .where(eq(jurnal.id, id))
 
     if (!header) {
@@ -169,6 +168,7 @@ export const JurnalService = {
       .select(jurnalDetailSelection)
       .from(jurnalDetail)
       .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
+      .innerJoin(user, eq(user.id, jurnalDetail.userId))
       .where(eq(jurnalDetail.jurnalId, id))
       .orderBy(asc(jurnalDetail.id))
 
@@ -214,7 +214,6 @@ export const JurnalService = {
           kodeTransaksi,
           tanggalTransaksi: data.tanggalTransaksi,
           keterangan: data.keterangan ?? null,
-          userId,
         })
         .returning({ id: jurnal.id })
 
@@ -226,6 +225,7 @@ export const JurnalService = {
         data.details.map(detail => ({
           jurnalId: header.id,
           akunId: detail.akunId,
+          userId,
           debit: detail.debit,
           kredit: detail.kredit,
         })),
@@ -262,7 +262,12 @@ export const JurnalService = {
         .from(mutasiSimpanan)
         .where(inArray(mutasiSimpanan.jurnalId, uniqueIds))
 
-      const referencedIds = new Set(references.map(reference => reference.jurnalId))
+      const transferReferences = await tx
+        .select({ jurnalId: pemindahbukuan.jurnalId })
+        .from(pemindahbukuan)
+        .where(inArray(pemindahbukuan.jurnalId, uniqueIds))
+
+      const referencedIds = new Set([...references, ...transferReferences].map(reference => reference.jurnalId))
       const protectedIds = uniqueIds.filter(id => referencedIds.has(id))
       if (protectedIds.length > 0) {
         throw new AutoJurnalsImmutableError({ ids: protectedIds })

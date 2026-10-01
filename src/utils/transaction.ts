@@ -1,11 +1,17 @@
 import type { db } from '#/database'
 import { eq, sql } from 'drizzle-orm'
 import { jurnal } from '#/database/schema/jurnal'
-import { mutasiSimpanan } from '#/database/schema/simpanan'
+import { mutasiSimpanan, pemindahbukuan } from '#/database/schema/simpanan'
 import { transactionCodeCounter } from '#/database/schema/transaction'
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type TransactionKind = 'simpanan' | 'jurnal'
+type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan'
+
+const transactionSources = {
+  simpanan: { prefix: 'STR', table: mutasiSimpanan },
+  jurnal: { prefix: 'TRX', table: jurnal },
+  pemindahbukuan: { prefix: 'PBK', table: pemindahbukuan },
+} as const
 
 export function getJakartaDate(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -39,7 +45,7 @@ async function getTransactionCodeCounter(
   retainedCodes: string[] = [],
 ) {
   const dateSegment = date.replaceAll('-', '')
-  const prefix = `${kind === 'simpanan' ? 'STR' : 'TRX'}-${dateSegment}-`
+  const prefix = `${transactionSources[kind].prefix}-${dateSegment}-`
   const lockKey = `${kind}-code:${dateSegment}`
 
   await tx.execute(sql`
@@ -68,7 +74,7 @@ async function getTransactionCodeCounter(
   }
 
   // Initialize from existing records when upgrading a database without counters.
-  const source = kind === 'simpanan' ? mutasiSimpanan : jurnal
+  const source = transactionSources[kind].table
   const existingCodes = await tx
     .select({ kodeTransaksi: source.kodeTransaksi })
     .from(source)
