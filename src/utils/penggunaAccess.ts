@@ -1,7 +1,6 @@
 import type { db } from '#/database'
-import { and, eq, exists, or } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 import { user } from '#/database/schema/auth'
-import { kelompokPenanggungJawab } from '#/database/schema/kelompok'
 import { ItemNotFoundError, PenggunaAccessDeniedError } from './errors'
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -23,17 +22,9 @@ export async function getPenggunaAccessCondition(connection: Connection, actorId
   }
 
   if (actor.role === 'pj') {
-    const assignment = connection
-      .select({ userId: kelompokPenanggungJawab.userId })
-      .from(kelompokPenanggungJawab)
-      .where(and(
-        eq(kelompokPenanggungJawab.userId, actorId),
-        eq(kelompokPenanggungJawab.kelompokId, actor.idKelompok),
-      ))
-
     return or(
       eq(user.id, actorId),
-      and(eq(user.idKelompok, actor.idKelompok), exists(assignment)),
+      eq(user.idKelompok, actor.idKelompok),
     )
   }
 

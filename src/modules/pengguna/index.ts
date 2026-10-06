@@ -17,9 +17,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
         401: UnauthorizedSchema,
         404: ErrorSchema,
       },
-      detail: {
-        description: 'Admin melihat semua pengguna; PJ melihat pengguna dalam kelompok yang ditanggung dan dirinya sendiri; pengguna biasa hanya dirinya sendiri.',
-      },
     },
   )
   .get(
@@ -71,23 +68,6 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
         200: penggunaModel.verifyPenggunaResponseSchema,
         404: ErrorSchema,
         409: ErrorSchema,
-      },
-    },
-  )
-  .patch(
-    '/:id/pj',
-    async ({ params, body }) => {
-      await PenggunaService.setPenggunaPj(params.id, body.isPj)
-      return status(200, { message: 'Success' })
-    },
-    {
-      admin: true,
-      params: idParamsSchema,
-      body: penggunaModel.setPjSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        404: ErrorSchema,
       },
     },
   )

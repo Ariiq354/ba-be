@@ -19,7 +19,7 @@ export const penggunaModel = {
     email: t.String(),
     image: t.Nullable(t.String()),
     noAnggota: t.Nullable(t.String()),
-    noHp: t.Nullable(t.String()),
+    noHp: t.String(),
     nik: t.Nullable(t.String()),
     namaBank: t.Nullable(t.String()),
     noRekening: t.Nullable(t.String()),
@@ -35,7 +35,7 @@ export const penggunaModel = {
     name: t.Optional(t.String({ minLength: 1 })),
     imageAction: t.Optional(t.UnionEnum(['keep', 'remove', 'update'])),
     image: t.Optional(t.String({ minLength: 1 })),
-    noHp: t.Optional(t.String({ minLength: 1 })),
+    noHp: t.String({ minLength: 1 }),
     nik: t.Optional(t.String({ minLength: 1 })),
     namaBank: t.Optional(t.String({ minLength: 1 })),
     noRekening: t.Optional(t.String({ minLength: 1 })),
@@ -80,10 +80,6 @@ export const penggunaModel = {
         createdAt: t.Date(),
       }),
     ),
-  }),
-
-  setPjSchema: t.Object({
-    isPj: t.Boolean(),
   }),
 
   verifyPenggunaResponseSchema: t.Object({

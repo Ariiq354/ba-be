@@ -3,7 +3,7 @@ import { and, asc, desc, eq, ilike, isNull, like, ne, or, sql } from 'drizzle-or
 import { db } from '#/database'
 import { user } from '#/database/schema/auth'
 import { files } from '#/database/schema/files'
-import { kelompok, kelompokPenanggungJawab } from '#/database/schema/kelompok'
+import { kelompok } from '#/database/schema/kelompok'
 import { userProfile } from '#/database/schema/users'
 import { kecamatan, kelurahan, kota, provinsi } from '#/database/schema/wilayah'
 import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASON } from '#/utils/auth'
@@ -11,15 +11,12 @@ import { ItemNotFoundError, logUnhandledError } from '#/utils/errors'
 import { deleteFiles } from '#/utils/file'
 import { getPenggunaAccessCondition } from '#/utils/penggunaAccess'
 import {
-  AdminCannotBePjError,
   DuplicateNikError,
   InvalidProfileImageError,
   InvalidProfileWilayahError,
   KelompokNotFoundError,
   PenggunaAlreadyVerifiedError,
-  PenggunaBannedError,
   PenggunaNotPendingVerificationError,
-  PenggunaUnverifiedError,
   ProfileImageRequiredError,
 } from './errors'
 
@@ -110,7 +107,7 @@ export const PenggunaService = {
         email: user.email,
         image: user.image,
         noAnggota: userProfile.noAnggota,
-        noHp: userProfile.noHp,
+        noHp: user.noHp,
         nik: userProfile.nik,
         namaBank: userProfile.namaBank,
         noRekening: userProfile.noRekening,
@@ -163,6 +160,7 @@ export const PenggunaService = {
 
       const penggunaData = {
         name: data.name,
+        noHp: data.noHp.trim(),
         image: undefined as string | null | undefined,
       }
 
@@ -218,7 +216,6 @@ export const PenggunaService = {
       }
 
       const profileData = {
-        noHp: data.noHp,
         nik: data.nik,
         namaBank: data.namaBank,
         noRekening: data.noRekening,
@@ -469,96 +466,6 @@ export const PenggunaService = {
 
       return {
         noAnggota,
-      }
-    })
-  },
-
-  async setPenggunaPj(
-    penggunaId: number,
-    isPj: boolean,
-  ) {
-    await db.transaction(async (tx) => {
-      const [targetPengguna] = await tx
-        .select({
-          role: user.role,
-          banned: user.banned,
-          banReason: user.banReason,
-          idKelompok: user.idKelompok,
-        })
-        .from(user)
-        .where(eq(user.id, penggunaId))
-        .for('update')
-
-      if (!targetPengguna) {
-        throw new ItemNotFoundError({
-          id: penggunaId,
-          message: 'Pengguna tidak ditemukan',
-        })
-      }
-
-      if (targetPengguna.role === 'admin') {
-        throw new AdminCannotBePjError({
-          penggunaId,
-        })
-      }
-
-      if (targetPengguna.banned) {
-        if (isPendingVerificationBanReason(targetPengguna.banReason)) {
-          throw new PenggunaUnverifiedError({
-            penggunaId,
-          })
-        }
-
-        throw new PenggunaBannedError({
-          penggunaId,
-        })
-      }
-
-      const [profile] = await tx
-        .select({
-          noAnggota: userProfile.noAnggota,
-        })
-        .from(userProfile)
-        .where(eq(userProfile.idUser, penggunaId))
-
-      if (!profile?.noAnggota) {
-        throw new PenggunaUnverifiedError({
-          penggunaId,
-        })
-      }
-
-      if (isPj) {
-        await tx
-          .update(user)
-          .set({
-            role: 'pj',
-          })
-          .where(eq(user.id, penggunaId))
-
-        await tx
-          .insert(kelompokPenanggungJawab)
-          .values({
-            kelompokId: targetPengguna.idKelompok,
-            userId: penggunaId,
-          })
-          .onConflictDoNothing()
-      }
-      else {
-        await tx
-          .update(user)
-          .set({
-            role: 'user',
-          })
-          .where(eq(user.id, penggunaId))
-
-        await tx
-          .delete(kelompokPenanggungJawab)
-          .where(
-            and(
-              eq(kelompokPenanggungJawab.kelompokId, targetPengguna.idKelompok),
-              eq(kelompokPenanggungJawab.userId, penggunaId),
-            ),
-          )
       }
     })
   },
