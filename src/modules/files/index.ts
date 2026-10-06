@@ -1,12 +1,11 @@
 import { cron } from '@elysia/cron'
 import Elysia, { status } from 'elysia'
-import { ErrorSchema, logUnhandledError } from '#/utils/errors'
-import { AuthMacro } from '#/utils/macro'
+import { auth } from '#/utils/auth'
+import { ErrorSchema, logUnhandledError, UnauthorizedSchema } from '#/utils/errors'
 import { filesModel } from './model'
 import { FilesService } from './service'
 
 export const FilesModules = new Elysia({ prefix: 'files', tags: ['Files'] })
-  .use(AuthMacro)
   .use(
     cron({
       name: 'cleanupPendingFiles',
@@ -30,11 +29,21 @@ export const FilesModules = new Elysia({ prefix: 'files', tags: ['Files'] })
     '/presigned',
     async ({ body }) => status(201, await FilesService.generatePresignedUpload(body)),
     {
-      auth: true,
       body: filesModel.presignedUploadSchema,
+      async beforeHandle({ body, request: { headers } }) {
+        if (body.dir === 'avatar') {
+          return
+        }
+
+        const session = await auth.api.getSession({ headers })
+        if (!session) {
+          return status(401, 'Unauthorized')
+        }
+      },
       response: {
         201: filesModel.presignedUploadResponseSchema,
         400: ErrorSchema,
+        401: UnauthorizedSchema,
       },
     },
   )

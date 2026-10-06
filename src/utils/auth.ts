@@ -1,10 +1,17 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import { betterAuth } from 'better-auth'
 import { admin as adminPlugins, openAPI, username } from 'better-auth/plugins'
+import { defaultRoles, userAc } from 'better-auth/plugins/admin/access'
 import { db } from '#/database'
 import { relations } from '#/database/relations'
 import * as schema from '#/database/schema/auth'
 import { FRONTEND_ORIGINS } from './config'
+
+const roles = {
+  ...defaultRoles,
+  pj: userAc,
+  wanhat: userAc,
+}
 
 export const PENDING_VERIFICATION_BAN_REASON = 'Pengguna belum terverifikasi'
 
@@ -48,11 +55,28 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
+      noHp: {
+        type: 'string',
+        input: true,
+        required: true,
+      },
       idKelompok: {
         type: 'number',
         input: true,
         required: true,
       },
+    },
+    validateUserInfo: async ({ source, user }) => {
+      if (
+        source.action === 'create-user'
+        && source.method === 'email-password'
+        && !user.image?.trim()
+      ) {
+        return {
+          error: 'AVATAR_REQUIRED',
+          errorDescription: 'Foto profil wajib diisi',
+        }
+      }
     },
   },
   advanced: {
@@ -66,7 +90,7 @@ export const auth = betterAuth({
       partitioned: true,
     },
   },
-  plugins: [openAPI(), username(), adminPlugins()],
+  plugins: [openAPI(), username(), adminPlugins({ roles })],
 })
 
 export type UserWithId = Omit<typeof auth.$Infer.Session.user, 'id'> & {

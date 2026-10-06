@@ -5,7 +5,6 @@ import { kecamatan, kelurahan, kota, provinsi } from './wilayah'
 export const userProfile = snakeCase.table('user_profile', {
   idUser: integer().primaryKey().references(() => user.id, { onDelete: 'cascade' }),
   noAnggota: text().unique(),
-  noHp: text(),
   nik: text().unique(),
   namaBank: text(),
   noRekening: text(),

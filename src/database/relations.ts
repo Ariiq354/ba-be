@@ -75,10 +75,6 @@ export const relations = defineRelations({
       from: r.user.id,
       to: r.pemindahbukuan.approvedBy,
     }),
-    kelompokPenanggungJawab: r.many.kelompokPenanggungJawab({
-      from: r.user.id,
-      to: r.kelompokPenanggungJawab.userId,
-    }),
     sahamUpdated: r.many.saham({
       from: r.user.id,
       to: r.saham.updatedBy,
@@ -122,20 +118,6 @@ export const relations = defineRelations({
     users: r.many.user({
       from: r.kelompok.id,
       to: r.user.idKelompok,
-    }),
-    penanggungJawab: r.many.kelompokPenanggungJawab({
-      from: r.kelompok.id,
-      to: r.kelompokPenanggungJawab.kelompokId,
-    }),
-  },
-  kelompokPenanggungJawab: {
-    kelompok: r.one.kelompok({
-      from: r.kelompokPenanggungJawab.kelompokId,
-      to: r.kelompok.id,
-    }),
-    user: r.one.user({
-      from: r.kelompokPenanggungJawab.userId,
-      to: r.user.id,
     }),
   },
   akun: {
