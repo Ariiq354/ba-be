@@ -161,15 +161,10 @@ export const PenggunaService = {
       const penggunaData = {
         name: data.name,
         noHp: data.noHp.trim(),
-        image: undefined as string | null | undefined,
+        image: undefined as string | undefined,
       }
 
       let oldImageToDelete: string | null = null
-
-      if (imageAction === 'remove') {
-        penggunaData.image = null
-        oldImageToDelete = targetPengguna.image
-      }
 
       if (imageAction === 'update') {
         const [pendingImage] = await tx
