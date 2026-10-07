@@ -15,7 +15,7 @@ export const saham = snakeCase.table('saham', {
 export const margin = snakeCase.table('margin', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   minNominal: integer().notNull(),
-  maxNominal: integer().notNull(),
+  maxNominal: integer(),
   persenMarginTahun: integer().notNull(),
   jaminan: jaminanEnum().notNull(),
   biayaAkad: integer().notNull(),
