@@ -68,6 +68,7 @@ export const penggunaModel = {
       t.Object({
         id: t.Integer(),
         name: t.String(),
+        image: t.Nullable(t.String()),
         username: t.Nullable(t.String()),
         email: t.String(),
         role: t.Nullable(t.String()),

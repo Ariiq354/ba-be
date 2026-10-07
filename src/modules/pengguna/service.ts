@@ -345,6 +345,7 @@ export const PenggunaService = {
       .select({
         id: user.id,
         name: user.name,
+        image: user.image,
         username: user.username,
         email: user.email,
         role: user.role,
