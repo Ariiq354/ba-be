@@ -17,7 +17,7 @@ export const penggunaModel = {
     id: t.Integer(),
     name: t.String(),
     email: t.String(),
-    image: t.Nullable(t.String()),
+    image: t.String(),
     noAnggota: t.Nullable(t.String()),
     noHp: t.String(),
     nik: t.Nullable(t.String()),
@@ -33,7 +33,7 @@ export const penggunaModel = {
 
   updateProfileSchema: t.Object({
     name: t.Optional(t.String({ minLength: 1 })),
-    imageAction: t.Optional(t.UnionEnum(['keep', 'remove', 'update'])),
+    imageAction: t.Optional(t.UnionEnum(['keep', 'update'])),
     image: t.Optional(t.String({ minLength: 1 })),
     noHp: t.String({ minLength: 1 }),
     nik: t.Optional(t.String({ minLength: 1 })),
@@ -68,6 +68,7 @@ export const penggunaModel = {
       t.Object({
         id: t.Integer(),
         name: t.String(),
+        image: t.String(),
         username: t.Nullable(t.String()),
         email: t.String(),
         role: t.Nullable(t.String()),

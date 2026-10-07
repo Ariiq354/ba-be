@@ -17,7 +17,7 @@ export const user = snakeCase.table('user', {
   email: text().notNull().unique(),
   emailVerified: boolean().notNull(),
   noHp: text().notNull(),
-  image: text(),
+  image: text().notNull(),
   role: text(),
   banned: boolean(),
   banReason: text(),
