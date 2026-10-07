@@ -343,6 +343,7 @@ export const PenggunaService = {
         image: user.image,
         username: user.username,
         email: user.email,
+        noHp: user.noHp,
         role: user.role,
         banned: user.banned,
         banReason: user.banReason,
