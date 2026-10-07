@@ -71,6 +71,7 @@ export const penggunaModel = {
         image: t.String(),
         username: t.Nullable(t.String()),
         email: t.String(),
+        noHp: t.String(),
         role: t.Nullable(t.String()),
         banned: t.Nullable(t.Boolean()),
         banReason: t.Nullable(t.String()),
