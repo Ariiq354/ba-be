@@ -1,11 +1,6 @@
 import { boolean, integer, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
-export const kategoriAkunEnum = pgEnum('kategori_akun', [
-  'aktiva',
-  'pasiva',
-  'pendapatan',
-  'biaya',
-])
+export const kategoriAkunEnum = pgEnum('kategori_akun', ['aktiva', 'pasiva', 'pendapatan', 'biaya'])
 
 export const normalBalanceEnum = pgEnum('normal_balance', ['debit', 'kredit'])
 

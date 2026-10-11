@@ -5,7 +5,8 @@
   "scripts": {
     "test": "bun test",
     "dev": "bun run --watch src/index.ts",
-    "lint": "eslint . --fix",
+    "lint": "oxlint . --fix",
+    "format": "oxfmt .",
     "check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
@@ -20,10 +21,10 @@
     "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.5.1",
-    "bun-types": "^1.4.2",
+    "bun-types": "^1.4.3",
     "drizzle-kit": "^1.0.0-rc.5-ab785fc",
-    "eslint": "^10.12.0",
-    "typescript": "6.0.3"
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
+    "typescript": "7.0.2"
   }
 }

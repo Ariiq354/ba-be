@@ -5,15 +5,11 @@ import { margin } from '#/database/schema/master'
 import { ItemNotFoundError, ItemsNotFoundError } from '#/utils/errors'
 
 export const MasterMarginService = {
-  async createMargin(
-    data: MasterMarginModel['createMarginSchema'],
-  ) {
+  async createMargin(data: MasterMarginModel['createMarginSchema']) {
     await db.insert(margin).values(data)
   },
 
-  async getPaginatedMargin(
-    query: MasterMarginModel['getMarginQuerySchema'],
-  ) {
+  async getPaginatedMargin(query: MasterMarginModel['getMarginQuerySchema']) {
     const marginQuery = db
       .select({
         id: margin.id,
@@ -31,7 +27,7 @@ export const MasterMarginService = {
     const offset = (query.page - 1) * query.limit
     const total = await db.$count(marginQuery)
     const rows = await marginQuery.limit(query.limit).offset(offset)
-    const data = rows.map(row => ({
+    const data = rows.map((row) => ({
       ...row,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -40,10 +36,7 @@ export const MasterMarginService = {
     return { total, data }
   },
 
-  async updateMargin(
-    id: number,
-    data: MasterMarginModel['updateMarginSchema'],
-  ) {
+  async updateMargin(id: number, data: MasterMarginModel['updateMarginSchema']) {
     const updatedRows = await db.update(margin).set(data).where(eq(margin.id, id)).returning()
 
     if (updatedRows.length === 0) {

@@ -6,14 +6,14 @@ Base URL: `/api/v1/jurnal`. Semua endpoint memerlukan admin.
 
 `jurnal_detail.user_id` wajib (NOT NULL), merujuk pengguna yang bersangkutan pada baris tersebut. Header jurnal menyimpan kode, tanggal, keterangan, dan waktu pembuatan.
 
-| Asal jurnal | Pengguna pada detail |
-| --- | --- |
+| Asal jurnal                | Pengguna pada detail                                               |
+| -------------------------- | ------------------------------------------------------------------ |
 | Setoran/penarikan tabungan | Semua baris kas/bank dan simpanan memakai anggota pemilik simpanan |
-| Setoran saham | Kas/bank, modal saham, dan agio memakai anggota pemilik saham |
-| Tabungan ke tabungan | Debit memakai sumber; kredit memakai tujuan |
-| Saham ke saham | Debit memakai sumber; kredit memakai tujuan |
-| Tabungan ke saham | Tabungan, modal saham, dan agio memakai anggota yang sama |
-| Jurnal manual | Semua detail memakai pengguna yang login |
+| Setoran saham              | Kas/bank, modal saham, dan agio memakai anggota pemilik saham      |
+| Tabungan ke tabungan       | Debit memakai sumber; kredit memakai tujuan                        |
+| Saham ke saham             | Debit memakai sumber; kredit memakai tujuan                        |
+| Tabungan ke saham          | Tabungan, modal saham, dan agio memakai anggota yang sama          |
+| Jurnal manual              | Semua detail memakai pengguna yang login                           |
 
 PJ/admin yang mengajukan simpanan untuk anggota lain tidak menjadi pemilik baris jurnal. Pembuat dan pemroses transaksi simpanan/pemindahbukuan tersedia melalui `createdBy` dan `approvedBy` pada transaksi terkait.
 

@@ -1,60 +1,56 @@
 import Elysia, { status } from 'elysia'
-import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/utils/errors'
+import {
+  ErrorSchema,
+  ForbiddenSchema,
+  SuccessSchema,
+  UnauthorizedSchema,
+  ValidationErrorSchema,
+} from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { simpananModel } from './model'
 import { SimpananService } from './service'
 
 export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'] })
   .use(AuthMacro)
-  .get(
-    '/akun-pembayaran/options',
-    () => SimpananService.getPaymentAccountOptions(),
-    {
-      auth: true,
-      response: {
-        200: simpananModel.getPaymentAccountOptionsResponseSchema,
-        401: UnauthorizedSchema,
-      },
-      detail: {
-        description: 'Pilihan akun kas/bank aktif yang dapat digunakan untuk setoran dan penarikan simpanan.',
-      },
+  .get('/akun-pembayaran/options', () => SimpananService.getPaymentAccountOptions(), {
+    auth: true,
+    response: {
+      200: simpananModel.getPaymentAccountOptionsResponseSchema,
+      401: UnauthorizedSchema,
     },
-  )
-  .get(
-    '/saldo',
-    ({ user, query }) => SimpananService.getSaldo(user.id, query.userId),
-    {
-      auth: true,
-      query: simpananModel.getSaldoQuerySchema,
-      response: {
-        200: simpananModel.getSaldoResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+    detail: {
+      description:
+        'Pilihan akun kas/bank aktif yang dapat digunakan untuk setoran dan penarikan simpanan.',
     },
-  )
-  .get(
-    '/mutasi',
-    ({ user, query }) => SimpananService.getMutasi(user.id, query),
-    {
-      auth: true,
-      query: simpananModel.getMutasiQuerySchema,
-      response: {
-        200: simpananModel.getMutasiResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
-      detail: {
-        description: 'Admin melihat semua mutasi; PJ melihat mutasi kelompok yang ditanggung dan dirinya sendiri; anggota biasa hanya miliknya. userId memfilter anggota dalam cakupan akses tersebut.',
-      },
+  })
+  .get('/saldo', ({ user, query }) => SimpananService.getSaldo(user.id, query.userId), {
+    auth: true,
+    query: simpananModel.getSaldoQuerySchema,
+    response: {
+      200: simpananModel.getSaldoResponseSchema,
+      400: ErrorSchema,
+      401: UnauthorizedSchema,
+      403: ErrorSchema,
+      404: ErrorSchema,
+      422: ValidationErrorSchema,
     },
-  )
+  })
+  .get('/mutasi', ({ user, query }) => SimpananService.getMutasi(user.id, query), {
+    auth: true,
+    query: simpananModel.getMutasiQuerySchema,
+    response: {
+      200: simpananModel.getMutasiResponseSchema,
+      400: ErrorSchema,
+      401: UnauthorizedSchema,
+      403: ErrorSchema,
+      404: ErrorSchema,
+      422: ValidationErrorSchema,
+    },
+    detail: {
+      description:
+        'Admin melihat semua mutasi; PJ melihat mutasi kelompok yang ditanggung dan dirinya sendiri; anggota biasa hanya miliknya. userId memfilter anggota dalam cakupan akses tersebut.',
+    },
+  })
   .post(
     '/mutasi/setoran',
     async ({ user, body }) => {
@@ -110,7 +106,8 @@ export const SimpananModules = new Elysia({ prefix: 'simpanan', tags: ['Simpanan
         422: ValidationErrorSchema,
       },
       detail: {
-        description: 'Membatalkan pengajuan pending milik sendiri atau yang dibuat sendiri untuk anggota yang masih berada dalam cakupan akses. Seluruh ID harus valid; jika satu gagal, seluruh penghapusan dibatalkan.',
+        description:
+          'Membatalkan pengajuan pending milik sendiri atau yang dibuat sendiri untuk anggota yang masih berada dalam cakupan akses. Seluruh ID harus valid; jika satu gagal, seluruh penghapusan dibatalkan.',
       },
     },
   )

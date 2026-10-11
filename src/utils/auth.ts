@@ -31,7 +31,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async user => ({
+        before: async (user) => ({
           data: {
             ...user,
             banned: true,
@@ -68,9 +68,9 @@ export const auth = betterAuth({
     },
     validateUserInfo: async ({ source, user }) => {
       if (
-        source.action === 'create-user'
-        && source.method === 'email-password'
-        && !user.image?.trim()
+        source.action === 'create-user' &&
+        source.method === 'email-password' &&
+        !user.image?.trim()
       ) {
         return {
           error: 'AVATAR_REQUIRED',

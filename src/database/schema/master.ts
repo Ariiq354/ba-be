@@ -8,7 +8,9 @@ export const saham = snakeCase.table('saham', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   hargaNominal: integer().notNull(),
   hargaJual: integer().notNull(),
-  updatedBy: integer().notNull().references(() => user.id),
+  updatedBy: integer()
+    .notNull()
+    .references(() => user.id),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 })
 

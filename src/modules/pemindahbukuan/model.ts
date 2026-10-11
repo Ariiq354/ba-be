@@ -6,11 +6,14 @@ const postgresIntegerMax = 2_147_483_647
 const databaseIdSchema = t.Integer({ minimum: 1, maximum: postgresIntegerMax })
 const positiveIntegerSchema = t.Integer({ minimum: 1, maximum: postgresIntegerMax })
 const transferProperties = {
-  idUserSumber: t.Optional(t.Integer({
-    minimum: 1,
-    maximum: postgresIntegerMax,
-    description: 'Anggota sumber. Jika tidak dikirim, menggunakan pengguna yang login. Admin atau PJ dapat mengajukan untuk anggota dalam cakupan aksesnya.',
-  })),
+  idUserSumber: t.Optional(
+    t.Integer({
+      minimum: 1,
+      maximum: postgresIntegerMax,
+      description:
+        'Anggota sumber. Jika tidak dikirim, menggunakan pengguna yang login. Admin atau PJ dapat mengajukan untuk anggota dalam cakupan aksesnya.',
+    }),
+  ),
   idUserTujuan: databaseIdSchema,
   keterangan: t.Optional(t.Nullable(t.String())),
 }
@@ -53,7 +56,10 @@ export const pemindahbukuanModel = {
     ...searchSchema.properties,
     userId: t.Optional(databaseIdSchema),
     status: t.UnionEnum(['all', 'pending', 'approved', 'rejected'], { default: 'all' }),
-    tipePemindahbukuan: t.UnionEnum(['all', 'saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham'], { default: 'all' }),
+    tipePemindahbukuan: t.UnionEnum(
+      ['all', 'saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham'],
+      { default: 'all' },
+    ),
   }),
 
   getPemindahbukuanResponseSchema: t.Object({
@@ -78,7 +84,8 @@ export const pemindahbukuanModel = {
       idUserTujuan: t.Integer({
         minimum: 1,
         maximum: postgresIntegerMax,
-        description: 'Harus sama dengan anggota sumber. Konversi tabungan ke saham hanya untuk anggota yang sama.',
+        description:
+          'Harus sama dengan anggota sumber. Konversi tabungan ke saham hanya untuk anggota yang sama.',
       }),
       jumlahSaham: positiveIntegerSchema,
     }),

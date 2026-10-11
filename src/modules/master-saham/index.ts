@@ -9,28 +9,20 @@ export const MasterSahamModules = new Elysia({
   tags: ['Master Saham'],
 })
   .use(AuthMacro)
-  .get(
-    '/',
-    async ({ query }) => MasterSahamService.getPaginatedHargaSaham(query),
-    {
-      admin: true,
-      query: masterSahamModel.getHargaSahamQuerySchema,
-      response: {
-        200: masterSahamModel.getHargaSahamResponseSchema,
-      },
+  .get('/', async ({ query }) => MasterSahamService.getPaginatedHargaSaham(query), {
+    admin: true,
+    query: masterSahamModel.getHargaSahamQuerySchema,
+    response: {
+      200: masterSahamModel.getHargaSahamResponseSchema,
     },
-  )
-  .get(
-    '/latest',
-    async () => MasterSahamService.getLatestHargaSaham(),
-    {
-      auth: true,
-      response: {
-        200: masterSahamModel.getLatestHargaSahamResponseSchema,
-        404: ErrorSchema,
-      },
+  })
+  .get('/latest', async () => MasterSahamService.getLatestHargaSaham(), {
+    auth: true,
+    response: {
+      200: masterSahamModel.getLatestHargaSahamResponseSchema,
+      404: ErrorSchema,
     },
-  )
+  })
   .post(
     '/',
     async ({ body, user }) => {

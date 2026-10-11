@@ -15,7 +15,7 @@ export const FilesModules = new Elysia({ prefix: 'files', tags: ['Files'] })
       async run() {
         await FilesService.cleanupPendingFiles()
           .then(({ deletedCount }) => {
-            // eslint-disable-next-line no-console
+            // oxlint-disable-next-line no-console
             console.info(`Cleanup file pending selesai: ${deletedCount} file dihapus`)
           })
           .catch((error) => {

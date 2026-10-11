@@ -18,6 +18,25 @@ bun run dev
 
 Open http://localhost:3000/ with your browser to see the result.
 
+## Code quality
+
+```bash
+bun run lint          # Check code with Oxlint
+bun run format        # Format with Oxfmt
+bun run check         # Type-check with TypeScript 7
+```
+
+Oxlint keeps the native rules supported from the previous Antfu ESLint preset.
+Unsupported plugin rules are omitted; formatting and import sorting are handled
+by Oxfmt. Native equivalents also cover supported `e18e` preferences such as
+`Object.hasOwn`, `Date.now`, array `some`, and regex `test`. Unused variables,
+console usage, and type-definition style are warnings.
+Explicit `any` and non-null assertions remain allowed, as in the previous preset.
+Type-aware linting is not enabled; `bun run check` handles type checking separately.
+
+Install the **Oxc** extension in VS Code or Zed for formatting and lint fixes on
+save. VS Code recommends the extension through `.vscode/extensions.json`.
+
 ## Database
 
 Set `DATABASE_URL`, then apply schema changes before starting the application:

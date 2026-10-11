@@ -29,7 +29,10 @@ export class InvalidPaymentAccountError extends AppError {
 export class InvalidAccountError extends AppError {
   readonly akunId: number
 
-  constructor({ akunId, message = 'Akun pembayaran tidak tersedia' }: {
+  constructor({
+    akunId,
+    message = 'Akun pembayaran tidak tersedia',
+  }: {
     akunId: number
     message?: string
   }) {

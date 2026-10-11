@@ -7,13 +7,10 @@ import { isUniqueViolation } from '#/utils/pgcode'
 import { DuplicateKodeAkunError } from './errors'
 
 export const MasterAkunService = {
-  async createAkun(
-    data: MasterAkunModel['createAkunSchema'],
-  ) {
+  async createAkun(data: MasterAkunModel['createAkunSchema']) {
     try {
       await db.insert(akun).values(data)
-    }
-    catch (error) {
+    } catch (error) {
       if (isUniqueViolation(error)) {
         throw new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
       }
@@ -21,9 +18,7 @@ export const MasterAkunService = {
     }
   },
 
-  async getPaginatedAkun(
-    query: MasterAkunModel['getAkunQuerySchema'],
-  ) {
+  async getPaginatedAkun(query: MasterAkunModel['getAkunQuerySchema']) {
     const conditions = []
 
     if (query.kategori && query.kategori !== 'all') {
@@ -32,9 +27,7 @@ export const MasterAkunService = {
 
     if (query.search) {
       const searchPattern = `%${query.search}%`
-      conditions.push(
-        or(ilike(akun.kodeAkun, searchPattern), ilike(akun.namaAkun, searchPattern)),
-      )
+      conditions.push(or(ilike(akun.kodeAkun, searchPattern), ilike(akun.namaAkun, searchPattern)))
     }
 
     const akunQuery = db
@@ -57,10 +50,7 @@ export const MasterAkunService = {
     return { total, data }
   },
 
-  async updateAkun(
-    id: number,
-    data: MasterAkunModel['updateAkunSchema'],
-  ) {
+  async updateAkun(id: number, data: MasterAkunModel['updateAkunSchema']) {
     if (!data.kodeAkun) {
       const updatedRows = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
 

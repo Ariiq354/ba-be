@@ -7,29 +7,21 @@ import { PenggunaService } from './service'
 
 export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'] })
   .use(AuthMacro)
-  .get(
-    '/options',
-    ({ user }) => PenggunaService.getPenggunaOptions(user.id),
-    {
-      auth: true,
-      response: {
-        200: penggunaModel.getPenggunaOptionsResponseSchema,
-        401: UnauthorizedSchema,
-        404: ErrorSchema,
-      },
+  .get('/options', ({ user }) => PenggunaService.getPenggunaOptions(user.id), {
+    auth: true,
+    response: {
+      200: penggunaModel.getPenggunaOptionsResponseSchema,
+      401: UnauthorizedSchema,
+      404: ErrorSchema,
     },
-  )
-  .get(
-    '/profile',
-    ({ user }) => PenggunaService.getProfile(user.id),
-    {
-      auth: true,
-      response: {
-        200: penggunaModel.getProfileResponseSchema,
-        404: ErrorSchema,
-      },
+  })
+  .get('/profile', ({ user }) => PenggunaService.getProfile(user.id), {
+    auth: true,
+    response: {
+      200: penggunaModel.getProfileResponseSchema,
+      404: ErrorSchema,
     },
-  )
+  })
   .patch(
     '/profile',
     async ({ user, body }) => {
@@ -47,27 +39,19 @@ export const PenggunaModules = new Elysia({ prefix: 'pengguna', tags: ['Pengguna
       },
     },
   )
-  .get(
-    '/',
-    ({ query }) => PenggunaService.getPaginatedPengguna(query),
-    {
-      admin: true,
-      query: penggunaModel.getPenggunaQuerySchema,
-      response: {
-        200: penggunaModel.getPenggunaResponseSchema,
-      },
+  .get('/', ({ query }) => PenggunaService.getPaginatedPengguna(query), {
+    admin: true,
+    query: penggunaModel.getPenggunaQuerySchema,
+    response: {
+      200: penggunaModel.getPenggunaResponseSchema,
     },
-  )
-  .patch(
-    '/:id/verifikasi',
-    ({ params }) => PenggunaService.verifyPengguna(params.id),
-    {
-      admin: true,
-      params: idParamsSchema,
-      response: {
-        200: penggunaModel.verifyPenggunaResponseSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-      },
+  })
+  .patch('/:id/verifikasi', ({ params }) => PenggunaService.verifyPengguna(params.id), {
+    admin: true,
+    params: idParamsSchema,
+    response: {
+      200: penggunaModel.verifyPenggunaResponseSchema,
+      404: ErrorSchema,
+      409: ErrorSchema,
     },
-  )
+  })

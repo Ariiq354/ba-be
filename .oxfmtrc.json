@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "printWidth": 100,
+  "sortImports": {
+    "internalPattern": ["#/"],
+    "newlinesBetween": false,
+    "groups": [
+      "type-import",
+      ["type-parent", "type-sibling", "type-index", "type-internal"],
+      "value-builtin",
+      "value-external",
+      "value-internal",
+      ["value-parent", "value-sibling", "value-index"],
+      "unknown"
+    ]
+  },
+  "ignorePatterns": [
+    "bun.lock",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/.agents/**",
+    "**/.claude/**",
+    "**/.context/**",
+    "**/.*/skills/**",
+    "**/CHANGELOG*.md",
+    "**/LICENSE*",
+    "**/*.min.*",
+    "**/__snapshots__/**",
+    "**/auto-import?(s).d.ts",
+    "**/components.d.ts"
+  ]
+}

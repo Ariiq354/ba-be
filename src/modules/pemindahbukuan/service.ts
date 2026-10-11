@@ -13,7 +13,11 @@ import { assertInputInteger, toPostgresInteger } from '#/utils/amount'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/utils/penggunaAccess'
 import { calculateSahamAmounts, HARGA_NOMINAL_SAHAM } from '#/utils/saham'
 import { getPendingSimpanan } from '#/utils/simpananBalance'
-import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/utils/transaction'
+import {
+  allocateTransactionCode,
+  getJakartaDate,
+  retainTransactionCodes,
+} from '#/utils/transaction'
 import {
   HargaSahamNotFoundError,
   InsufficientBalanceError,
@@ -40,14 +44,15 @@ const approver = alias(user, 'approver')
 const sourceAccount = alias(akun, 'source_account')
 const destinationAccount = alias(akun, 'destination_account')
 
-function assertTransferDestination(target: Pick<Transfer, 'idUserSumber' | 'idUserTujuan' | 'tipePemindahbukuan'>) {
+function assertTransferDestination(
+  target: Pick<Transfer, 'idUserSumber' | 'idUserTujuan' | 'tipePemindahbukuan'>,
+) {
   const sameMember = target.idUserSumber === target.idUserTujuan
   if (target.tipePemindahbukuan === 'tabungan_ke_saham') {
     if (!sameMember) {
       throw new InvalidConversionDestinationError()
     }
-  }
-  else if (sameMember) {
+  } else if (sameMember) {
     throw new InvalidTransferDestinationError()
   }
 }
@@ -72,8 +77,8 @@ async function assertAccounts(tx: Transaction, accountIds: number[]) {
     .where(inArray(akun.id, ids))
     .orderBy(asc(akun.id))
     .for('share')
-  const accountsById = new Map(accounts.map(account => [account.id, account]))
-  const invalidId = ids.find(id => !accountsById.get(id)?.isActive)
+  const accountsById = new Map(accounts.map((account) => [account.id, account]))
+  const invalidId = ids.find((id) => !accountsById.get(id)?.isActive)
 
   if (invalidId !== undefined) {
     throw new InvalidAccountError({
@@ -97,7 +102,7 @@ async function lockBalances(tx: Transaction, userIds: number[]) {
     .orderBy(asc(saldoSimpanan.userId))
     .for('update')
 
-  return new Map(balances.map(balance => [balance.userId, balance]))
+  return new Map(balances.map((balance) => [balance.userId, balance]))
 }
 
 async function assertAvailableBalance(
@@ -113,17 +118,18 @@ async function assertAvailableBalance(
     if (available < BigInt(target.jumlahSaham)) {
       throw new InsufficientSharesError()
     }
-  }
-  else {
-    const available = BigInt(balance.saldoTabungan)
-      - pending.penarikan - pending.pemindahbukuanTabungan
+  } else {
+    const available =
+      BigInt(balance.saldoTabungan) - pending.penarikan - pending.pemindahbukuanTabungan
     if (available < BigInt(target.nominal)) {
       throw new InsufficientBalanceError()
     }
   }
 }
 
-function getRequiredAccountIds(target: Pick<Transfer, 'akunIdSumber' | 'akunIdTujuan' | 'tipePemindahbukuan' | 'agioSaham'>) {
+function getRequiredAccountIds(
+  target: Pick<Transfer, 'akunIdSumber' | 'akunIdTujuan' | 'tipePemindahbukuan' | 'agioSaham'>,
+) {
   return [
     target.akunIdSumber,
     target.akunIdTujuan,
@@ -146,18 +152,22 @@ export const PemindahbukuanService = {
     const conditions = []
     if (accessCondition !== undefined) {
       const accessibleUsers = db.select({ id: user.id }).from(user).where(accessCondition)
-      conditions.push(or(
-        inArray(pemindahbukuan.idUserSumber, accessibleUsers),
-        inArray(pemindahbukuan.idUserTujuan, accessibleUsers),
-      ))
+      conditions.push(
+        or(
+          inArray(pemindahbukuan.idUserSumber, accessibleUsers),
+          inArray(pemindahbukuan.idUserTujuan, accessibleUsers),
+        ),
+      )
     }
 
     if (query.userId !== undefined) {
       await assertPenggunaAccess(db, actorId, query.userId)
-      conditions.push(or(
-        eq(pemindahbukuan.idUserSumber, query.userId),
-        eq(pemindahbukuan.idUserTujuan, query.userId),
-      ))
+      conditions.push(
+        or(
+          eq(pemindahbukuan.idUserSumber, query.userId),
+          eq(pemindahbukuan.idUserTujuan, query.userId),
+        ),
+      )
     }
 
     if (query.status !== 'all') {
@@ -213,7 +223,7 @@ export const PemindahbukuanService = {
 
     const total = await db.$count(qb)
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
-    const data = rows.map(row => ({
+    const data = rows.map((row) => ({
       ...row,
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
@@ -246,8 +256,7 @@ export const PemindahbukuanService = {
 
       if (data.tipePemindahbukuan === 'tabungan_ke_tabungan') {
         nominal = assertInputInteger(data.nominal)
-      }
-      else {
+      } else {
         jumlahSaham = assertInputInteger(data.jumlahSaham)
         hargaNominalPerSaham = HARGA_NOMINAL_SAHAM
         hargaPerSaham = HARGA_NOMINAL_SAHAM
@@ -274,8 +283,12 @@ export const PemindahbukuanService = {
       const target = {
         idUserSumber,
         idUserTujuan: data.idUserTujuan,
-        akunIdSumber: data.tipePemindahbukuan === 'saham_ke_saham' ? AkunId.SAHAM50 : AkunId.SIMPANANBERJANGKA,
-        akunIdTujuan: data.tipePemindahbukuan === 'tabungan_ke_tabungan' ? AkunId.SIMPANANBERJANGKA : AkunId.SAHAM50,
+        akunIdSumber:
+          data.tipePemindahbukuan === 'saham_ke_saham' ? AkunId.SAHAM50 : AkunId.SIMPANANBERJANGKA,
+        akunIdTujuan:
+          data.tipePemindahbukuan === 'tabungan_ke_tabungan'
+            ? AkunId.SIMPANANBERJANGKA
+            : AkunId.SAHAM50,
         tipePemindahbukuan: data.tipePemindahbukuan,
         nominal,
         jumlahSaham,
@@ -306,20 +319,22 @@ export const PemindahbukuanService = {
       const accessibleUsers = tx.select({ id: user.id }).from(user).where(accessCondition)
       const deleted = await tx
         .delete(pemindahbukuan)
-        .where(and(
-          inArray(pemindahbukuan.id, ids),
-          or(eq(pemindahbukuan.idUserSumber, actorId), eq(pemindahbukuan.createdBy, actorId)),
-          inArray(pemindahbukuan.idUserSumber, accessibleUsers),
-          eq(pemindahbukuan.statusApproved, 'pending'),
-        ))
+        .where(
+          and(
+            inArray(pemindahbukuan.id, ids),
+            or(eq(pemindahbukuan.idUserSumber, actorId), eq(pemindahbukuan.createdBy, actorId)),
+            inArray(pemindahbukuan.idUserSumber, accessibleUsers),
+            eq(pemindahbukuan.statusApproved, 'pending'),
+          ),
+        )
         .returning({
           id: pemindahbukuan.id,
           kodeTransaksi: pemindahbukuan.kodeTransaksi,
           tanggalTransaksi: pemindahbukuan.tanggalTransaksi,
         })
 
-      const deletedIds = new Set(deleted.map(item => item.id))
-      const invalidIds = ids.filter(id => !deletedIds.has(id))
+      const deletedIds = new Set(deleted.map((item) => item.id))
+      const invalidIds = ids.filter((id) => !deletedIds.has(id))
       if (deleted.length === 0 || invalidIds.length > 0) {
         throw new PemindahbukuanNotDeletedError({ ids: invalidIds })
       }
@@ -330,7 +345,11 @@ export const PemindahbukuanService = {
 
   async approvePemindahbukuan(id: number, adminId: number) {
     await db.transaction(async (tx) => {
-      const [target] = await tx.select().from(pemindahbukuan).where(eq(pemindahbukuan.id, id)).for('update')
+      const [target] = await tx
+        .select()
+        .from(pemindahbukuan)
+        .where(eq(pemindahbukuan.id, id))
+        .for('update')
       if (!target) {
         throw new PemindahbukuanNotFoundError({ id })
       }
@@ -339,7 +358,9 @@ export const PemindahbukuanService = {
       }
 
       assertTransferDestination(target)
-      for (const userId of [...new Set([target.idUserSumber, target.idUserTujuan])].sort((a, b) => a - b)) {
+      for (const userId of [...new Set([target.idUserSumber, target.idUserTujuan])].sort(
+        (a, b) => a - b,
+      )) {
         await assertMember(tx, userId)
       }
       const balances = await lockBalances(tx, [target.idUserSumber, target.idUserTujuan])
@@ -350,44 +371,74 @@ export const PemindahbukuanService = {
       await assertAccounts(tx, getRequiredAccountIds(target))
 
       if (target.tipePemindahbukuan === 'saham_ke_saham') {
-        await tx.update(saldoSimpanan)
-          .set({ jumlahSaham: toPostgresInteger(BigInt(source.jumlahSaham) - BigInt(target.jumlahSaham)) })
+        await tx
+          .update(saldoSimpanan)
+          .set({
+            jumlahSaham: toPostgresInteger(BigInt(source.jumlahSaham) - BigInt(target.jumlahSaham)),
+          })
           .where(eq(saldoSimpanan.userId, target.idUserSumber))
-      }
-      else {
-        await tx.update(saldoSimpanan)
-          .set({ saldoTabungan: toPostgresInteger(BigInt(source.saldoTabungan) - BigInt(target.nominal)) })
+      } else {
+        await tx
+          .update(saldoSimpanan)
+          .set({
+            saldoTabungan: toPostgresInteger(BigInt(source.saldoTabungan) - BigInt(target.nominal)),
+          })
           .where(eq(saldoSimpanan.userId, target.idUserSumber))
       }
 
       if (target.tipePemindahbukuan === 'tabungan_ke_tabungan') {
-        await tx.update(saldoSimpanan)
-          .set({ saldoTabungan: toPostgresInteger(BigInt(destination.saldoTabungan) + BigInt(target.nominal)) })
+        await tx
+          .update(saldoSimpanan)
+          .set({
+            saldoTabungan: toPostgresInteger(
+              BigInt(destination.saldoTabungan) + BigInt(target.nominal),
+            ),
+          })
           .where(eq(saldoSimpanan.userId, target.idUserTujuan))
-      }
-      else {
-        await tx.update(saldoSimpanan)
-          .set({ jumlahSaham: toPostgresInteger(BigInt(destination.jumlahSaham) + BigInt(target.jumlahSaham)) })
+      } else {
+        await tx
+          .update(saldoSimpanan)
+          .set({
+            jumlahSaham: toPostgresInteger(
+              BigInt(destination.jumlahSaham) + BigInt(target.jumlahSaham),
+            ),
+          })
           .where(eq(saldoSimpanan.userId, target.idUserTujuan))
       }
 
       const kodeJurnal = await allocateTransactionCode(tx, 'jurnal', target.tanggalTransaksi)
-      const [createdJournal] = await tx.insert(jurnal).values({
-        kodeTransaksi: kodeJurnal,
-        tanggalTransaksi: target.tanggalTransaksi,
-        keterangan: target.keterangan,
-      }).returning({ id: jurnal.id })
+      const [createdJournal] = await tx
+        .insert(jurnal)
+        .values({
+          kodeTransaksi: kodeJurnal,
+          tanggalTransaksi: target.tanggalTransaksi,
+          keterangan: target.keterangan,
+        })
+        .returning({ id: jurnal.id })
 
       if (!createdJournal) {
         throw new Error('Jurnal gagal dibuat')
       }
 
-      const nominalTujuan = target.tipePemindahbukuan === 'tabungan_ke_saham'
-        ? toPostgresInteger(BigInt(target.jumlahSaham) * BigInt(target.hargaNominalPerSaham))
-        : target.nominal
+      const nominalTujuan =
+        target.tipePemindahbukuan === 'tabungan_ke_saham'
+          ? toPostgresInteger(BigInt(target.jumlahSaham) * BigInt(target.hargaNominalPerSaham))
+          : target.nominal
       const details = [
-        { jurnalId: createdJournal.id, akunId: target.akunIdSumber, userId: target.idUserSumber, debit: target.nominal, kredit: 0 },
-        { jurnalId: createdJournal.id, akunId: target.akunIdTujuan, userId: target.idUserTujuan, debit: 0, kredit: nominalTujuan },
+        {
+          jurnalId: createdJournal.id,
+          akunId: target.akunIdSumber,
+          userId: target.idUserSumber,
+          debit: target.nominal,
+          kredit: 0,
+        },
+        {
+          jurnalId: createdJournal.id,
+          akunId: target.akunIdTujuan,
+          userId: target.idUserTujuan,
+          debit: 0,
+          kredit: nominalTujuan,
+        },
       ]
 
       if (target.tipePemindahbukuan === 'tabungan_ke_saham' && target.agioSaham > 0) {
@@ -401,13 +452,16 @@ export const PemindahbukuanService = {
         })
       }
       await tx.insert(jurnalDetail).values(details)
-      await tx.update(pemindahbukuan).set({
-        jurnalId: createdJournal.id,
-        statusApproved: 'approved',
-        alasanPenolakan: null,
-        approvedBy: adminId,
-        approvedAt: new Date(),
-      }).where(eq(pemindahbukuan.id, id))
+      await tx
+        .update(pemindahbukuan)
+        .set({
+          jurnalId: createdJournal.id,
+          statusApproved: 'approved',
+          alasanPenolakan: null,
+          approvedBy: adminId,
+          approvedAt: new Date(),
+        })
+        .where(eq(pemindahbukuan.id, id))
     })
   },
 
@@ -430,12 +484,15 @@ export const PemindahbukuanService = {
         throw new PemindahbukuanAlreadyProcessedError({ id })
       }
 
-      await tx.update(pemindahbukuan).set({
-        statusApproved: 'rejected',
-        alasanPenolakan: rejectionReason,
-        approvedBy: adminId,
-        approvedAt: new Date(),
-      }).where(eq(pemindahbukuan.id, id))
+      await tx
+        .update(pemindahbukuan)
+        .set({
+          statusApproved: 'rejected',
+          alasanPenolakan: rejectionReason,
+          approvedBy: adminId,
+          approvedAt: new Date(),
+        })
+        .where(eq(pemindahbukuan.id, id))
     })
   },
 }

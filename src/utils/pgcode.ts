@@ -11,12 +11,7 @@ export function isUniqueViolation(error: unknown): boolean {
   // Check nested code in cause (Drizzle wrapped error)
   if ('cause' in error) {
     const cause = error.cause
-    if (
-      typeof cause === 'object'
-      && cause !== null
-      && 'code' in cause
-      && cause.code === '23505'
-    ) {
+    if (typeof cause === 'object' && cause !== null && 'code' in cause && cause.code === '23505') {
       return true
     }
   }

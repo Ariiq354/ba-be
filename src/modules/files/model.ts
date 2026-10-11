@@ -16,5 +16,5 @@ export const filesModel = {
 } as const
 
 export type FilesModel = {
-  [key in keyof typeof filesModel]: UnwrapSchema<(typeof filesModel)[key]>;
+  [key in keyof typeof filesModel]: UnwrapSchema<(typeof filesModel)[key]>
 }

@@ -10,11 +10,14 @@ const positiveIntegerSchema = t.Integer({ minimum: 1, maximum: postgresIntegerMa
 const paymentAccountSchema = t.UnionEnum(PAYMENT_ACCOUNT_IDS)
 
 const nullableDescriptionSchema = t.Optional(t.Nullable(t.String()))
-const targetUserSchema = t.Optional(t.Integer({
-  minimum: 1,
-  maximum: postgresIntegerMax,
-  description: 'Pemilik simpanan. Jika tidak dikirim, menggunakan pengguna yang login. Hanya admin atau PJ kelompok tujuan yang dapat mengajukan untuk pengguna lain.',
-}))
+const targetUserSchema = t.Optional(
+  t.Integer({
+    minimum: 1,
+    maximum: postgresIntegerMax,
+    description:
+      'Pemilik simpanan. Jika tidak dikirim, menggunakan pengguna yang login. Hanya admin atau PJ kelompok tujuan yang dapat mengajukan untuk pengguna lain.',
+  }),
+)
 
 const mutasiResponseSchema = t.Object({
   id: t.Integer(),
@@ -48,19 +51,24 @@ const mutasiResponseSchema = t.Object({
 
 export const simpananModel = {
   getPaymentAccountOptionsResponseSchema: t.Object({
-    data: t.Array(t.Object({
-      id: t.Integer(),
-      kodeAkun: t.String(),
-      namaAkun: t.String(),
-    })),
+    data: t.Array(
+      t.Object({
+        id: t.Integer(),
+        kodeAkun: t.String(),
+        namaAkun: t.String(),
+      }),
+    ),
   }),
 
   getSaldoQuerySchema: t.Object({
-    userId: t.Optional(t.Integer({
-      minimum: 1,
-      maximum: postgresIntegerMax,
-      description: 'Anggota pemilik saldo. Jika tidak dikirim, menggunakan pengguna yang login. Akses anggota lain dibatasi berdasarkan peran dan kelompok PJ.',
-    })),
+    userId: t.Optional(
+      t.Integer({
+        minimum: 1,
+        maximum: postgresIntegerMax,
+        description:
+          'Anggota pemilik saldo. Jika tidak dikirim, menggunakan pengguna yang login. Akses anggota lain dibatasi berdasarkan peran dan kelompok PJ.',
+      }),
+    ),
   }),
 
   getSaldoResponseSchema: t.Object({

@@ -30,5 +30,5 @@ export const masterSahamModel = {
 } as const
 
 export type MasterSahamModel = {
-  [key in keyof typeof masterSahamModel]: UnwrapSchema<(typeof masterSahamModel)[key]>;
+  [key in keyof typeof masterSahamModel]: UnwrapSchema<(typeof masterSahamModel)[key]>
 }

@@ -54,9 +54,9 @@ function isValidTransactionDate(value: string) {
   date.setUTCHours(0, 0, 0, 0)
   date.setUTCFullYear(year, month - 1, day)
 
-  return date.getUTCFullYear() === year
-    && date.getUTCMonth() === month - 1
-    && date.getUTCDate() === day
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  )
 }
 
 function validateJurnalInput(data: JurnalModel['createJurnalSchema']) {
@@ -65,14 +65,15 @@ function validateJurnalInput(data: JurnalModel['createJurnalSchema']) {
   }
 
   if (
-    data.details.length < 2
-    || data.details.some(detail =>
-      !Number.isInteger(detail.akunId)
-      || detail.akunId < 1
-      || !Number.isInteger(detail.debit)
-      || detail.debit < 0
-      || !Number.isInteger(detail.kredit)
-      || detail.kredit < 0,
+    data.details.length < 2 ||
+    data.details.some(
+      (detail) =>
+        !Number.isInteger(detail.akunId) ||
+        detail.akunId < 1 ||
+        !Number.isInteger(detail.debit) ||
+        detail.debit < 0 ||
+        !Number.isInteger(detail.kredit) ||
+        detail.kredit < 0,
     )
   ) {
     throw new InvalidJurnalError({ reason: 'invalid_details' })
@@ -91,12 +92,8 @@ function validateJurnalInput(data: JurnalModel['createJurnalSchema']) {
 }
 
 export const JurnalService = {
-  async getPaginatedJurnal(
-    query: JurnalModel['getJurnalQuerySchema'],
-  ) {
-    const condition = query.search
-      ? ilike(jurnal.kodeTransaksi, `%${query.search}%`)
-      : undefined
+  async getPaginatedJurnal(query: JurnalModel['getJurnalQuerySchema']) {
+    const condition = query.search ? ilike(jurnal.kodeTransaksi, `%${query.search}%`) : undefined
     const offset = (query.page - 1) * query.limit
 
     const [total, headers] = await Promise.all([
@@ -119,7 +116,12 @@ export const JurnalService = {
       .from(jurnalDetail)
       .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
       .innerJoin(user, eq(user.id, jurnalDetail.userId))
-      .where(inArray(jurnalDetail.jurnalId, headers.map(header => header.id)))
+      .where(
+        inArray(
+          jurnalDetail.jurnalId,
+          headers.map((header) => header.id),
+        ),
+      )
       .orderBy(asc(jurnalDetail.id))
 
     const detailsByJurnal = new Map<number, typeof details>()
@@ -127,14 +129,13 @@ export const JurnalService = {
       const headerDetails = detailsByJurnal.get(detail.jurnalId)
       if (headerDetails) {
         headerDetails.push(detail)
-      }
-      else {
+      } else {
         detailsByJurnal.set(detail.jurnalId, [detail])
       }
     }
 
-    const data = headers.flatMap(header =>
-      (detailsByJurnal.get(header.id) ?? []).map(detail => ({
+    const data = headers.flatMap((header) =>
+      (detailsByJurnal.get(header.id) ?? []).map((detail) => ({
         id: detail.id,
         jurnalId: header.id,
         kodeTransaksi: header.kodeTransaksi,
@@ -155,10 +156,7 @@ export const JurnalService = {
   },
 
   async getJurnalById(id: number) {
-    const [header] = await db
-      .select(jurnalHeaderSelection)
-      .from(jurnal)
-      .where(eq(jurnal.id, id))
+    const [header] = await db.select(jurnalHeaderSelection).from(jurnal).where(eq(jurnal.id, id))
 
     if (!header) {
       throw new JurnalNotFoundError({ id })
@@ -179,14 +177,11 @@ export const JurnalService = {
     }
   },
 
-  async createJurnal(
-    userId: number,
-    data: JurnalModel['createJurnalSchema'],
-  ) {
+  async createJurnal(userId: number, data: JurnalModel['createJurnalSchema']) {
     validateJurnalInput(data)
 
     await db.transaction(async (tx) => {
-      const akunIds = [...new Set(data.details.map(detail => detail.akunId))]
+      const akunIds = [...new Set(data.details.map((detail) => detail.akunId))]
       const akunRows = await tx
         .select({
           id: akun.id,
@@ -196,13 +191,13 @@ export const JurnalService = {
         .where(inArray(akun.id, akunIds))
         .for('share')
 
-      const akunById = new Map(akunRows.map(row => [row.id, row]))
-      const missingAkunIds = akunIds.filter(id => !akunById.has(id))
+      const akunById = new Map(akunRows.map((row) => [row.id, row]))
+      const missingAkunIds = akunIds.filter((id) => !akunById.has(id))
       if (missingAkunIds.length > 0) {
         throw new AkunNotFoundError({ ids: missingAkunIds })
       }
 
-      const inactiveAkunIds = akunIds.filter(id => !akunById.get(id)?.isActive)
+      const inactiveAkunIds = akunIds.filter((id) => !akunById.get(id)?.isActive)
       if (inactiveAkunIds.length > 0) {
         throw new InactiveAkunError({ ids: inactiveAkunIds })
       }
@@ -222,7 +217,7 @@ export const JurnalService = {
       }
 
       await tx.insert(jurnalDetail).values(
-        data.details.map(detail => ({
+        data.details.map((detail) => ({
           jurnalId: header.id,
           akunId: detail.akunId,
           userId,
@@ -251,8 +246,8 @@ export const JurnalService = {
         .where(inArray(jurnal.id, uniqueIds))
         .for('update')
 
-      const existingIds = new Set(existing.map(item => item.id))
-      const missingIds = uniqueIds.filter(id => !existingIds.has(id))
+      const existingIds = new Set(existing.map((item) => item.id))
+      const missingIds = uniqueIds.filter((id) => !existingIds.has(id))
       if (missingIds.length > 0) {
         throw new JurnalsNotFoundError({ ids: missingIds })
       }
@@ -267,8 +262,10 @@ export const JurnalService = {
         .from(pemindahbukuan)
         .where(inArray(pemindahbukuan.jurnalId, uniqueIds))
 
-      const referencedIds = new Set([...references, ...transferReferences].map(reference => reference.jurnalId))
-      const protectedIds = uniqueIds.filter(id => referencedIds.has(id))
+      const referencedIds = new Set(
+        [...references, ...transferReferences].map((reference) => reference.jurnalId),
+      )
+      const protectedIds = uniqueIds.filter((id) => referencedIds.has(id))
       if (protectedIds.length > 0) {
         throw new AutoJurnalsImmutableError({ ids: protectedIds })
       }

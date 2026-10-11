@@ -6,29 +6,21 @@ import { JurnalService } from './service'
 
 export const JurnalModules = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
   .use(AuthMacro)
-  .get(
-    '/',
-    ({ query }) => JurnalService.getPaginatedJurnal(query),
-    {
-      admin: true,
-      query: jurnalModel.getJurnalQuerySchema,
-      response: {
-        200: jurnalModel.getJurnalResponseSchema,
-      },
+  .get('/', ({ query }) => JurnalService.getPaginatedJurnal(query), {
+    admin: true,
+    query: jurnalModel.getJurnalQuerySchema,
+    response: {
+      200: jurnalModel.getJurnalResponseSchema,
     },
-  )
-  .get(
-    '/:id',
-    ({ params }) => JurnalService.getJurnalById(params.id),
-    {
-      admin: true,
-      params: jurnalModel.getJurnalByIdParamsSchema,
-      response: {
-        200: jurnalModel.getJurnalByIdResponseSchema,
-        404: ErrorSchema,
-      },
+  })
+  .get('/:id', ({ params }) => JurnalService.getJurnalById(params.id), {
+    admin: true,
+    params: jurnalModel.getJurnalByIdParamsSchema,
+    response: {
+      200: jurnalModel.getJurnalByIdResponseSchema,
+      404: ErrorSchema,
     },
-  )
+  })
   .post(
     '/',
     async ({ body, user }) => {

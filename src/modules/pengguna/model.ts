@@ -4,13 +4,15 @@ import { paginationSchema, searchSchema } from '#/utils/schema'
 
 export const penggunaModel = {
   getPenggunaOptionsResponseSchema: t.Object({
-    data: t.Array(t.Object({
-      id: t.Integer(),
-      name: t.String(),
-      noAnggota: t.Nullable(t.String()),
-      idKelompok: t.Integer(),
-      namaKelompok: t.String(),
-    })),
+    data: t.Array(
+      t.Object({
+        id: t.Integer(),
+        name: t.String(),
+        noAnggota: t.Nullable(t.String()),
+        idKelompok: t.Integer(),
+        namaKelompok: t.String(),
+      }),
+    ),
   }),
 
   getProfileResponseSchema: t.Object({
@@ -41,18 +43,26 @@ export const penggunaModel = {
     noRekening: t.Optional(t.String({ minLength: 1 })),
     pemilikRekening: t.Optional(t.String({ minLength: 1 })),
     jalan: t.Optional(t.String({ minLength: 1 })),
-    idProvinsi: t.Optional(t.String({
-      minLength: 1,
-      description: 'Jika berubah, kabupaten/kota, kecamatan, dan desa/kelurahan yang tidak dikirim akan dikosongkan.',
-    })),
-    idKabupatenKota: t.Optional(t.String({
-      minLength: 1,
-      description: 'Jika berubah, kecamatan dan desa/kelurahan yang tidak dikirim akan dikosongkan.',
-    })),
-    idKecamatan: t.Optional(t.String({
-      minLength: 1,
-      description: 'Jika berubah, desa/kelurahan yang tidak dikirim akan dikosongkan.',
-    })),
+    idProvinsi: t.Optional(
+      t.String({
+        minLength: 1,
+        description:
+          'Jika berubah, kabupaten/kota, kecamatan, dan desa/kelurahan yang tidak dikirim akan dikosongkan.',
+      }),
+    ),
+    idKabupatenKota: t.Optional(
+      t.String({
+        minLength: 1,
+        description:
+          'Jika berubah, kecamatan dan desa/kelurahan yang tidak dikirim akan dikosongkan.',
+      }),
+    ),
+    idKecamatan: t.Optional(
+      t.String({
+        minLength: 1,
+        description: 'Jika berubah, desa/kelurahan yang tidak dikirim akan dikosongkan.',
+      }),
+    ),
     idDesaKelurahan: t.Optional(t.String({ minLength: 1 })),
   }),
 
@@ -90,5 +100,5 @@ export const penggunaModel = {
 } as const
 
 export type PenggunaModel = {
-  [key in keyof typeof penggunaModel]: UnwrapSchema<(typeof penggunaModel)[key]>;
+  [key in keyof typeof penggunaModel]: UnwrapSchema<(typeof penggunaModel)[key]>
 }
