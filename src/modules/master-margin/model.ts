@@ -41,5 +41,5 @@ export const masterMarginModel = {
 } as const
 
 export type MasterMarginModel = {
-  [key in keyof typeof masterMarginModel]: UnwrapSchema<(typeof masterMarginModel)[key]>;
+  [key in keyof typeof masterMarginModel]: UnwrapSchema<(typeof masterMarginModel)[key]>
 }

@@ -73,10 +73,7 @@ export const PenggunaService = {
     return profile
   },
 
-  async updateProfile(
-    penggunaId: number,
-    data: PenggunaModel['updateProfileSchema'],
-  ) {
+  async updateProfile(penggunaId: number, data: PenggunaModel['updateProfileSchema']) {
     const imageAction = data.imageAction ?? 'keep'
 
     if (imageAction === 'update' && !data.image) {
@@ -158,8 +155,12 @@ export const PenggunaService = {
         ...wilayahUpdates,
       }
 
-      if (Object.values(profileData).some(value => value !== undefined)) {
-        if ([data.idProvinsi, data.idKabupatenKota, data.idKecamatan, data.idDesaKelurahan].some(value => value !== undefined)) {
+      if (Object.values(profileData).some((value) => value !== undefined)) {
+        if (
+          [data.idProvinsi, data.idKabupatenKota, data.idKecamatan, data.idDesaKelurahan].some(
+            (value) => value !== undefined,
+          )
+        ) {
           const [currentWilayah] = await tx
             .select({
               idProvinsi: userProfile.idProvinsi,
@@ -184,8 +185,7 @@ export const PenggunaService = {
             if (value !== undefined) {
               ancestorChanged ||= value !== nextWilayah[field]
               nextWilayah[field] = value
-            }
-            else if (ancestorChanged) {
+            } else if (ancestorChanged) {
               wilayahUpdates[field] = null
               nextWilayah[field] = null
             }
@@ -243,24 +243,20 @@ export const PenggunaService = {
         await db
           .delete(files)
           .where(and(eq(files.publicId, oldImageToDelete), eq(files.status, 'pending_delete')))
-      }
-      catch (error) {
+      } catch (error) {
         logUnhandledError(error)
       }
     }
   },
 
-  async getPaginatedPengguna(
-    query: PenggunaModel['getPenggunaQuerySchema'],
-  ) {
+  async getPaginatedPengguna(query: PenggunaModel['getPenggunaQuerySchema']) {
     const conditions = []
 
     if (query.status === 'pending') {
       conditions.push(
         and(eq(user.banned, true), eq(user.banReason, PENDING_VERIFICATION_BAN_REASON)),
       )
-    }
-    else if (query.status === 'verified') {
+    } else if (query.status === 'verified') {
       conditions.push(or(eq(user.banned, false), isNull(user.banned)))
     }
 

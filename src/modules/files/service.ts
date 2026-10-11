@@ -9,9 +9,7 @@ import { FileTooLargeError, InvalidUploadDirectoryError, UnsupportedFileTypeErro
 const CLEANUP_LOCK_KEY = 'files:cleanup-pending'
 
 export const FilesService = {
-  async generatePresignedUpload(
-    input: FilesModel['presignedUploadSchema'],
-  ) {
+  async generatePresignedUpload(input: FilesModel['presignedUploadSchema']) {
     const dirConfig = UPLOAD_CONFIG.get(input.dir)
 
     if (!dirConfig) {
@@ -66,17 +64,19 @@ export const FilesService = {
           publicId: files.publicId,
         })
         .from(files)
-        .where(or(
-          eq(files.status, 'pending_delete'),
-          and(eq(files.status, 'pending'), lte(files.createdAt, cutoff)),
-        ))
+        .where(
+          or(
+            eq(files.status, 'pending_delete'),
+            and(eq(files.status, 'pending'), lte(files.createdAt, cutoff)),
+          ),
+        )
         .for('update')
 
       if (pendingFiles.length === 0) {
         return { deletedCount: 0 }
       }
 
-      const publicIds = pendingFiles.map(file => file.publicId)
+      const publicIds = pendingFiles.map((file) => file.publicId)
 
       await deleteFiles(publicIds)
 

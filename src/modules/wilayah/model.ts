@@ -57,5 +57,5 @@ export const wilayahModel = {
 } as const
 
 export type WilayahModel = {
-  [key in keyof typeof wilayahModel]: UnwrapSchema<(typeof wilayahModel)[key]>;
+  [key in keyof typeof wilayahModel]: UnwrapSchema<(typeof wilayahModel)[key]>
 }

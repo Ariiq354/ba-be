@@ -4,14 +4,17 @@ import { eq } from 'drizzle-orm'
 import { kecamatan, kelurahan, kota, provinsi } from '#/database/schema/wilayah'
 import { InvalidProfileWilayahError } from './errors'
 
-export type ProfileWilayah = Pick<typeof userProfile.$inferSelect, 'idProvinsi' | 'idKota' | 'idKecamatan' | 'idKelurahan'>
+export type ProfileWilayah = Pick<
+  typeof userProfile.$inferSelect,
+  'idProvinsi' | 'idKota' | 'idKecamatan' | 'idKelurahan'
+>
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export async function validateProfileWilayah(tx: Transaction, wilayah: ProfileWilayah) {
   let hierarchy: Partial<ProfileWilayah> | undefined
 
   if (wilayah.idKelurahan) {
-    [hierarchy] = await tx
+    ;[hierarchy] = await tx
       .select({
         idProvinsi: kota.idProvinsi,
         idKota: kecamatan.idKota,
@@ -22,9 +25,8 @@ export async function validateProfileWilayah(tx: Transaction, wilayah: ProfileWi
       .innerJoin(kecamatan, eq(kecamatan.id, kelurahan.idKecamatan))
       .innerJoin(kota, eq(kota.id, kecamatan.idKota))
       .where(eq(kelurahan.id, wilayah.idKelurahan))
-  }
-  else if (wilayah.idKecamatan) {
-    [hierarchy] = await tx
+  } else if (wilayah.idKecamatan) {
+    ;[hierarchy] = await tx
       .select({
         idProvinsi: kota.idProvinsi,
         idKota: kecamatan.idKota,
@@ -33,25 +35,25 @@ export async function validateProfileWilayah(tx: Transaction, wilayah: ProfileWi
       .from(kecamatan)
       .innerJoin(kota, eq(kota.id, kecamatan.idKota))
       .where(eq(kecamatan.id, wilayah.idKecamatan))
-  }
-  else if (wilayah.idKota) {
-    [hierarchy] = await tx
+  } else if (wilayah.idKota) {
+    ;[hierarchy] = await tx
       .select({ idProvinsi: kota.idProvinsi, idKota: kota.id })
       .from(kota)
       .where(eq(kota.id, wilayah.idKota))
-  }
-  else if (wilayah.idProvinsi) {
-    [hierarchy] = await tx
+  } else if (wilayah.idProvinsi) {
+    ;[hierarchy] = await tx
       .select({ idProvinsi: provinsi.id })
       .from(provinsi)
       .where(eq(provinsi.id, wilayah.idProvinsi))
-  }
-  else {
+  } else {
     return
   }
 
   const fields = ['idProvinsi', 'idKota', 'idKecamatan', 'idKelurahan'] as const
-  if (!hierarchy || fields.some(field => wilayah[field] !== null && wilayah[field] !== hierarchy[field])) {
+  if (
+    !hierarchy ||
+    fields.some((field) => wilayah[field] !== null && wilayah[field] !== hierarchy[field])
+  ) {
     throw new InvalidProfileWilayahError()
   }
 }

@@ -40,5 +40,5 @@ export const masterAkunModel = {
 } as const
 
 export type MasterAkunModel = {
-  [key in keyof typeof masterAkunModel]: UnwrapSchema<(typeof masterAkunModel)[key]>;
+  [key in keyof typeof masterAkunModel]: UnwrapSchema<(typeof masterAkunModel)[key]>
 }

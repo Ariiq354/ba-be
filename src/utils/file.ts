@@ -18,5 +18,5 @@ export async function generatePresignedUrl(
 }
 
 export async function deleteFiles(paths: string[]) {
-  await Promise.all(paths.map(path => s3.delete(path)))
+  await Promise.all(paths.map((path) => s3.delete(path)))
 }

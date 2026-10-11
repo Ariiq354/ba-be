@@ -18,12 +18,15 @@ export class AppError extends Error {
   }
 
   toResponse() {
-    return Response.json({
-      code: this.code,
-      message: this.message,
-    }, {
-      status: this.status,
-    })
+    return Response.json(
+      {
+        code: this.code,
+        message: this.message,
+      },
+      {
+        status: this.status,
+      },
+    )
   }
 }
 
@@ -36,7 +39,7 @@ export function logUnhandledError(error: unknown) {
 export class ItemNotFoundError extends AppError {
   readonly id: number
 
-  constructor({ id, message = 'Data tidak ditemukan' }: { id: number, message?: string }) {
+  constructor({ id, message = 'Data tidak ditemukan' }: { id: number; message?: string }) {
     super({
       code: 'ITEM_NOT_FOUND_ERROR',
       message,
@@ -49,7 +52,7 @@ export class ItemNotFoundError extends AppError {
 export class ItemsNotFoundError extends AppError {
   readonly ids: number[]
 
-  constructor({ ids, message = 'Data tidak ditemukan' }: { ids: number[], message?: string }) {
+  constructor({ ids, message = 'Data tidak ditemukan' }: { ids: number[]; message?: string }) {
     super({
       code: 'ITEM_NOT_FOUND_ERROR',
       message,

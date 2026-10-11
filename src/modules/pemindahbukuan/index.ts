@@ -1,30 +1,36 @@
 import Elysia, { status } from 'elysia'
-import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/utils/errors'
+import {
+  ErrorSchema,
+  ForbiddenSchema,
+  SuccessSchema,
+  UnauthorizedSchema,
+  ValidationErrorSchema,
+} from '#/utils/errors'
 import { AuthMacro } from '#/utils/macro'
 import { pemindahbukuanModel } from './model'
 import { PemindahbukuanService } from './service'
 
-export const PemindahbukuanModules = new Elysia({ prefix: 'pemindahbukuan', tags: ['Pemindahbukuan'] })
+export const PemindahbukuanModules = new Elysia({
+  prefix: 'pemindahbukuan',
+  tags: ['Pemindahbukuan'],
+})
   .use(AuthMacro)
-  .get(
-    '/',
-    ({ user, query }) => PemindahbukuanService.getPemindahbukuan(user.id, query),
-    {
-      auth: true,
-      query: pemindahbukuanModel.getPemindahbukuanQuerySchema,
-      response: {
-        200: pemindahbukuanModel.getPemindahbukuanResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
-      detail: {
-        description: 'Admin melihat semua pemindahbukuan; PJ dan anggota melihat transaksi dengan sumber atau tujuan dalam cakupan aksesnya. userId memfilter sumber atau tujuan dalam cakupan tersebut.',
-      },
+  .get('/', ({ user, query }) => PemindahbukuanService.getPemindahbukuan(user.id, query), {
+    auth: true,
+    query: pemindahbukuanModel.getPemindahbukuanQuerySchema,
+    response: {
+      200: pemindahbukuanModel.getPemindahbukuanResponseSchema,
+      400: ErrorSchema,
+      401: UnauthorizedSchema,
+      403: ErrorSchema,
+      404: ErrorSchema,
+      422: ValidationErrorSchema,
     },
-  )
+    detail: {
+      description:
+        'Admin melihat semua pemindahbukuan; PJ dan anggota melihat transaksi dengan sumber atau tujuan dalam cakupan aksesnya. userId memfilter sumber atau tujuan dalam cakupan tersebut.',
+    },
+  })
   .post(
     '/',
     async ({ user, body }) => {
@@ -43,7 +49,8 @@ export const PemindahbukuanModules = new Elysia({ prefix: 'pemindahbukuan', tags
         422: ValidationErrorSchema,
       },
       detail: {
-        description: 'Mengajukan pemindahbukuan pending dan mencadangkan saldo atau saham sumber. Akun ditentukan otomatis. Harga konversi tabungan ke saham dikunci saat pengajuan. Transfer sejenis harus antaranggota berbeda; konversi tabungan ke saham hanya untuk anggota yang sama.',
+        description:
+          'Mengajukan pemindahbukuan pending dan mencadangkan saldo atau saham sumber. Akun ditentukan otomatis. Harga konversi tabungan ke saham dikunci saat pengajuan. Transfer sejenis harus antaranggota berbeda; konversi tabungan ke saham hanya untuk anggota yang sama.',
       },
     },
   )
@@ -64,7 +71,8 @@ export const PemindahbukuanModules = new Elysia({ prefix: 'pemindahbukuan', tags
         422: ValidationErrorSchema,
       },
       detail: {
-        description: 'Membatalkan pending oleh pemilik sumber atau pembuat yang masih punya akses ke sumber. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
+        description:
+          'Membatalkan pending oleh pemilik sumber atau pembuat yang masih punya akses ke sumber. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
       },
     },
   )

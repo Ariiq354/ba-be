@@ -10,17 +10,13 @@ export const MasterMarginModules = new Elysia({
   tags: ['Master Margin'],
 })
   .use(AuthMacro)
-  .get(
-    '/',
-    async ({ query }) => MasterMarginService.getPaginatedMargin(query),
-    {
-      admin: true,
-      query: masterMarginModel.getMarginQuerySchema,
-      response: {
-        200: masterMarginModel.getMarginResponseSchema,
-      },
+  .get('/', async ({ query }) => MasterMarginService.getPaginatedMargin(query), {
+    admin: true,
+    query: masterMarginModel.getMarginQuerySchema,
+    response: {
+      200: masterMarginModel.getMarginResponseSchema,
     },
-  )
+  })
   .post(
     '/',
     async ({ body }) => {

@@ -15,5 +15,5 @@ export const app = new Elysia()
   .use(AuthModule)
   .listen(3000)
 
-// eslint-disable-next-line no-console
+// oxlint-disable-next-line no-console
 console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)

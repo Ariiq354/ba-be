@@ -4,11 +4,7 @@ const POSTGRES_INTEGER_MIN = -2_147_483_648n
 const POSTGRES_INTEGER_MAX = 2_147_483_647n
 
 export function assertInputInteger(value: number) {
-  if (
-    !Number.isSafeInteger(value)
-    || BigInt(value) < 0n
-    || BigInt(value) > POSTGRES_INTEGER_MAX
-  ) {
+  if (!Number.isSafeInteger(value) || BigInt(value) < 0n || BigInt(value) > POSTGRES_INTEGER_MAX) {
     throw new AmountOverflowError()
   }
 

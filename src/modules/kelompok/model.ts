@@ -14,5 +14,5 @@ export const kelompokModel = {
 } as const
 
 export type KelompokModel = {
-  [key in keyof typeof kelompokModel]: UnwrapSchema<(typeof kelompokModel)[key]>;
+  [key in keyof typeof kelompokModel]: UnwrapSchema<(typeof kelompokModel)[key]>
 }

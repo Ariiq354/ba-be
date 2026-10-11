@@ -20,7 +20,7 @@ export function getJakartaDate(date = new Date()) {
     month: '2-digit',
     day: '2-digit',
   }).formatToParts(date)
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
 
   return `${values.year}-${values.month}-${values.day}`
 }
@@ -32,7 +32,7 @@ function getMaxTransactionSequence(prefix: string, existingCodes: string[]) {
     }
 
     const suffix = code.slice(prefix.length)
-    const sequence = /^\d+$/.test(suffix) ? parseInt(suffix) : 0
+    const sequence = /^\d+$/.test(suffix) ? Number.parseInt(suffix) : 0
 
     return sequence > max ? sequence : max
   }, 0)
@@ -80,7 +80,7 @@ async function getTransactionCodeCounter(
     .from(source)
     .where(sql`left(${source.kodeTransaksi}, ${prefix.length}) = ${prefix}`)
   const lastSequence = getMaxTransactionSequence(prefix, [
-    ...existingCodes.map(item => item.kodeTransaksi),
+    ...existingCodes.map((item) => item.kodeTransaksi),
     ...retainedCodes,
   ])
 
@@ -108,16 +108,18 @@ export async function allocateTransactionCode(
 export async function retainTransactionCodes(
   tx: Transaction,
   kind: TransactionKind,
-  records: { kodeTransaksi: string, tanggalTransaksi: string }[],
+  records: { kodeTransaksi: string; tanggalTransaksi: string }[],
 ) {
-  const dates = [...new Set(records.map(record => record.tanggalTransaksi))].sort()
+  const dates = [...new Set(records.map((record) => record.tanggalTransaksi))].sort()
 
   for (const date of dates) {
     await getTransactionCodeCounter(
       tx,
       kind,
       date,
-      records.filter(record => record.tanggalTransaksi === date).map(record => record.kodeTransaksi),
+      records
+        .filter((record) => record.tanggalTransaksi === date)
+        .map((record) => record.kodeTransaksi),
     )
   }
 }

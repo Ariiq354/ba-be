@@ -68,5 +68,5 @@ export const jurnalModel = {
 } as const
 
 export type JurnalModel = {
-  [key in keyof typeof jurnalModel]: UnwrapSchema<(typeof jurnalModel)[key]>;
+  [key in keyof typeof jurnalModel]: UnwrapSchema<(typeof jurnalModel)[key]>
 }

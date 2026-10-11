@@ -52,10 +52,10 @@ export const OpenApiPlugin = new Elysia({ prefix: 'api' })
           const [reqUser, reqPass] = credentials.split(':')
 
           if (
-            reqUser
-            && reqPass
-            && safeCompare(reqUser, username)
-            && safeCompare(reqPass, password)
+            reqUser &&
+            reqPass &&
+            safeCompare(reqUser, username) &&
+            safeCompare(reqPass, password)
           ) {
             return
           }
@@ -79,9 +79,7 @@ export const OpenApiPlugin = new Elysia({ prefix: 'api' })
           version: '1.0.0',
           description: 'Berkah Amanah Backend API',
         },
-        // eslint-disable-next-line antfu/no-top-level-await
         components: await OpenAPI.components,
-        // eslint-disable-next-line antfu/no-top-level-await
         paths: await OpenAPI.getPaths(),
       },
     }),

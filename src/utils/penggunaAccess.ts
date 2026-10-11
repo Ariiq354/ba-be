@@ -22,16 +22,17 @@ export async function getPenggunaAccessCondition(connection: Connection, actorId
   }
 
   if (actor.role === 'pj') {
-    return or(
-      eq(user.id, actorId),
-      eq(user.idKelompok, actor.idKelompok),
-    )
+    return or(eq(user.id, actorId), eq(user.idKelompok, actor.idKelompok))
   }
 
   return eq(user.id, actorId)
 }
 
-export async function assertPenggunaAccess(connection: Connection, actorId: number, targetId: number) {
+export async function assertPenggunaAccess(
+  connection: Connection,
+  actorId: number,
+  targetId: number,
+) {
   if (actorId === targetId) {
     return
   }

@@ -21,9 +21,7 @@ export const WilayahService = {
     return { data }
   },
 
-  async getKabupatenKota(
-    query: WilayahModel['getKabupatenKotaQuerySchema'],
-  ) {
+  async getKabupatenKota(query: WilayahModel['getKabupatenKotaQuerySchema']) {
     const data = await db
       .select({
         id: kabupatenKota.id,
@@ -37,9 +35,7 @@ export const WilayahService = {
     return { data }
   },
 
-  async getKecamatan(
-    query: WilayahModel['getKecamatanQuerySchema'],
-  ) {
+  async getKecamatan(query: WilayahModel['getKecamatanQuerySchema']) {
     const data = await db
       .select({
         id: kecamatan.id,
@@ -53,9 +49,7 @@ export const WilayahService = {
     return { data }
   },
 
-  async getDesaKelurahan(
-    query: WilayahModel['getDesaKelurahanQuerySchema'],
-  ) {
+  async getDesaKelurahan(query: WilayahModel['getDesaKelurahanQuerySchema']) {
     const data = await db
       .select({
         id: desaKelurahan.id,

@@ -7,17 +7,13 @@ import { MasterAkunService } from './service'
 
 export const MasterAkunModules = new Elysia({ prefix: 'master-akun', tags: ['Master Akun'] })
   .use(AuthMacro)
-  .get(
-    '/',
-    async ({ query }) => MasterAkunService.getPaginatedAkun(query),
-    {
-      admin: true,
-      query: masterAkunModel.getAkunQuerySchema,
-      response: {
-        200: masterAkunModel.getAkunResponseSchema,
-      },
+  .get('/', async ({ query }) => MasterAkunService.getPaginatedAkun(query), {
+    admin: true,
+    query: masterAkunModel.getAkunQuerySchema,
+    response: {
+      200: masterAkunModel.getAkunResponseSchema,
     },
-  )
+  })
   .post(
     '/',
     async ({ body }) => {

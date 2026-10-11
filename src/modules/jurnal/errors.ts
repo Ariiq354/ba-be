@@ -25,7 +25,7 @@ export class UnbalancedJurnalError extends AppError {
   readonly totalDebit: number
   readonly totalKredit: number
 
-  constructor({ totalDebit, totalKredit }: { totalDebit: number, totalKredit: number }) {
+  constructor({ totalDebit, totalKredit }: { totalDebit: number; totalKredit: number }) {
     super({
       code: 'UNBALANCED_JURNAL_ERROR',
       message: `Total debit (${totalDebit}) harus sama dengan total kredit (${totalKredit})`,

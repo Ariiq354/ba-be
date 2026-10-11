@@ -7,10 +7,7 @@ import { HARGA_NOMINAL_SAHAM } from '#/utils/saham'
 import { HargaSahamNotFoundError } from './errors'
 
 export const MasterSahamService = {
-  async createHargaSaham(
-    userId: number,
-    data: MasterSahamModel['createHargaSahamSchema'],
-  ) {
+  async createHargaSaham(userId: number, data: MasterSahamModel['createHargaSahamSchema']) {
     await db.insert(hargaSaham).values({
       hargaNominal: HARGA_NOMINAL_SAHAM,
       hargaJual: data.hargaJual,
@@ -46,9 +43,7 @@ export const MasterSahamService = {
     }
   },
 
-  async getPaginatedHargaSaham(
-    query: MasterSahamModel['getHargaSahamQuerySchema'],
-  ) {
+  async getPaginatedHargaSaham(query: MasterSahamModel['getHargaSahamQuerySchema']) {
     const hargaSahamQuery = db
       .select({
         id: hargaSaham.id,
@@ -64,7 +59,7 @@ export const MasterSahamService = {
     const offset = (query.page - 1) * query.limit
     const total = await db.$count(hargaSahamQuery)
     const rows = await hargaSahamQuery.limit(query.limit).offset(offset)
-    const data = rows.map(row => ({
+    const data = rows.map((row) => ({
       ...row,
       hargaNominal: HARGA_NOMINAL_SAHAM,
       updatedByName: row.updatedByName ?? '',
