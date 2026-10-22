@@ -35,6 +35,33 @@ documentation under `/api/docs`. Database tables are unchanged by this migration
 bun test              # Routing, auth, validation, CORS, and documentation regression tests
 ```
 
+## Error handling
+
+Application errors extend Elysia's `HTTPError.id(code, status)` and use native
+RFC 9457 Problem Details responses (`application/problem+json`):
+
+```json
+{
+  "type": "ITEM_NOT_FOUND_ERROR",
+  "code": "ITEM_NOT_FOUND_ERROR",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Data tidak ditemukan"
+}
+```
+
+Clients should read `detail` instead of the previous `message` field. Authentication
+and authorization errors also return problem documents, not plain-text strings.
+Better Auth's own endpoints retain Better Auth's response format.
+
+Return expected errors when the caller can forward them. Inside database transactions
+and assertion helpers, throw errors so failures abort the operation and roll back writes.
+Controllers must forward returned errors before building a success response.
+
+```bash
+bun test tests/errors.test.ts
+```
+
 ## Code quality
 
 ```bash

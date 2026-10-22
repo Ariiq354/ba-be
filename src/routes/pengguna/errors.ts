@@ -1,122 +1,73 @@
-import { AppError } from '#/libs/errors'
+import { HTTPError } from 'elysia'
 
-export class PenggunaAlreadyVerifiedError extends AppError {
+export class PenggunaAlreadyVerifiedError extends HTTPError.id('PENGGUNA_ALREADY_VERIFIED_ERROR', 409) {
   readonly penggunaId: number
 
   constructor({ penggunaId }: { penggunaId: number }) {
-    super({
-      code: 'PENGGUNA_ALREADY_VERIFIED_ERROR',
-      message: 'Pengguna sudah terverifikasi sebelumnya',
-      status: 409,
-    })
+    super('Pengguna sudah terverifikasi sebelumnya')
     this.penggunaId = penggunaId
   }
 }
 
-export class PenggunaNotPendingVerificationError extends AppError {
+export class PenggunaUnverifiedError extends HTTPError.id('PENGGUNA_UNVERIFIED_ERROR', 400) {
   readonly penggunaId: number
 
   constructor({ penggunaId }: { penggunaId: number }) {
-    super({
-      code: 'PENGGUNA_NOT_PENDING_VERIFICATION_ERROR',
-      message: 'Pengguna sedang diblokir secara administratif',
-      status: 409,
-    })
+    super('Pengguna belum terverifikasi dan tidak dapat dijadikan PJ Kelompok')
     this.penggunaId = penggunaId
   }
 }
 
-export class PenggunaUnverifiedError extends AppError {
+export class PenggunaBannedError extends HTTPError.id('PENGGUNA_BANNED_ERROR', 400) {
   readonly penggunaId: number
 
   constructor({ penggunaId }: { penggunaId: number }) {
-    super({
-      code: 'PENGGUNA_UNVERIFIED_ERROR',
-      message: 'Pengguna belum terverifikasi dan tidak dapat dijadikan PJ Kelompok',
-      status: 400,
-    })
+    super('Pengguna yang sedang diblokir tidak dapat dijadikan PJ Kelompok')
     this.penggunaId = penggunaId
   }
 }
 
-export class PenggunaBannedError extends AppError {
+export class AdminCannotBePjError extends HTTPError.id('ADMIN_CANNOT_BE_PJ_ERROR', 400) {
   readonly penggunaId: number
 
   constructor({ penggunaId }: { penggunaId: number }) {
-    super({
-      code: 'PENGGUNA_BANNED_ERROR',
-      message: 'Pengguna yang sedang diblokir tidak dapat dijadikan PJ Kelompok',
-      status: 400,
-    })
+    super('Pengguna dengan role admin tidak dapat dijadikan PJ Kelompok')
     this.penggunaId = penggunaId
   }
 }
 
-export class AdminCannotBePjError extends AppError {
-  readonly penggunaId: number
-
-  constructor({ penggunaId }: { penggunaId: number }) {
-    super({
-      code: 'ADMIN_CANNOT_BE_PJ_ERROR',
-      message: 'Pengguna dengan role admin tidak dapat dijadikan PJ Kelompok',
-      status: 400,
-    })
-    this.penggunaId = penggunaId
-  }
-}
-
-export class ProfileImageRequiredError extends AppError {
+export class ProfileImageRequiredError extends HTTPError.id('PROFILE_IMAGE_REQUIRED_ERROR', 400) {
   constructor() {
-    super({
-      code: 'PROFILE_IMAGE_REQUIRED_ERROR',
-      message: 'Foto profil baru wajib diisi untuk tindakan update',
-      status: 400,
-    })
+    super('Foto profil baru wajib diisi untuk tindakan update')
   }
 }
 
-export class InvalidProfileImageError extends AppError {
+export class InvalidProfileImageError extends HTTPError.id('INVALID_PROFILE_IMAGE_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_PROFILE_IMAGE_ERROR',
-      message: 'File foto profil tidak valid atau sudah digunakan',
-      status: 400,
-    })
+    super('File foto profil tidak valid atau sudah digunakan')
   }
 }
 
-export class InvalidProfileWilayahError extends AppError {
+export class InvalidProfileWilayahError extends HTTPError.id('INVALID_PROFILE_WILAYAH_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_PROFILE_WILAYAH_ERROR',
-      message: 'Wilayah alamat tidak ditemukan atau tidak sesuai hierarki',
-      status: 400,
-    })
+    super('Wilayah alamat tidak ditemukan atau tidak sesuai hierarki')
   }
 }
 
-export class KelompokNotFoundError extends AppError {
+export class KelompokNotFoundError extends HTTPError.id('KELOMPOK_NOT_FOUND_ERROR', 404) {
   readonly idKelompok: number
 
   constructor({ idKelompok }: { idKelompok: number }) {
-    super({
-      code: 'KELOMPOK_NOT_FOUND_ERROR',
-      message: 'Kelompok pengguna tidak ditemukan',
-      status: 404,
-    })
+    super('Kelompok pengguna tidak ditemukan')
     this.idKelompok = idKelompok
   }
 }
 
-export class DuplicateNikError extends AppError {
+export class DuplicateNikError extends HTTPError.id('DUPLICATE_NIK_ERROR', 409) {
   readonly nik: string
 
   constructor({ nik }: { nik: string }) {
-    super({
-      code: 'DUPLICATE_NIK_ERROR',
-      message: `NIK '${nik}' sudah digunakan`,
-      status: 409,
-    })
+    super(`NIK '${nik}' sudah digunakan`)
     this.nik = nik
   }
 }

@@ -1,10 +1,8 @@
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
-import { ErrorSchema, SuccessSchema } from '#/libs/errors'
-import { deleteBulkSchema, idParamsSchema } from '#/libs/schema'
 import { AuthMacro } from '#/plugins/macro'
 
-import { masterAkunModel } from './model'
+import * as MasterAkunModel from './model'
 import { MasterAkunService } from './service'
 
 export const MasterAkunRoutes = new Elysia({ prefix: 'master-akun', tags: ['Master Akun'] })
@@ -13,10 +11,8 @@ export const MasterAkunRoutes = new Elysia({ prefix: 'master-akun', tags: ['Mast
     '/',
     {
       admin: true,
-      query: masterAkunModel.getAkunQuerySchema,
-      response: {
-        200: masterAkunModel.getAkunResponseSchema,
-      },
+      query: MasterAkunModel.Get.Query,
+      response: MasterAkunModel.Get.Response,
     },
     async ({ query }) => MasterAkunService.getPaginatedAkun(query),
   )
@@ -24,14 +20,12 @@ export const MasterAkunRoutes = new Elysia({ prefix: 'master-akun', tags: ['Mast
     '/',
     {
       admin: true,
-      body: masterAkunModel.createAkunSchema,
-      response: {
-        201: SuccessSchema,
-        409: ErrorSchema,
-      },
+      body: MasterAkunModel.Post.Body,
+      response: MasterAkunModel.Post.Response,
     },
     async ({ body }) => {
-      await MasterAkunService.createAkun(body)
+      const result = await MasterAkunService.createAkun(body)
+      if (result instanceof HTTPError) return result
       return status(201, { message: 'Success' })
     },
   )
@@ -39,16 +33,13 @@ export const MasterAkunRoutes = new Elysia({ prefix: 'master-akun', tags: ['Mast
     '/:id',
     {
       admin: true,
-      params: idParamsSchema,
-      body: masterAkunModel.updateAkunSchema,
-      response: {
-        200: SuccessSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-      },
+      params: MasterAkunModel.ByIdPatch.Params,
+      body: MasterAkunModel.ByIdPatch.Body,
+      response: MasterAkunModel.ByIdPatch.Response,
     },
     async ({ params, body }) => {
-      await MasterAkunService.updateAkun(params.id, body)
+      const result = await MasterAkunService.updateAkun(params.id, body)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )
@@ -56,14 +47,12 @@ export const MasterAkunRoutes = new Elysia({ prefix: 'master-akun', tags: ['Mast
     '/',
     {
       admin: true,
-      body: deleteBulkSchema,
-      response: {
-        200: SuccessSchema,
-        404: ErrorSchema,
-      },
+      body: MasterAkunModel.Delete.Body,
+      response: MasterAkunModel.Delete.Response,
     },
     async ({ body }) => {
-      await MasterAkunService.deleteAkun(body.ids)
+      const result = await MasterAkunService.deleteAkun(body.ids)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )

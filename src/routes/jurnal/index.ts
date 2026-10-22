@@ -1,9 +1,8 @@
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
-import { ErrorSchema, SuccessSchema } from '#/libs/errors'
 import { AuthMacro } from '#/plugins/macro'
 
-import { jurnalModel } from './model'
+import * as JurnalModel from './model'
 import { JurnalService } from './service'
 
 export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
@@ -12,10 +11,8 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
     '/',
     {
       admin: true,
-      query: jurnalModel.getJurnalQuerySchema,
-      response: {
-        200: jurnalModel.getJurnalResponseSchema,
-      },
+      query: JurnalModel.Get.Query,
+      response: JurnalModel.Get.Response,
     },
     ({ query }) => JurnalService.getPaginatedJurnal(query),
   )
@@ -23,11 +20,8 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
     '/:id',
     {
       admin: true,
-      params: jurnalModel.getJurnalByIdParamsSchema,
-      response: {
-        200: jurnalModel.getJurnalByIdResponseSchema,
-        404: ErrorSchema,
-      },
+      params: JurnalModel.ByIdGet.Params,
+      response: JurnalModel.ByIdGet.Response,
     },
     ({ params }) => JurnalService.getJurnalById(params.id),
   )
@@ -35,12 +29,8 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
     '/',
     {
       admin: true,
-      body: jurnalModel.createJurnalSchema,
-      response: {
-        201: SuccessSchema,
-        400: ErrorSchema,
-        404: ErrorSchema,
-      },
+      body: JurnalModel.Post.Body,
+      response: JurnalModel.Post.Response,
     },
     async ({ body, user }) => {
       await JurnalService.createJurnal(user.id, body)
@@ -51,16 +41,12 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
     '/',
     {
       admin: true,
-      body: jurnalModel.deleteJurnalSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-      },
+      body: JurnalModel.Delete.Body,
+      response: JurnalModel.Delete.Response,
     },
     async ({ body }) => {
-      await JurnalService.deleteJurnal(body.ids)
+      const result = await JurnalService.deleteJurnal(body.ids)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )

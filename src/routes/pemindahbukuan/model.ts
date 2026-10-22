@@ -2,10 +2,14 @@ import type { UnwrapModels } from 'elysia'
 
 import { t } from 'elysia'
 
+import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { searchSchema } from '#/libs/schema'
 
 const databaseIdSchema = t.Integer({ minimum: 1 })
 const positiveIntegerSchema = t.Integer({ minimum: 1 })
+const idParamsSchema = t.Object({
+  id: databaseIdSchema,
+})
 const transferProperties = {
   idUserSumber: t.Optional(
     t.Integer({
@@ -49,8 +53,8 @@ const pemindahbukuanResponseSchema = t.Object({
   approverName: t.Nullable(t.String()),
 })
 
-export const pemindahbukuanModel = {
-  getPemindahbukuanQuerySchema: t.Object({
+export const Get = {
+  Query: t.Object({
     page: t.Integer({ minimum: 1, default: 1 }),
     limit: t.Integer({ minimum: 1, maximum: 100, default: 10 }),
     ...searchSchema.properties,
@@ -61,12 +65,23 @@ export const pemindahbukuanModel = {
     }),
   }),
 
-  getPemindahbukuanResponseSchema: t.Object({
-    total: t.Integer(),
-    data: t.Array(pemindahbukuanResponseSchema),
-  }),
+  Response: {
+    200: t.Object({
+      total: t.Integer(),
+      data: t.Array(pemindahbukuanResponseSchema),
+    }),
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
 
-  createPemindahbukuanSchema: t.Union([
+export type Get = UnwrapModels<typeof Get>
+
+export const Post = {
+  Body: t.Union([
     t.Object({
       ...transferProperties,
       tipePemindahbukuan: t.Literal('tabungan_ke_tabungan'),
@@ -88,17 +103,62 @@ export const pemindahbukuanModel = {
     }),
   ]),
 
-  deletePemindahbukuanSchema: t.Object({
-    ids: t.Array(databaseIdSchema, { minItems: 1, uniqueItems: true }),
-  }),
-
-  idParamsSchema: t.Object({
-    id: databaseIdSchema,
-  }),
-
-  rejectPemindahbukuanSchema: t.Object({
-    alasanPenolakan: t.String(),
-  }),
+  Response: {
+    201: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
 } as const
 
-export type PemindahbukuanModel = UnwrapModels<typeof pemindahbukuanModel>
+export type Post = UnwrapModels<typeof Post>
+
+export const Delete = {
+  Body: t.Object({
+    ids: t.Array(databaseIdSchema, { minItems: 1, uniqueItems: true }),
+  }),
+  Response: {
+    200: SuccessSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type Delete = UnwrapModels<typeof Delete>
+
+export const ByIdApprovePatch = {
+  Params: idParamsSchema,
+  Response: {
+    200: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    409: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type ByIdApprovePatch = UnwrapModels<typeof ByIdApprovePatch>
+
+export const ByIdRejectPatch = {
+  Params: idParamsSchema,
+  Body: t.Object({
+    alasanPenolakan: t.String(),
+  }),
+  Response: {
+    200: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    409: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type ByIdRejectPatch = UnwrapModels<typeof ByIdRejectPatch>

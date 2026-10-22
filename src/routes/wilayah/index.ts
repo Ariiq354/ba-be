@@ -1,45 +1,37 @@
 import Elysia from 'elysia'
 
-import { wilayahModel } from './model'
+import * as WilayahModel from './model'
 import { WilayahService } from './service'
 
 export const WilayahRoutes = new Elysia({ prefix: 'wilayah', tags: ['Wilayah'] })
   .get(
     '/provinsi',
     {
-      response: {
-        200: wilayahModel.getProvinsiResponseSchema,
-      },
+      response: WilayahModel.ProvinsiGet.Response,
     },
     () => WilayahService.getProvinsi(),
   )
   .get(
     '/kabupaten-kota',
     {
-      query: wilayahModel.getKabupatenKotaQuerySchema,
-      response: {
-        200: wilayahModel.getKabupatenKotaResponseSchema,
-      },
+      query: WilayahModel.KabupatenKotaGet.Query,
+      response: WilayahModel.KabupatenKotaGet.Response,
     },
     ({ query }) => WilayahService.getKabupatenKota(query),
   )
   .get(
     '/kecamatan',
     {
-      query: wilayahModel.getKecamatanQuerySchema,
-      response: {
-        200: wilayahModel.getKecamatanResponseSchema,
-      },
+      query: WilayahModel.KecamatanGet.Query,
+      response: WilayahModel.KecamatanGet.Response,
     },
     ({ query }) => WilayahService.getKecamatan(query),
   )
   .get(
     '/desa-kelurahan',
     {
-      query: wilayahModel.getDesaKelurahanQuerySchema,
-      response: {
-        200: wilayahModel.getDesaKelurahanResponseSchema,
-      },
+      query: WilayahModel.DesaKelurahanGet.Query,
+      response: WilayahModel.DesaKelurahanGet.Response,
     },
     ({ query }) => WilayahService.getDesaKelurahan(query),
   )

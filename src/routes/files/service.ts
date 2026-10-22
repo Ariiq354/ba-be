@@ -4,7 +4,7 @@ import { db } from '#/libs/database'
 import { files } from '#/libs/database/schema/files'
 import { deleteFiles, generatePresignedUrl } from '#/libs/file'
 
-import type { FilesModel } from './model'
+import type * as FilesModel from './model'
 
 import { PENDING_FILE_MAX_AGE_MS, PRESIGNED_URL_EXPIRY_SECONDS, UPLOAD_CONFIG } from './config'
 import { FileTooLargeError, InvalidUploadDirectoryError, UnsupportedFileTypeError } from './errors'
@@ -12,22 +12,22 @@ import { FileTooLargeError, InvalidUploadDirectoryError, UnsupportedFileTypeErro
 const CLEANUP_LOCK_KEY = 'files:cleanup-pending'
 
 export const FilesService = {
-  async generatePresignedUpload(input: FilesModel['presignedUploadSchema']) {
+  async generatePresignedUpload(input: FilesModel.PresignedPost['Body']) {
     const dirConfig = UPLOAD_CONFIG.get(input.dir)
 
     if (!dirConfig) {
-      throw new InvalidUploadDirectoryError()
+      return new InvalidUploadDirectoryError()
     }
 
     if (input.filesize > dirConfig.maxSize) {
-      throw new FileTooLargeError({
+      return new FileTooLargeError({
         maxSizeMb: dirConfig.maxSize / 1024 / 1024,
       })
     }
 
     const extension = dirConfig.extensionByMimeType.get(input.fileType)
     if (!extension) {
-      throw new UnsupportedFileTypeError()
+      return new UnsupportedFileTypeError()
     }
 
     const key = `${input.dir}/${crypto.randomUUID()}.${extension}`
@@ -45,7 +45,7 @@ export const FilesService = {
       status: 'pending',
     })
 
-    return { uploadUrl, key }
+    return { uploadUrl, key } satisfies FilesModel.PresignedPost['Response'][201]
   },
 
   async cleanupPendingFiles() {

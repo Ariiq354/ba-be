@@ -1,9 +1,8 @@
 import Elysia, { status } from 'elysia'
 
-import { ErrorSchema, SuccessSchema } from '#/libs/errors'
 import { AuthMacro } from '#/plugins/macro'
 
-import { masterSahamModel } from './model'
+import * as MasterSahamModel from './model'
 import { MasterSahamService } from './service'
 
 export const MasterSahamRoutes = new Elysia({
@@ -15,10 +14,8 @@ export const MasterSahamRoutes = new Elysia({
     '/',
     {
       admin: true,
-      query: masterSahamModel.getHargaSahamQuerySchema,
-      response: {
-        200: masterSahamModel.getHargaSahamResponseSchema,
-      },
+      query: MasterSahamModel.Get.Query,
+      response: MasterSahamModel.Get.Response,
     },
     async ({ query }) => MasterSahamService.getPaginatedHargaSaham(query),
   )
@@ -26,10 +23,7 @@ export const MasterSahamRoutes = new Elysia({
     '/latest',
     {
       auth: true,
-      response: {
-        200: masterSahamModel.getLatestHargaSahamResponseSchema,
-        404: ErrorSchema,
-      },
+      response: MasterSahamModel.LatestGet.Response,
     },
     async () => MasterSahamService.getLatestHargaSaham(),
   )
@@ -37,10 +31,8 @@ export const MasterSahamRoutes = new Elysia({
     '/',
     {
       admin: true,
-      body: masterSahamModel.createHargaSahamSchema,
-      response: {
-        201: SuccessSchema,
-      },
+      body: MasterSahamModel.Post.Body,
+      response: MasterSahamModel.Post.Response,
     },
     async ({ body, user }) => {
       await MasterSahamService.createHargaSaham(user.id, body)

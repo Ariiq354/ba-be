@@ -2,12 +2,16 @@ import type { UnwrapModels } from 'elysia'
 
 import { t } from 'elysia'
 
+import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { searchSchema } from '#/libs/schema'
 
 import { PAYMENT_ACCOUNT_IDS } from './constants'
 
 const databaseIdSchema = t.Integer({ minimum: 1 })
 const positiveIntegerSchema = t.Integer({ minimum: 1 })
+const idParamsSchema = t.Object({
+  id: databaseIdSchema,
+})
 
 const paymentAccountSchema = t.UnionEnum(PAYMENT_ACCOUNT_IDS)
 
@@ -50,18 +54,25 @@ const mutasiResponseSchema = t.Object({
   approverName: t.Nullable(t.String()),
 })
 
-export const simpananModel = {
-  getPaymentAccountOptionsResponseSchema: t.Object({
-    data: t.Array(
-      t.Object({
-        id: t.Integer(),
-        kodeAkun: t.String(),
-        namaAkun: t.String(),
-      }),
-    ),
-  }),
+export const AkunPembayaranOptionsGet = {
+  Response: {
+    200: t.Object({
+      data: t.Array(
+        t.Object({
+          id: t.Integer(),
+          kodeAkun: t.String(),
+          namaAkun: t.String(),
+        }),
+      ),
+    }),
+    401: UnauthorizedSchema,
+  },
+} as const
 
-  getSaldoQuerySchema: t.Object({
+export type AkunPembayaranOptionsGet = UnwrapModels<typeof AkunPembayaranOptionsGet>
+
+export const SaldoGet = {
+  Query: t.Object({
     userId: t.Optional(
       t.Integer({
         minimum: 1,
@@ -71,17 +82,28 @@ export const simpananModel = {
     ),
   }),
 
-  getSaldoResponseSchema: t.Object({
-    saldoTabungan: t.Integer(),
-    jumlahSaham: t.Integer(),
-    totalPenarikanPending: t.Integer(),
-    totalPemindahbukuanPending: t.Integer(),
-    totalSahamPending: t.Integer(),
-    saldoEfektif: t.Integer(),
-    jumlahSahamEfektif: t.Integer(),
-  }),
+  Response: {
+    200: t.Object({
+      saldoTabungan: t.Integer(),
+      jumlahSaham: t.Integer(),
+      totalPenarikanPending: t.Integer(),
+      totalPemindahbukuanPending: t.Integer(),
+      totalSahamPending: t.Integer(),
+      saldoEfektif: t.Integer(),
+      jumlahSahamEfektif: t.Integer(),
+    }),
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
 
-  getMutasiQuerySchema: t.Object({
+export type SaldoGet = UnwrapModels<typeof SaldoGet>
+
+export const MutasiGet = {
+  Query: t.Object({
     page: t.Integer({ minimum: 1, default: 1 }),
     limit: t.Integer({ minimum: 1, maximum: 100, default: 10 }),
     ...searchSchema.properties,
@@ -91,12 +113,23 @@ export const simpananModel = {
     jenisSimpanan: t.UnionEnum(['all', 'tabungan', 'saham'], { default: 'all' }),
   }),
 
-  getMutasiResponseSchema: t.Object({
-    total: t.Integer(),
-    data: t.Array(mutasiResponseSchema),
-  }),
+  Response: {
+    200: t.Object({
+      total: t.Integer(),
+      data: t.Array(mutasiResponseSchema),
+    }),
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
 
-  createSetoranSchema: t.Union([
+export type MutasiGet = UnwrapModels<typeof MutasiGet>
+
+export const MutasiSetoranPost = {
+  Body: t.Union([
     t.Object({
       jenisSimpanan: t.Literal('tabungan'),
       userId: targetUserSchema,
@@ -113,24 +146,83 @@ export const simpananModel = {
     }),
   ]),
 
-  createPenarikanSchema: t.Object({
+  Response: {
+    201: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type MutasiSetoranPost = UnwrapModels<typeof MutasiSetoranPost>
+
+export const MutasiPenarikanPost = {
+  Body: t.Object({
     userId: targetUserSchema,
     akunId: paymentAccountSchema,
     nilaiTransaksi: positiveIntegerSchema,
     keterangan: nullableDescriptionSchema,
   }),
 
-  deleteMutasiSchema: t.Object({
-    ids: t.Array(databaseIdSchema, { minItems: 1, uniqueItems: true }),
-  }),
-
-  idParamsSchema: t.Object({
-    id: databaseIdSchema,
-  }),
-
-  rejectMutasiSchema: t.Object({
-    alasanPenolakan: t.String(),
-  }),
+  Response: {
+    201: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
 } as const
 
-export type SimpananModel = UnwrapModels<typeof simpananModel>
+export type MutasiPenarikanPost = UnwrapModels<typeof MutasiPenarikanPost>
+
+export const MutasiDelete = {
+  Body: t.Object({
+    ids: t.Array(databaseIdSchema, { minItems: 1, uniqueItems: true }),
+  }),
+  Response: {
+    200: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ErrorSchema,
+    404: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type MutasiDelete = UnwrapModels<typeof MutasiDelete>
+
+export const MutasiByIdApprovePatch = {
+  Params: idParamsSchema,
+  Response: {
+    200: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    409: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type MutasiByIdApprovePatch = UnwrapModels<typeof MutasiByIdApprovePatch>
+
+export const MutasiByIdRejectPatch = {
+  Params: idParamsSchema,
+  Body: t.Object({
+    alasanPenolakan: t.String(),
+  }),
+  Response: {
+    200: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    409: ErrorSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type MutasiByIdRejectPatch = UnwrapModels<typeof MutasiByIdRejectPatch>

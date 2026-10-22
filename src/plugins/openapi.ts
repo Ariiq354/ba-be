@@ -1,7 +1,7 @@
 import type { Elysia } from 'elysia'
 
 import { openapi } from '@elysia/openapi'
-import { status } from 'elysia'
+import { problem } from 'elysia'
 import { Buffer } from 'node:buffer'
 import { timingSafeEqual } from 'node:crypto'
 import process from 'node:process'
@@ -67,7 +67,7 @@ export const OpenApiPlugin = (app: Elysia) =>
           }
 
           set.headers['www-authenticate'] = 'Basic realm="API Documentation"'
-          return status(401, 'Unauthorized')
+          return problem(401, { type: 'UNAUTHORIZED', code: 'UNAUTHORIZED', detail: 'Unauthorized' })
         }
       }
     })

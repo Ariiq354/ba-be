@@ -1,9 +1,8 @@
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
-import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { AuthMacro } from '#/plugins/macro'
 
-import { simpananModel } from './model'
+import * as SimpananModel from './model'
 import { SimpananService } from './service'
 
 export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'] })
@@ -12,10 +11,7 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/akun-pembayaran/options',
     {
       auth: true,
-      response: {
-        200: simpananModel.getPaymentAccountOptionsResponseSchema,
-        401: UnauthorizedSchema,
-      },
+      response: SimpananModel.AkunPembayaranOptionsGet.Response,
       detail: {
         description: 'Pilihan akun kas/bank aktif yang dapat digunakan untuk setoran dan penarikan simpanan.',
       },
@@ -26,15 +22,8 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/saldo',
     {
       auth: true,
-      query: simpananModel.getSaldoQuerySchema,
-      response: {
-        200: simpananModel.getSaldoResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      query: SimpananModel.SaldoGet.Query,
+      response: SimpananModel.SaldoGet.Response,
     },
     ({ user, query }) => SimpananService.getSaldo(user.id, query.userId),
   )
@@ -42,15 +31,8 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/mutasi',
     {
       auth: true,
-      query: simpananModel.getMutasiQuerySchema,
-      response: {
-        200: simpananModel.getMutasiResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      query: SimpananModel.MutasiGet.Query,
+      response: SimpananModel.MutasiGet.Response,
       detail: {
         description:
           'Admin melihat semua mutasi; PJ melihat mutasi kelompok yang ditanggung dan dirinya sendiri; anggota biasa hanya miliknya. userId memfilter anggota dalam cakupan akses tersebut.',
@@ -62,15 +44,8 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/mutasi/setoran',
     {
       auth: true,
-      body: simpananModel.createSetoranSchema,
-      response: {
-        201: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      body: SimpananModel.MutasiSetoranPost.Body,
+      response: SimpananModel.MutasiSetoranPost.Response,
     },
     async ({ user, body }) => {
       await SimpananService.createSetoran(user.id, body)
@@ -81,15 +56,8 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/mutasi/penarikan',
     {
       auth: true,
-      body: simpananModel.createPenarikanSchema,
-      response: {
-        201: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      body: SimpananModel.MutasiPenarikanPost.Body,
+      response: SimpananModel.MutasiPenarikanPost.Response,
     },
     async ({ user, body }) => {
       await SimpananService.createPenarikan(user.id, body)
@@ -100,14 +68,8 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/mutasi',
     {
       auth: true,
-      body: simpananModel.deleteMutasiSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      body: SimpananModel.MutasiDelete.Body,
+      response: SimpananModel.MutasiDelete.Response,
       detail: {
         description:
           'Membatalkan pengajuan pending milik sendiri atau yang dibuat sendiri untuk anggota yang masih berada dalam cakupan akses. Seluruh ID harus valid; jika satu gagal, seluruh penghapusan dibatalkan.',
@@ -122,16 +84,8 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/mutasi/:id/approve',
     {
       admin: true,
-      params: simpananModel.idParamsSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ForbiddenSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      params: SimpananModel.MutasiByIdApprovePatch.Params,
+      response: SimpananModel.MutasiByIdApprovePatch.Response,
     },
     async ({ user, params }) => {
       await SimpananService.approveMutasi(params.id, user.id)
@@ -142,20 +96,13 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     '/mutasi/:id/reject',
     {
       admin: true,
-      params: simpananModel.idParamsSchema,
-      body: simpananModel.rejectMutasiSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ForbiddenSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      params: SimpananModel.MutasiByIdRejectPatch.Params,
+      body: SimpananModel.MutasiByIdRejectPatch.Body,
+      response: SimpananModel.MutasiByIdRejectPatch.Response,
     },
     async ({ user, params, body }) => {
-      await SimpananService.rejectMutasi(params.id, user.id, body.alasanPenolakan)
+      const result = await SimpananService.rejectMutasi(params.id, user.id, body.alasanPenolakan)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )

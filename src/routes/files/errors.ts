@@ -1,34 +1,22 @@
-import { AppError } from '#/libs/errors'
+import { HTTPError } from 'elysia'
 
-export class InvalidUploadDirectoryError extends AppError {
+export class InvalidUploadDirectoryError extends HTTPError.id('INVALID_UPLOAD_DIRECTORY_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_UPLOAD_DIRECTORY_ERROR',
-      message: 'Direktori unggahan tidak valid',
-      status: 400,
-    })
+    super('Direktori unggahan tidak valid')
   }
 }
 
-export class FileTooLargeError extends AppError {
+export class FileTooLargeError extends HTTPError.id('FILE_TOO_LARGE_ERROR', 400) {
   readonly maxSizeMb: number
 
   constructor({ maxSizeMb }: { maxSizeMb: number }) {
-    super({
-      code: 'FILE_TOO_LARGE_ERROR',
-      message: `Ukuran file melebihi batas maksimum (${maxSizeMb}MB)`,
-      status: 400,
-    })
+    super(`Ukuran file melebihi batas maksimum (${maxSizeMb}MB)`)
     this.maxSizeMb = maxSizeMb
   }
 }
 
-export class UnsupportedFileTypeError extends AppError {
+export class UnsupportedFileTypeError extends HTTPError.id('UNSUPPORTED_FILE_TYPE_ERROR', 400) {
   constructor() {
-    super({
-      code: 'UNSUPPORTED_FILE_TYPE_ERROR',
-      message: 'Tipe file tidak didukung',
-      status: 400,
-    })
+    super('Tipe file tidak didukung')
   }
 }

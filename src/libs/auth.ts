@@ -14,12 +14,6 @@ const roles = {
   wanhat: userAc,
 }
 
-export const PENDING_VERIFICATION_BAN_REASON = 'Pengguna belum terverifikasi'
-
-export function isPendingVerificationBanReason(reason: string | null): boolean {
-  return reason === PENDING_VERIFICATION_BAN_REASON
-}
-
 export const auth = betterAuth({
   trustedOrigins: FRONTEND_ORIGINS,
   database: drizzleAdapter(db, {
@@ -36,7 +30,7 @@ export const auth = betterAuth({
           data: {
             ...user,
             banned: true,
-            banReason: PENDING_VERIFICATION_BAN_REASON,
+            banReason: 'Pengguna belum terverifikasi',
             banExpires: null,
           },
         }),
@@ -89,7 +83,3 @@ export const auth = betterAuth({
   },
   plugins: [openAPI(), username(), adminPlugins({ roles })],
 })
-
-export type UserWithId = Omit<typeof auth.$Infer.Session.user, 'id'> & {
-  id: number
-}

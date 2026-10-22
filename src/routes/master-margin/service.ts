@@ -4,14 +4,14 @@ import { db } from '#/libs/database'
 import { margin } from '#/libs/database/schema/master'
 import { ItemNotFoundError, ItemsNotFoundError } from '#/libs/errors'
 
-import type { MasterMarginModel } from './model'
+import type * as MasterMarginModel from './model'
 
 export const MasterMarginService = {
-  async createMargin(data: MasterMarginModel['createMarginSchema']) {
+  async createMargin(data: MasterMarginModel.Post['Body']) {
     await db.insert(margin).values(data)
   },
 
-  async getPaginatedMargin(query: MasterMarginModel['getMarginQuerySchema']) {
+  async getPaginatedMargin(query: MasterMarginModel.Get['Query']) {
     const marginQuery = db
       .select({
         id: margin.id,
@@ -35,25 +35,25 @@ export const MasterMarginService = {
       updatedAt: row.updatedAt.toISOString(),
     }))
 
-    return { total, data }
+    return { total, data } satisfies MasterMarginModel.Get['Response'][200]
   },
 
-  async updateMargin(id: number, data: MasterMarginModel['updateMarginSchema']) {
+  async updateMargin(id: MasterMarginModel.ByIdPatch['Params']['id'], data: MasterMarginModel.ByIdPatch['Body']) {
     const updatedRows = await db.update(margin).set(data).where(eq(margin.id, id)).returning()
 
     if (updatedRows.length === 0) {
-      throw new ItemNotFoundError({
+      return new ItemNotFoundError({
         id,
         message: `Margin dengan ID '${id}' tidak ditemukan`,
       })
     }
   },
 
-  async deleteMargin(ids: number[]) {
+  async deleteMargin(ids: MasterMarginModel.Delete['Body']['ids']) {
     const deletedRows = await db.delete(margin).where(inArray(margin.id, ids)).returning()
 
     if (deletedRows.length === 0) {
-      throw new ItemsNotFoundError({
+      return new ItemsNotFoundError({
         ids,
         message: `Margin dengan ID '${ids.join(', ')}' tidak ditemukan`,
       })

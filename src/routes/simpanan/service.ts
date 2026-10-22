@@ -14,7 +14,7 @@ import { calculateSahamAmounts } from '#/libs/saham'
 import { getPendingSimpanan } from '#/libs/simpananBalance'
 import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/libs/transaction'
 
-import type { SimpananModel } from './model'
+import type * as SimpananModel from './model'
 
 import { PAYMENT_ACCOUNT_IDS } from './constants'
 import {
@@ -64,10 +64,10 @@ export const SimpananService = {
       .where(and(inArray(akun.id, PAYMENT_ACCOUNT_IDS), eq(akun.isActive, true)))
       .orderBy(asc(akun.namaAkun), asc(akun.id))
 
-    return { data }
+    return { data } satisfies SimpananModel.AkunPembayaranOptionsGet['Response'][200]
   },
 
-  async getSaldo(actorId: number, userId = actorId) {
+  async getSaldo(actorId: number, userId: SimpananModel.SaldoGet['Query']['userId'] = actorId) {
     // Read balances and reservations from the same snapshot during approvals.
     return db.transaction(
       async (tx) => {
@@ -90,9 +90,9 @@ export const SimpananService = {
         const saldoTabungan = result.saldoTabungan ?? 0
         const jumlahSaham = result.jumlahSaham ?? 0
         const pending = await getPendingSimpanan(tx, userId)
-        const totalPenarikanPending = Number(pending.penarikan)
-        const totalPemindahbukuanPending = Number(pending.pemindahbukuanTabungan)
-        const totalSahamPending = Number(pending.pemindahbukuanSaham)
+        const totalPenarikanPending = pending.penarikan
+        const totalPemindahbukuanPending = pending.pemindahbukuanTabungan
+        const totalSahamPending = pending.pemindahbukuanSaham
 
         return {
           saldoTabungan,
@@ -102,13 +102,13 @@ export const SimpananService = {
           totalSahamPending,
           saldoEfektif: Math.max(0, saldoTabungan - totalPenarikanPending - totalPemindahbukuanPending),
           jumlahSahamEfektif: Math.max(0, jumlahSaham - totalSahamPending),
-        }
+        } satisfies SimpananModel.SaldoGet['Response'][200]
       },
       { isolationLevel: 'repeatable read' },
     )
   },
 
-  async getMutasi(actorId: number, query: SimpananModel['getMutasiQuerySchema']) {
+  async getMutasi(actorId: number, query: SimpananModel.MutasiGet['Query']) {
     const accessCondition = await getPenggunaAccessCondition(db, actorId)
 
     if (accessCondition !== undefined) {
@@ -191,10 +191,10 @@ export const SimpananService = {
       updatedAt: row.updatedAt.toISOString(),
     }))
 
-    return { total, data }
+    return { total, data } satisfies SimpananModel.MutasiGet['Response'][200]
   },
 
-  async createSetoran(actorId: number, data: SimpananModel['createSetoranSchema']) {
+  async createSetoran(actorId: number, data: SimpananModel.MutasiSetoranPost['Body']) {
     const userId = data.userId ?? actorId
 
     await db.transaction(async (tx) => {
@@ -204,11 +204,6 @@ export const SimpananService = {
       await assertMember(tx, userId)
 
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
-      await tx
-        .select({ id: saldoSimpanan.id })
-        .from(saldoSimpanan)
-        .where(eq(saldoSimpanan.userId, userId))
-        .for('update')
 
       const [paymentAccount] = await tx
         .select({ id: akun.id, isActive: akun.isActive })
@@ -272,7 +267,7 @@ export const SimpananService = {
     })
   },
 
-  async createPenarikan(actorId: number, data: SimpananModel['createPenarikanSchema']) {
+  async createPenarikan(actorId: number, data: SimpananModel.MutasiPenarikanPost['Body']) {
     const userId = data.userId ?? actorId
 
     await db.transaction(async (tx) => {
@@ -300,9 +295,9 @@ export const SimpananService = {
       }
 
       const pending = await getPendingSimpanan(tx, userId)
-      const available = BigInt(balance?.saldoTabungan ?? 0) - pending.penarikan - pending.pemindahbukuanTabungan
+      const available = (balance?.saldoTabungan ?? 0) - pending.penarikan - pending.pemindahbukuanTabungan
 
-      if (available < BigInt(nilaiTransaksi)) {
+      if (available < nilaiTransaksi) {
         throw new InsufficientBalanceError()
       }
 
@@ -330,7 +325,7 @@ export const SimpananService = {
     })
   },
 
-  async deleteMutasi(actorId: number, ids: number[]) {
+  async deleteMutasi(actorId: number, ids: SimpananModel.MutasiDelete['Body']['ids']) {
     await db.transaction(async (tx) => {
       const accessCondition = await getPenggunaAccessCondition(tx, actorId)
       const accessibleUsers = tx.select({ id: user.id }).from(user).where(accessCondition)
@@ -362,7 +357,7 @@ export const SimpananService = {
     })
   },
 
-  async approveMutasi(id: number, adminId: number) {
+  async approveMutasi(id: SimpananModel.MutasiByIdApprovePatch['Params']['id'], adminId: number) {
     await db.transaction(async (tx) => {
       const [target] = await tx.select().from(mutasiSimpanan).where(eq(mutasiSimpanan.id, id)).for('update')
 
@@ -392,10 +387,9 @@ export const SimpananService = {
 
         if (target.jenisTransaksi === 'penarikan') {
           const otherPending = await getPendingSimpanan(tx, target.userId, { mutasiId: target.id })
-          const available =
-            BigInt(balance?.saldoTabungan ?? 0) - otherPending.penarikan - otherPending.pemindahbukuanTabungan
+          const available = (balance?.saldoTabungan ?? 0) - otherPending.penarikan - otherPending.pemindahbukuanTabungan
 
-          if (available < BigInt(target.nilaiTransaksi)) {
+          if (available < target.nilaiTransaksi) {
             throw new InsufficientBalanceError()
           }
 
@@ -530,11 +524,15 @@ export const SimpananService = {
     })
   },
 
-  async rejectMutasi(id: number, adminId: number, reason: string) {
+  async rejectMutasi(
+    id: SimpananModel.MutasiByIdRejectPatch['Params']['id'],
+    adminId: number,
+    reason: SimpananModel.MutasiByIdRejectPatch['Body']['alasanPenolakan'],
+  ) {
     const rejectionReason = reason.trim()
 
     if (!rejectionReason) {
-      throw new InvalidRejectionReasonError()
+      return new InvalidRejectionReasonError()
     }
 
     await db.transaction(async (tx) => {

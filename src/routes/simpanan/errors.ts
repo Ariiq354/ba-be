@@ -1,109 +1,73 @@
-import { AppError } from '#/libs/errors'
+import { HTTPError } from 'elysia'
 
-export class NotMemberError extends AppError {
+export class NotMemberError extends HTTPError.id('NOT_MEMBER_ERROR', 400) {
   readonly userId: number
 
   constructor({ userId }: { userId: number }) {
-    super({
-      code: 'NOT_MEMBER_ERROR',
-      message: 'Pengguna belum terdaftar sebagai anggota',
-      status: 400,
-    })
+    super('Pengguna belum terdaftar sebagai anggota')
     this.userId = userId
   }
 }
 
-export class InvalidPaymentAccountError extends AppError {
+export class InvalidPaymentAccountError extends HTTPError.id('INVALID_PAYMENT_ACCOUNT_ERROR', 400) {
   readonly akunId: number
 
   constructor({ akunId }: { akunId: number }) {
-    super({
-      code: 'INVALID_PAYMENT_ACCOUNT_ERROR',
-      message: 'Akun pembayaran tidak valid',
-      status: 400,
-    })
+    super('Akun pembayaran tidak valid')
     this.akunId = akunId
   }
 }
 
-export class InvalidAccountError extends AppError {
+export class InvalidAccountError extends HTTPError.id('INVALID_ACCOUNT_ERROR', 400) {
   readonly akunId: number
 
   constructor({ akunId, message = 'Akun pembayaran tidak tersedia' }: { akunId: number; message?: string }) {
-    super({
-      code: 'INVALID_ACCOUNT_ERROR',
-      message,
-      status: 400,
-    })
+    super(message)
     this.akunId = akunId
   }
 }
 
-export class HargaSahamNotFoundError extends AppError {
+export class HargaSahamNotFoundError extends HTTPError.id('HARGA_SAHAM_NOT_FOUND_ERROR', 404) {
   constructor() {
-    super({
-      code: 'HARGA_SAHAM_NOT_FOUND_ERROR',
-      message: 'Harga saham belum tersedia',
-      status: 404,
-    })
+    super('Harga saham belum tersedia')
   }
 }
 
-export class InsufficientBalanceError extends AppError {
+export class InsufficientBalanceError extends HTTPError.id('INSUFFICIENT_BALANCE_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INSUFFICIENT_BALANCE_ERROR',
-      message: 'Saldo efektif tidak mencukupi',
-      status: 400,
-    })
+    super('Saldo efektif tidak mencukupi')
   }
 }
 
-export class MutasiSimpananNotFoundError extends AppError {
+export class MutasiSimpananNotFoundError extends HTTPError.id('MUTASI_SIMPANAN_NOT_FOUND_ERROR', 404) {
   readonly id: number
 
   constructor({ id }: { id: number }) {
-    super({
-      code: 'MUTASI_SIMPANAN_NOT_FOUND_ERROR',
-      message: 'Mutasi simpanan tidak ditemukan',
-      status: 404,
-    })
+    super('Mutasi simpanan tidak ditemukan')
     this.id = id
   }
 }
 
-export class MutasiSimpananAlreadyProcessedError extends AppError {
+export class MutasiSimpananAlreadyProcessedError extends HTTPError.id('MUTASI_SIMPANAN_ALREADY_PROCESSED_ERROR', 409) {
   readonly id: number
 
   constructor({ id }: { id: number }) {
-    super({
-      code: 'MUTASI_SIMPANAN_ALREADY_PROCESSED_ERROR',
-      message: 'Mutasi simpanan sudah diproses',
-      status: 409,
-    })
+    super('Mutasi simpanan sudah diproses')
     this.id = id
   }
 }
 
-export class MutasiSimpananNotDeletedError extends AppError {
+export class MutasiSimpananNotDeletedError extends HTTPError.id('MUTASI_SIMPANAN_NOT_DELETED_ERROR', 404) {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
-    super({
-      code: 'MUTASI_SIMPANAN_NOT_DELETED_ERROR',
-      message: 'Mutasi simpanan pending tidak ditemukan',
-      status: 404,
-    })
+    super('Mutasi simpanan pending tidak ditemukan')
     this.ids = ids
   }
 }
 
-export class InvalidRejectionReasonError extends AppError {
+export class InvalidRejectionReasonError extends HTTPError.id('INVALID_REJECTION_REASON_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_REJECTION_REASON_ERROR',
-      message: 'Alasan penolakan wajib diisi',
-      status: 400,
-    })
+    super('Alasan penolakan wajib diisi')
   }
 }

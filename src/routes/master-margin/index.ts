@@ -1,10 +1,8 @@
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
-import { ErrorSchema, SuccessSchema } from '#/libs/errors'
-import { deleteBulkSchema, idParamsSchema } from '#/libs/schema'
 import { AuthMacro } from '#/plugins/macro'
 
-import { masterMarginModel } from './model'
+import * as MasterMarginModel from './model'
 import { MasterMarginService } from './service'
 
 export const MasterMarginRoutes = new Elysia({
@@ -16,10 +14,8 @@ export const MasterMarginRoutes = new Elysia({
     '/',
     {
       admin: true,
-      query: masterMarginModel.getMarginQuerySchema,
-      response: {
-        200: masterMarginModel.getMarginResponseSchema,
-      },
+      query: MasterMarginModel.Get.Query,
+      response: MasterMarginModel.Get.Response,
     },
     async ({ query }) => MasterMarginService.getPaginatedMargin(query),
   )
@@ -27,10 +23,8 @@ export const MasterMarginRoutes = new Elysia({
     '/',
     {
       admin: true,
-      body: masterMarginModel.createMarginSchema,
-      response: {
-        201: SuccessSchema,
-      },
+      body: MasterMarginModel.Post.Body,
+      response: MasterMarginModel.Post.Response,
     },
     async ({ body }) => {
       await MasterMarginService.createMargin(body)
@@ -41,15 +35,13 @@ export const MasterMarginRoutes = new Elysia({
     '/:id',
     {
       admin: true,
-      params: idParamsSchema,
-      body: masterMarginModel.updateMarginSchema,
-      response: {
-        200: SuccessSchema,
-        404: ErrorSchema,
-      },
+      params: MasterMarginModel.ByIdPatch.Params,
+      body: MasterMarginModel.ByIdPatch.Body,
+      response: MasterMarginModel.ByIdPatch.Response,
     },
     async ({ params, body }) => {
-      await MasterMarginService.updateMargin(params.id, body)
+      const result = await MasterMarginService.updateMargin(params.id, body)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )
@@ -57,14 +49,12 @@ export const MasterMarginRoutes = new Elysia({
     '/',
     {
       admin: true,
-      body: deleteBulkSchema,
-      response: {
-        200: SuccessSchema,
-        404: ErrorSchema,
-      },
+      body: MasterMarginModel.Delete.Body,
+      response: MasterMarginModel.Delete.Response,
     },
     async ({ body }) => {
-      await MasterMarginService.deleteMargin(body.ids)
+      const result = await MasterMarginService.deleteMargin(body.ids)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )

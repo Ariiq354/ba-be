@@ -5,12 +5,12 @@ import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
 
-import type { MasterSahamModel } from './model'
+import type * as MasterSahamModel from './model'
 
 import { HargaSahamNotFoundError } from './errors'
 
 export const MasterSahamService = {
-  async createHargaSaham(userId: number, data: MasterSahamModel['createHargaSahamSchema']) {
+  async createHargaSaham(userId: number, data: MasterSahamModel.Post['Body']) {
     await db.insert(hargaSaham).values({
       hargaNominal: HARGA_NOMINAL_SAHAM,
       hargaJual: data.hargaJual,
@@ -34,7 +34,7 @@ export const MasterSahamService = {
     })
 
     if (!row) {
-      throw new HargaSahamNotFoundError()
+      return new HargaSahamNotFoundError()
     }
 
     return {
@@ -43,10 +43,10 @@ export const MasterSahamService = {
       hargaJual: row.hargaJual,
       updatedByName: row.updater?.name ?? '',
       createdAt: row.createdAt.toISOString(),
-    }
+    } satisfies MasterSahamModel.LatestGet['Response'][200]
   },
 
-  async getPaginatedHargaSaham(query: MasterSahamModel['getHargaSahamQuerySchema']) {
+  async getPaginatedHargaSaham(query: MasterSahamModel.Get['Query']) {
     const hargaSahamQuery = db
       .select({
         id: hargaSaham.id,
@@ -69,6 +69,6 @@ export const MasterSahamService = {
       createdAt: row.createdAt.toISOString(),
     }))
 
-    return { total, data }
+    return { total, data } satisfies MasterSahamModel.Get['Response'][200]
   },
 }

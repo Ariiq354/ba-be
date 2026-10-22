@@ -1,16 +1,17 @@
 import Elysia from 'elysia'
 
 import { auth } from '#/libs/auth'
+import { ForbiddenError, UnauthorizedError } from '#/libs/errors'
 
 export const AuthMacro = new Elysia({ name: 'AuthMacro' }).macro({
   auth: {
-    async derive({ status, request: { headers } }) {
+    async derive({ request: { headers } }) {
       const session = await auth.api.getSession({
         headers,
       })
 
       if (!session) {
-        return status(401)
+        return new UnauthorizedError()
       }
 
       return {
@@ -23,17 +24,17 @@ export const AuthMacro = new Elysia({ name: 'AuthMacro' }).macro({
     },
   },
   admin: {
-    async derive({ status, request: { headers } }) {
+    async derive({ request: { headers } }) {
       const session = await auth.api.getSession({
         headers,
       })
 
       if (!session) {
-        return status(401)
+        return new UnauthorizedError()
       }
 
       if (session.user.role !== 'admin') {
-        return status(403)
+        return new ForbiddenError()
       }
 
       return {

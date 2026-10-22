@@ -1,70 +1,46 @@
-import { AppError } from '#/libs/errors'
+import { HTTPError } from 'elysia'
 
-export class InvalidTransferDestinationError extends AppError {
+export class InvalidTransferDestinationError extends HTTPError.id('INVALID_TRANSFER_DESTINATION_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_TRANSFER_DESTINATION_ERROR',
-      message: 'Pemindahbukuan sejenis harus dilakukan ke anggota lain',
-      status: 400,
-    })
+    super('Pemindahbukuan sejenis harus dilakukan ke anggota lain')
   }
 }
 
-export class InvalidConversionDestinationError extends AppError {
+export class InvalidConversionDestinationError extends HTTPError.id('INVALID_CONVERSION_DESTINATION_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_CONVERSION_DESTINATION_ERROR',
-      message: 'Konversi tabungan ke saham hanya dapat dilakukan untuk anggota yang sama',
-      status: 400,
-    })
+    super('Konversi tabungan ke saham hanya dapat dilakukan untuk anggota yang sama')
   }
 }
 
-export class InsufficientSharesError extends AppError {
+export class InsufficientSharesError extends HTTPError.id('INSUFFICIENT_SHARES_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INSUFFICIENT_SHARES_ERROR',
-      message: 'Jumlah saham tersedia tidak mencukupi',
-      status: 400,
-    })
+    super('Jumlah saham tersedia tidak mencukupi')
   }
 }
 
-export class PemindahbukuanNotFoundError extends AppError {
+export class PemindahbukuanNotFoundError extends HTTPError.id('PEMINDAHBUKUAN_NOT_FOUND_ERROR', 404) {
   readonly id: number
 
   constructor({ id }: { id: number }) {
-    super({
-      code: 'PEMINDAHBUKUAN_NOT_FOUND_ERROR',
-      message: 'Pemindahbukuan tidak ditemukan',
-      status: 404,
-    })
+    super('Pemindahbukuan tidak ditemukan')
     this.id = id
   }
 }
 
-export class PemindahbukuanAlreadyProcessedError extends AppError {
+export class PemindahbukuanAlreadyProcessedError extends HTTPError.id('PEMINDAHBUKUAN_ALREADY_PROCESSED_ERROR', 409) {
   readonly id: number
 
   constructor({ id }: { id: number }) {
-    super({
-      code: 'PEMINDAHBUKUAN_ALREADY_PROCESSED_ERROR',
-      message: 'Pemindahbukuan sudah diproses',
-      status: 409,
-    })
+    super('Pemindahbukuan sudah diproses')
     this.id = id
   }
 }
 
-export class PemindahbukuanNotDeletedError extends AppError {
+export class PemindahbukuanNotDeletedError extends HTTPError.id('PEMINDAHBUKUAN_NOT_DELETED_ERROR', 404) {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
-    super({
-      code: 'PEMINDAHBUKUAN_NOT_DELETED_ERROR',
-      message: 'Pemindahbukuan pending tidak ditemukan',
-      status: 404,
-    })
+    super('Pemindahbukuan pending tidak ditemukan')
     this.ids = ids
   }
 }

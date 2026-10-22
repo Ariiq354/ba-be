@@ -1,6 +1,5 @@
-import { and, asc, desc, eq, ilike, isNull, like, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, isNull, like, or, sql } from 'drizzle-orm'
 
-import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASON } from '#/libs/auth'
 import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { files } from '#/libs/database/schema/files'
@@ -9,8 +8,9 @@ import { userProfile } from '#/libs/database/schema/users'
 import { ItemNotFoundError, logUnhandledError } from '#/libs/errors'
 import { deleteFiles } from '#/libs/file'
 import { getPenggunaAccessCondition } from '#/libs/penggunaAccess'
+import { isUniqueViolation } from '#/libs/pgcode'
 
-import type { PenggunaModel } from './model'
+import type * as PenggunaModel from './model'
 import type { ProfileWilayah } from './utils'
 
 import {
@@ -18,7 +18,6 @@ import {
   InvalidProfileImageError,
   KelompokNotFoundError,
   PenggunaAlreadyVerifiedError,
-  PenggunaNotPendingVerificationError,
   ProfileImageRequiredError,
 } from './errors'
 import { getMembershipPeriod, validateProfileWilayah } from './utils'
@@ -40,7 +39,7 @@ export const PenggunaService = {
       .where(condition)
       .orderBy(asc(user.name), asc(user.id))
 
-    return { data }
+    return { data } satisfies PenggunaModel.OptionsGet['Response'][200]
   },
 
   async getProfile(penggunaId: number) {
@@ -67,20 +66,20 @@ export const PenggunaService = {
       .where(eq(user.id, penggunaId))
 
     if (!profile) {
-      throw new ItemNotFoundError({
+      return new ItemNotFoundError({
         id: penggunaId,
         message: 'Data profil pengguna tidak ditemukan',
       })
     }
 
-    return profile
+    return profile satisfies PenggunaModel.ProfileGet['Response'][200]
   },
 
-  async updateProfile(penggunaId: number, data: PenggunaModel['updateProfileSchema']) {
+  async updateProfile(penggunaId: number, data: PenggunaModel.ProfilePatch['Body']) {
     const imageAction = data.imageAction ?? 'keep'
 
     if (imageAction === 'update' && !data.image) {
-      throw new ProfileImageRequiredError()
+      return new ProfileImageRequiredError()
     }
 
     const { oldImageToDelete } = await db.transaction(async (tx) => {
@@ -192,34 +191,23 @@ export const PenggunaService = {
           Object.assign(profileData, wilayahUpdates)
         }
 
-        if (typeof data.nik === 'string') {
-          await tx.execute(sql`
-            select pg_advisory_xact_lock(
-              hashtextextended(${`user-profile:nik:${data.nik}`}, 0)
-            )
-          `)
-
-          const [existingNik] = await tx
-            .select({ idUser: userProfile.idUser })
-            .from(userProfile)
-            .where(and(eq(userProfile.nik, data.nik), ne(userProfile.idUser, penggunaId)))
-            .limit(1)
-
-          if (existingNik) {
+        try {
+          await tx
+            .insert(userProfile)
+            .values({
+              idUser: penggunaId,
+              ...profileData,
+            })
+            .onConflictDoUpdate({
+              target: userProfile.idUser,
+              set: profileData,
+            })
+        } catch (error) {
+          if (typeof data.nik === 'string' && isUniqueViolation(error)) {
             throw new DuplicateNikError({ nik: data.nik })
           }
+          throw error
         }
-
-        await tx
-          .insert(userProfile)
-          .values({
-            idUser: penggunaId,
-            ...profileData,
-          })
-          .onConflictDoUpdate({
-            target: userProfile.idUser,
-            set: profileData,
-          })
       }
 
       if (oldImageToDelete) {
@@ -241,11 +229,11 @@ export const PenggunaService = {
     }
   },
 
-  async getPaginatedPengguna(query: PenggunaModel['getPenggunaQuerySchema']) {
+  async getPaginatedPengguna(query: PenggunaModel.Get['Query']) {
     const conditions = []
 
     if (query.status === 'pending') {
-      conditions.push(and(eq(user.banned, true), eq(user.banReason, PENDING_VERIFICATION_BAN_REASON)))
+      conditions.push(eq(user.banned, true))
     } else if (query.status === 'verified') {
       conditions.push(or(eq(user.banned, false), isNull(user.banned)))
     }
@@ -288,15 +276,14 @@ export const PenggunaService = {
     const total = await db.$count(qb)
     const data = await qb.limit(query.limit).offset(offset)
 
-    return { total, data }
+    return { total, data } satisfies PenggunaModel.Get['Response'][200]
   },
 
-  async verifyPengguna(penggunaId: number) {
+  async verifyPengguna(penggunaId: PenggunaModel.ByIdVerifikasiPatch['Params']['id']) {
     return db.transaction(async (tx) => {
       const [targetPengguna] = await tx
         .select({
           banned: user.banned,
-          banReason: user.banReason,
           idKelompok: user.idKelompok,
         })
         .from(user)
@@ -312,12 +299,6 @@ export const PenggunaService = {
 
       if (targetPengguna.banned !== true) {
         throw new PenggunaAlreadyVerifiedError({
-          penggunaId,
-        })
-      }
-
-      if (!isPendingVerificationBanReason(targetPengguna.banReason)) {
-        throw new PenggunaNotPendingVerificationError({
           penggunaId,
         })
       }
@@ -388,7 +369,7 @@ export const PenggunaService = {
 
       return {
         noAnggota,
-      }
+      } satisfies PenggunaModel.ByIdVerifikasiPatch['Response'][200]
     })
   },
 }
