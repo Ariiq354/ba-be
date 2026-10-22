@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, inArray, or } from 'drizzle-orm'
 
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
@@ -54,7 +54,7 @@ export const MasterAkunService = {
   },
 
   async updateAkun(id: MasterAkunModel.ByIdPatch['Params']['id'], data: MasterAkunModel.ByIdPatch['Body']) {
-    if (!data.kodeAkun) {
+    try {
       const updatedRows = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
 
       if (updatedRows.length === 0) {
@@ -63,38 +63,12 @@ export const MasterAkunService = {
           message: `Akun dengan ID '${id}' tidak ditemukan`,
         })
       }
-
-      return
+    } catch (error) {
+      if (data.kodeAkun !== undefined && isUniqueViolation(error)) {
+        return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
+      }
+      throw error
     }
-
-    const kodeAkun = data.kodeAkun
-
-    await db.transaction(async (tx) => {
-      await tx.execute(sql`
-        select pg_advisory_xact_lock(
-          hashtextextended(${`master-akun:${kodeAkun}`}, 0)
-        )
-      `)
-
-      const [existing] = await tx
-        .select({ id: akun.id })
-        .from(akun)
-        .where(and(eq(akun.kodeAkun, kodeAkun), ne(akun.id, id)))
-        .limit(1)
-
-      if (existing) {
-        throw new DuplicateKodeAkunError({ kodeAkun })
-      }
-
-      const updatedRows = await tx.update(akun).set(data).where(eq(akun.id, id)).returning()
-
-      if (updatedRows.length === 0) {
-        throw new ItemNotFoundError({
-          id,
-          message: `Akun dengan ID '${id}' tidak ditemukan`,
-        })
-      }
-    })
   },
 
   async deleteAkun(ids: MasterAkunModel.Delete['Body']['ids']) {

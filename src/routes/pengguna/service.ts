@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, isNull, like, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, isNull, like, or, sql } from 'drizzle-orm'
 
 import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
@@ -8,6 +8,7 @@ import { userProfile } from '#/libs/database/schema/users'
 import { ItemNotFoundError, logUnhandledError } from '#/libs/errors'
 import { deleteFiles } from '#/libs/file'
 import { getPenggunaAccessCondition } from '#/libs/penggunaAccess'
+import { isUniqueViolation } from '#/libs/pgcode'
 
 import type * as PenggunaModel from './model'
 import type { ProfileWilayah } from './utils'
@@ -190,34 +191,23 @@ export const PenggunaService = {
           Object.assign(profileData, wilayahUpdates)
         }
 
-        if (typeof data.nik === 'string') {
-          await tx.execute(sql`
-            select pg_advisory_xact_lock(
-              hashtextextended(${`user-profile:nik:${data.nik}`}, 0)
-            )
-          `)
-
-          const [existingNik] = await tx
-            .select({ idUser: userProfile.idUser })
-            .from(userProfile)
-            .where(and(eq(userProfile.nik, data.nik), ne(userProfile.idUser, penggunaId)))
-            .limit(1)
-
-          if (existingNik) {
+        try {
+          await tx
+            .insert(userProfile)
+            .values({
+              idUser: penggunaId,
+              ...profileData,
+            })
+            .onConflictDoUpdate({
+              target: userProfile.idUser,
+              set: profileData,
+            })
+        } catch (error) {
+          if (typeof data.nik === 'string' && isUniqueViolation(error)) {
             throw new DuplicateNikError({ nik: data.nik })
           }
+          throw error
         }
-
-        await tx
-          .insert(userProfile)
-          .values({
-            idUser: penggunaId,
-            ...profileData,
-          })
-          .onConflictDoUpdate({
-            target: userProfile.idUser,
-            set: profileData,
-          })
       }
 
       if (oldImageToDelete) {

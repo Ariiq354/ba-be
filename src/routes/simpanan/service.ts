@@ -204,11 +204,6 @@ export const SimpananService = {
       await assertMember(tx, userId)
 
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
-      await tx
-        .select({ id: saldoSimpanan.id })
-        .from(saldoSimpanan)
-        .where(eq(saldoSimpanan.userId, userId))
-        .for('update')
 
       const [paymentAccount] = await tx
         .select({ id: akun.id, isActive: akun.isActive })
