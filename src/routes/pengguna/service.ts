@@ -10,7 +10,7 @@ import { ItemNotFoundError, logUnhandledError } from '#/libs/errors'
 import { deleteFiles } from '#/libs/file'
 import { getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 
-import type { PenggunaModel } from './model'
+import type * as PenggunaModel from './model'
 import type { ProfileWilayah } from './utils'
 
 import {
@@ -40,7 +40,7 @@ export const PenggunaService = {
       .where(condition)
       .orderBy(asc(user.name), asc(user.id))
 
-    return { data }
+    return { data } satisfies PenggunaModel.OptionsGet['Response'][200]
   },
 
   async getProfile(penggunaId: number) {
@@ -67,20 +67,20 @@ export const PenggunaService = {
       .where(eq(user.id, penggunaId))
 
     if (!profile) {
-      throw new ItemNotFoundError({
+      return new ItemNotFoundError({
         id: penggunaId,
         message: 'Data profil pengguna tidak ditemukan',
       })
     }
 
-    return profile
+    return profile satisfies PenggunaModel.ProfileGet['Response'][200]
   },
 
-  async updateProfile(penggunaId: number, data: PenggunaModel['updateProfileSchema']) {
+  async updateProfile(penggunaId: number, data: PenggunaModel.ProfilePatch['Body']) {
     const imageAction = data.imageAction ?? 'keep'
 
     if (imageAction === 'update' && !data.image) {
-      throw new ProfileImageRequiredError()
+      return new ProfileImageRequiredError()
     }
 
     const { oldImageToDelete } = await db.transaction(async (tx) => {
@@ -241,7 +241,7 @@ export const PenggunaService = {
     }
   },
 
-  async getPaginatedPengguna(query: PenggunaModel['getPenggunaQuerySchema']) {
+  async getPaginatedPengguna(query: PenggunaModel.Get['Query']) {
     const conditions = []
 
     if (query.status === 'pending') {
@@ -288,10 +288,10 @@ export const PenggunaService = {
     const total = await db.$count(qb)
     const data = await qb.limit(query.limit).offset(offset)
 
-    return { total, data }
+    return { total, data } satisfies PenggunaModel.Get['Response'][200]
   },
 
-  async verifyPengguna(penggunaId: number) {
+  async verifyPengguna(penggunaId: PenggunaModel.ByIdVerifikasiPatch['Params']['id']) {
     return db.transaction(async (tx) => {
       const [targetPengguna] = await tx
         .select({
@@ -388,7 +388,7 @@ export const PenggunaService = {
 
       return {
         noAnggota,
-      }
+      } satisfies PenggunaModel.ByIdVerifikasiPatch['Response'][200]
     })
   },
 }

@@ -7,7 +7,7 @@ import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
-import type { JurnalModel } from './model'
+import type * as JurnalModel from './model'
 
 import {
   AkunNotFoundError,
@@ -60,7 +60,7 @@ function isValidTransactionDate(value: string) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
 }
 
-function validateJurnalInput(data: JurnalModel['createJurnalSchema']) {
+function validateJurnalInput(data: JurnalModel.Post['Body']) {
   if (!isValidTransactionDate(data.tanggalTransaksi)) {
     throw new InvalidJurnalError({ reason: 'invalid_date' })
   }
@@ -93,7 +93,7 @@ function validateJurnalInput(data: JurnalModel['createJurnalSchema']) {
 }
 
 export const JurnalService = {
-  async getPaginatedJurnal(query: JurnalModel['getJurnalQuerySchema']) {
+  async getPaginatedJurnal(query: JurnalModel.Get['Query']) {
     const condition = query.search ? ilike(jurnal.kodeTransaksi, `%${query.search}%`) : undefined
     const offset = (query.page - 1) * query.limit
 
@@ -109,7 +109,7 @@ export const JurnalService = {
     ])
 
     if (headers.length === 0) {
-      return { total, data: [] }
+      return { total, data: [] } satisfies JurnalModel.Get['Response'][200]
     }
 
     const details = await db
@@ -153,14 +153,14 @@ export const JurnalService = {
       })),
     )
 
-    return { total, data }
+    return { total, data } satisfies JurnalModel.Get['Response'][200]
   },
 
-  async getJurnalById(id: number) {
+  async getJurnalById(id: JurnalModel.ByIdGet['Params']['id']) {
     const [header] = await db.select(jurnalHeaderSelection).from(jurnal).where(eq(jurnal.id, id))
 
     if (!header) {
-      throw new JurnalNotFoundError({ id })
+      return new JurnalNotFoundError({ id })
     }
 
     const details = await db
@@ -175,10 +175,10 @@ export const JurnalService = {
       ...header,
       createdAt: header.createdAt.toISOString(),
       details,
-    }
+    } satisfies JurnalModel.ByIdGet['Response'][200]
   },
 
-  async createJurnal(userId: number, data: JurnalModel['createJurnalSchema']) {
+  async createJurnal(userId: number, data: JurnalModel.Post['Body']) {
     validateJurnalInput(data)
 
     await db.transaction(async (tx) => {
@@ -229,11 +229,11 @@ export const JurnalService = {
     })
   },
 
-  async deleteJurnal(ids: number[]) {
+  async deleteJurnal(ids: JurnalModel.Delete['Body']['ids']) {
     const uniqueIds = [...new Set(ids)]
 
     if (uniqueIds.length === 0) {
-      throw new InvalidJurnalIdsError()
+      return new InvalidJurnalIdsError()
     }
 
     await db.transaction(async (tx) => {

@@ -1,4 +1,4 @@
-import { AppError } from '#/libs/errors'
+import { HTTPError } from 'elysia'
 
 const invalidJurnalMessages = {
   invalid_date: 'Format tanggal transaksi tidak valid',
@@ -8,105 +8,73 @@ const invalidJurnalMessages = {
 
 type InvalidJurnalReason = keyof typeof invalidJurnalMessages
 
-export class InvalidJurnalError extends AppError {
+export class InvalidJurnalError extends HTTPError.id('INVALID_JURNAL_ERROR', 400) {
   readonly reason: InvalidJurnalReason
 
   constructor({ reason }: { reason: InvalidJurnalReason }) {
-    super({
-      code: 'INVALID_JURNAL_ERROR',
-      message: invalidJurnalMessages[reason],
-      status: 400,
-    })
+    super(invalidJurnalMessages[reason])
     this.reason = reason
   }
 }
 
-export class UnbalancedJurnalError extends AppError {
+export class UnbalancedJurnalError extends HTTPError.id('UNBALANCED_JURNAL_ERROR', 400) {
   readonly totalDebit: number
   readonly totalKredit: number
 
   constructor({ totalDebit, totalKredit }: { totalDebit: number; totalKredit: number }) {
-    super({
-      code: 'UNBALANCED_JURNAL_ERROR',
-      message: `Total debit (${totalDebit}) harus sama dengan total kredit (${totalKredit})`,
-      status: 400,
-    })
+    super(`Total debit (${totalDebit}) harus sama dengan total kredit (${totalKredit})`)
     this.totalDebit = totalDebit
     this.totalKredit = totalKredit
   }
 }
 
-export class AkunNotFoundError extends AppError {
+export class AkunNotFoundError extends HTTPError.id('ACCOUNT_NOT_FOUND_ERROR', 404) {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
-    super({
-      code: 'ACCOUNT_NOT_FOUND_ERROR',
-      message: `Akun dengan ID '${ids.join(', ')}' tidak ditemukan`,
-      status: 404,
-    })
+    super(`Akun dengan ID '${ids.join(', ')}' tidak ditemukan`)
     this.ids = ids
   }
 }
 
-export class InactiveAkunError extends AppError {
+export class InactiveAkunError extends HTTPError.id('INACTIVE_ACCOUNT_ERROR', 400) {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
-    super({
-      code: 'INACTIVE_ACCOUNT_ERROR',
-      message: `Akun dengan ID '${ids.join(', ')}' tidak aktif`,
-      status: 400,
-    })
+    super(`Akun dengan ID '${ids.join(', ')}' tidak aktif`)
     this.ids = ids
   }
 }
 
-export class JurnalNotFoundError extends AppError {
+export class JurnalNotFoundError extends HTTPError.id('JURNAL_NOT_FOUND_ERROR', 404) {
   readonly id: number
 
   constructor({ id }: { id: number }) {
-    super({
-      code: 'JURNAL_NOT_FOUND_ERROR',
-      message: `Jurnal dengan ID '${id}' tidak ditemukan`,
-      status: 404,
-    })
+    super(`Jurnal dengan ID '${id}' tidak ditemukan`)
     this.id = id
   }
 }
 
-export class JurnalsNotFoundError extends AppError {
+export class JurnalsNotFoundError extends HTTPError.id('JURNAL_NOT_FOUND_ERROR', 404) {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
-    super({
-      code: 'JURNAL_NOT_FOUND_ERROR',
-      message: `Jurnal dengan ID '${ids.join(', ')}' tidak ditemukan`,
-      status: 404,
-    })
+    super(`Jurnal dengan ID '${ids.join(', ')}' tidak ditemukan`)
     this.ids = ids
   }
 }
 
-export class InvalidJurnalIdsError extends AppError {
+export class InvalidJurnalIdsError extends HTTPError.id('INVALID_JURNAL_ERROR', 400) {
   constructor() {
-    super({
-      code: 'INVALID_JURNAL_ERROR',
-      message: 'Minimal satu ID jurnal harus diberikan',
-      status: 400,
-    })
+    super('Minimal satu ID jurnal harus diberikan')
   }
 }
 
-export class AutoJurnalsImmutableError extends AppError {
+export class AutoJurnalsImmutableError extends HTTPError.id('AUTO_JURNAL_IMMUTABLE_ERROR', 409) {
   readonly ids: number[]
 
   constructor({ ids }: { ids: number[] }) {
-    super({
-      code: 'AUTO_JURNAL_IMMUTABLE_ERROR',
-      message: `Jurnal otomatis dengan ID '${ids.join(', ')}' tidak dapat dihapus`,
-      status: 409,
-    })
+    super(`Jurnal otomatis dengan ID '${ids.join(', ')}' tidak dapat dihapus`)
     this.ids = ids
   }
 }

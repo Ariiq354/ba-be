@@ -2,18 +2,24 @@ import type { UnwrapModels } from 'elysia'
 
 import { t } from 'elysia'
 
-export const filesModel = {
-  presignedUploadSchema: t.Object({
+import { ErrorSchema, UnauthorizedSchema } from '#/libs/errors'
+
+export const PresignedPost = {
+  Body: t.Object({
     dir: t.String({ minLength: 1 }),
     filename: t.String({ minLength: 1 }),
     filesize: t.Integer({ minimum: 1 }),
     fileType: t.String({ minLength: 1 }),
   }),
 
-  presignedUploadResponseSchema: t.Object({
-    uploadUrl: t.String(),
-    key: t.String(),
-  }),
+  Response: {
+    201: t.Object({
+      uploadUrl: t.String(),
+      key: t.String(),
+    }),
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+  },
 } as const
 
-export type FilesModel = UnwrapModels<typeof filesModel>
+export type PresignedPost = UnwrapModels<typeof PresignedPost>

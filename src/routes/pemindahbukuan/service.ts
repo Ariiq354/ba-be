@@ -14,7 +14,7 @@ import { calculateSahamAmounts } from '#/libs/saham'
 import { getPendingSimpanan } from '#/libs/simpananBalance'
 import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/libs/transaction'
 
-import type { PemindahbukuanModel } from './model'
+import type * as PemindahbukuanModel from './model'
 
 import {
   HargaSahamNotFoundError,
@@ -133,7 +133,7 @@ function getRequiredAccountIds(
 }
 
 export const PemindahbukuanService = {
-  async getPemindahbukuan(actorId: number, query: PemindahbukuanModel['getPemindahbukuanQuerySchema']) {
+  async getPemindahbukuan(actorId: number, query: PemindahbukuanModel.Get['Query']) {
     const accessCondition = await getPenggunaAccessCondition(db, actorId)
     if (accessCondition !== undefined) {
       await assertMember(db, actorId)
@@ -215,10 +215,10 @@ export const PemindahbukuanService = {
       updatedAt: row.updatedAt.toISOString(),
     }))
 
-    return { total, data }
+    return { total, data } satisfies PemindahbukuanModel.Get['Response'][200]
   },
 
-  async createPemindahbukuan(actorId: number, data: PemindahbukuanModel['createPemindahbukuanSchema']) {
+  async createPemindahbukuan(actorId: number, data: PemindahbukuanModel.Post['Body']) {
     const idUserSumber = data.idUserSumber ?? actorId
     assertTransferDestination({ ...data, idUserSumber })
 
@@ -290,7 +290,7 @@ export const PemindahbukuanService = {
     })
   },
 
-  async deletePemindahbukuan(actorId: number, ids: number[]) {
+  async deletePemindahbukuan(actorId: number, ids: PemindahbukuanModel.Delete['Body']['ids']) {
     await db.transaction(async (tx) => {
       const accessCondition = await getPenggunaAccessCondition(tx, actorId)
       const accessibleUsers = tx.select({ id: user.id }).from(user).where(accessCondition)
@@ -320,7 +320,7 @@ export const PemindahbukuanService = {
     })
   },
 
-  async approvePemindahbukuan(id: number, adminId: number) {
+  async approvePemindahbukuan(id: PemindahbukuanModel.ByIdApprovePatch['Params']['id'], adminId: number) {
     await db.transaction(async (tx) => {
       const [target] = await tx.select().from(pemindahbukuan).where(eq(pemindahbukuan.id, id)).for('update')
       if (!target) {
@@ -432,10 +432,14 @@ export const PemindahbukuanService = {
     })
   },
 
-  async rejectPemindahbukuan(id: number, adminId: number, reason: string) {
+  async rejectPemindahbukuan(
+    id: PemindahbukuanModel.ByIdRejectPatch['Params']['id'],
+    adminId: number,
+    reason: PemindahbukuanModel.ByIdRejectPatch['Body']['alasanPenolakan'],
+  ) {
     const rejectionReason = reason.trim()
     if (!rejectionReason) {
-      throw new InvalidRejectionReasonError()
+      return new InvalidRejectionReasonError()
     }
 
     await db.transaction(async (tx) => {

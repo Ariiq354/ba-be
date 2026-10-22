@@ -1,14 +1,10 @@
-import { AppError } from '#/libs/errors'
+import { HTTPError } from 'elysia'
 
-export class DuplicateKodeAkunError extends AppError {
+export class DuplicateKodeAkunError extends HTTPError.id('DUPLICATE_KODE_AKUN_ERROR', 409) {
   readonly kodeAkun: string
 
   constructor({ kodeAkun }: { kodeAkun: string }) {
-    super({
-      code: 'DUPLICATE_KODE_AKUN_ERROR',
-      message: `Kode akun '${kodeAkun}' sudah digunakan`,
-      status: 409,
-    })
+    super(`Kode akun '${kodeAkun}' sudah digunakan`)
     this.kodeAkun = kodeAkun
   }
 }

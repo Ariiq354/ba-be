@@ -5,23 +5,23 @@ import { akun } from '#/libs/database/schema/akun'
 import { ItemNotFoundError, ItemsNotFoundError } from '#/libs/errors'
 import { isUniqueViolation } from '#/libs/pgcode'
 
-import type { MasterAkunModel } from './model'
+import type * as MasterAkunModel from './model'
 
 import { DuplicateKodeAkunError } from './errors'
 
 export const MasterAkunService = {
-  async createAkun(data: MasterAkunModel['createAkunSchema']) {
+  async createAkun(data: MasterAkunModel.Post['Body']) {
     try {
       await db.insert(akun).values(data)
     } catch (error) {
       if (isUniqueViolation(error)) {
-        throw new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
+        return new DuplicateKodeAkunError({ kodeAkun: data.kodeAkun })
       }
       throw error
     }
   },
 
-  async getPaginatedAkun(query: MasterAkunModel['getAkunQuerySchema']) {
+  async getPaginatedAkun(query: MasterAkunModel.Get['Query']) {
     const conditions = []
 
     if (query.kategori && query.kategori !== 'all') {
@@ -50,15 +50,15 @@ export const MasterAkunService = {
     const total = await db.$count(akunQuery)
     const data = await akunQuery.limit(query.limit).offset(offset)
 
-    return { total, data }
+    return { total, data } satisfies MasterAkunModel.Get['Response'][200]
   },
 
-  async updateAkun(id: number, data: MasterAkunModel['updateAkunSchema']) {
+  async updateAkun(id: MasterAkunModel.ByIdPatch['Params']['id'], data: MasterAkunModel.ByIdPatch['Body']) {
     if (!data.kodeAkun) {
       const updatedRows = await db.update(akun).set(data).where(eq(akun.id, id)).returning()
 
       if (updatedRows.length === 0) {
-        throw new ItemNotFoundError({
+        return new ItemNotFoundError({
           id,
           message: `Akun dengan ID '${id}' tidak ditemukan`,
         })
@@ -97,11 +97,11 @@ export const MasterAkunService = {
     })
   },
 
-  async deleteAkun(ids: number[]) {
+  async deleteAkun(ids: MasterAkunModel.Delete['Body']['ids']) {
     const deletedRows = await db.delete(akun).where(inArray(akun.id, ids)).returning()
 
     if (deletedRows.length === 0) {
-      throw new ItemsNotFoundError({
+      return new ItemsNotFoundError({
         ids,
         message: `Akun dengan ID '${ids.join(', ')}' tidak ditemukan`,
       })

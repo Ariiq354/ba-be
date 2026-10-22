@@ -1,10 +1,10 @@
 import { cron } from '@elysia/cron'
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
 import { auth } from '#/libs/auth'
-import { ErrorSchema, logUnhandledError, UnauthorizedSchema } from '#/libs/errors'
+import { logUnhandledError, UnauthorizedError } from '#/libs/errors'
 
-import { filesModel } from './model'
+import * as FilesModel from './model'
 import { FilesService } from './service'
 
 export const FilesRoutes = new Elysia({ prefix: 'files', tags: ['Files'] })
@@ -30,7 +30,7 @@ export const FilesRoutes = new Elysia({ prefix: 'files', tags: ['Files'] })
   .post(
     '/presigned',
     {
-      body: filesModel.presignedUploadSchema,
+      body: FilesModel.PresignedPost.Body,
       async beforeHandle({ body, request: { headers } }) {
         if (body.dir === 'avatar') {
           return
@@ -38,14 +38,14 @@ export const FilesRoutes = new Elysia({ prefix: 'files', tags: ['Files'] })
 
         const session = await auth.api.getSession({ headers })
         if (!session) {
-          return status(401, 'Unauthorized')
+          return new UnauthorizedError()
         }
       },
-      response: {
-        201: filesModel.presignedUploadResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-      },
+      response: FilesModel.PresignedPost.Response,
     },
-    async ({ body }) => status(201, await FilesService.generatePresignedUpload(body)),
+    async ({ body }) => {
+      const result = await FilesService.generatePresignedUpload(body)
+      if (result instanceof HTTPError) return result
+      return status(201, result)
+    },
   )

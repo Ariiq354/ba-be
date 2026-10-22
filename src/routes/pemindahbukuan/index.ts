@@ -1,9 +1,8 @@
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
-import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { AuthMacro } from '#/plugins/macro'
 
-import { pemindahbukuanModel } from './model'
+import * as PemindahbukuanModel from './model'
 import { PemindahbukuanService } from './service'
 
 export const PemindahbukuanRoutes = new Elysia({
@@ -15,15 +14,8 @@ export const PemindahbukuanRoutes = new Elysia({
     '/',
     {
       auth: true,
-      query: pemindahbukuanModel.getPemindahbukuanQuerySchema,
-      response: {
-        200: pemindahbukuanModel.getPemindahbukuanResponseSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      query: PemindahbukuanModel.Get.Query,
+      response: PemindahbukuanModel.Get.Response,
       detail: {
         description:
           'Admin melihat semua pemindahbukuan; PJ dan anggota melihat transaksi dengan sumber atau tujuan dalam cakupan aksesnya. userId memfilter sumber atau tujuan dalam cakupan tersebut.',
@@ -35,15 +27,8 @@ export const PemindahbukuanRoutes = new Elysia({
     '/',
     {
       auth: true,
-      body: pemindahbukuanModel.createPemindahbukuanSchema,
-      response: {
-        201: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      body: PemindahbukuanModel.Post.Body,
+      response: PemindahbukuanModel.Post.Response,
       detail: {
         description:
           'Mengajukan pemindahbukuan pending dan mencadangkan saldo atau saham sumber. Akun ditentukan otomatis. Harga konversi tabungan ke saham dikunci saat pengajuan. Transfer sejenis harus antaranggota berbeda; konversi tabungan ke saham hanya untuk anggota yang sama.',
@@ -58,14 +43,8 @@ export const PemindahbukuanRoutes = new Elysia({
     '/',
     {
       auth: true,
-      body: pemindahbukuanModel.deletePemindahbukuanSchema,
-      response: {
-        200: SuccessSchema,
-        401: UnauthorizedSchema,
-        403: ErrorSchema,
-        404: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      body: PemindahbukuanModel.Delete.Body,
+      response: PemindahbukuanModel.Delete.Response,
       detail: {
         description:
           'Membatalkan pending oleh pemilik sumber atau pembuat yang masih punya akses ke sumber. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
@@ -80,16 +59,8 @@ export const PemindahbukuanRoutes = new Elysia({
     '/:id/approve',
     {
       admin: true,
-      params: pemindahbukuanModel.idParamsSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ForbiddenSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      params: PemindahbukuanModel.ByIdApprovePatch.Params,
+      response: PemindahbukuanModel.ByIdApprovePatch.Response,
     },
     async ({ user, params }) => {
       await PemindahbukuanService.approvePemindahbukuan(params.id, user.id)
@@ -100,20 +71,13 @@ export const PemindahbukuanRoutes = new Elysia({
     '/:id/reject',
     {
       admin: true,
-      params: pemindahbukuanModel.idParamsSchema,
-      body: pemindahbukuanModel.rejectPemindahbukuanSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        401: UnauthorizedSchema,
-        403: ForbiddenSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-        422: ValidationErrorSchema,
-      },
+      params: PemindahbukuanModel.ByIdRejectPatch.Params,
+      body: PemindahbukuanModel.ByIdRejectPatch.Body,
+      response: PemindahbukuanModel.ByIdRejectPatch.Response,
     },
     async ({ user, params, body }) => {
-      await PemindahbukuanService.rejectPemindahbukuan(params.id, user.id, body.alasanPenolakan)
+      const result = await PemindahbukuanService.rejectPemindahbukuan(params.id, user.id, body.alasanPenolakan)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )

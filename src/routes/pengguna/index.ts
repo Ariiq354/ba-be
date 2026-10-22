@@ -1,10 +1,8 @@
-import Elysia, { status } from 'elysia'
+import Elysia, { HTTPError, status } from 'elysia'
 
-import { ErrorSchema, SuccessSchema, UnauthorizedSchema } from '#/libs/errors'
-import { idParamsSchema } from '#/libs/schema'
 import { AuthMacro } from '#/plugins/macro'
 
-import { penggunaModel } from './model'
+import * as PenggunaModel from './model'
 import { PenggunaService } from './service'
 
 export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'] })
@@ -13,11 +11,7 @@ export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'
     '/options',
     {
       auth: true,
-      response: {
-        200: penggunaModel.getPenggunaOptionsResponseSchema,
-        401: UnauthorizedSchema,
-        404: ErrorSchema,
-      },
+      response: PenggunaModel.OptionsGet.Response,
     },
     ({ user }) => PenggunaService.getPenggunaOptions(user.id),
   )
@@ -25,10 +19,7 @@ export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'
     '/profile',
     {
       auth: true,
-      response: {
-        200: penggunaModel.getProfileResponseSchema,
-        404: ErrorSchema,
-      },
+      response: PenggunaModel.ProfileGet.Response,
     },
     ({ user }) => PenggunaService.getProfile(user.id),
   )
@@ -36,16 +27,12 @@ export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'
     '/profile',
     {
       auth: true,
-      body: penggunaModel.updateProfileSchema,
-      response: {
-        200: SuccessSchema,
-        400: ErrorSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-      },
+      body: PenggunaModel.ProfilePatch.Body,
+      response: PenggunaModel.ProfilePatch.Response,
     },
     async ({ user, body }) => {
-      await PenggunaService.updateProfile(user.id, body)
+      const result = await PenggunaService.updateProfile(user.id, body)
+      if (result instanceof HTTPError) return result
       return status(200, { message: 'Success' })
     },
   )
@@ -53,10 +40,8 @@ export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'
     '/',
     {
       admin: true,
-      query: penggunaModel.getPenggunaQuerySchema,
-      response: {
-        200: penggunaModel.getPenggunaResponseSchema,
-      },
+      query: PenggunaModel.Get.Query,
+      response: PenggunaModel.Get.Response,
     },
     ({ query }) => PenggunaService.getPaginatedPengguna(query),
   )
@@ -64,12 +49,8 @@ export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'
     '/:id/verifikasi',
     {
       admin: true,
-      params: idParamsSchema,
-      response: {
-        200: penggunaModel.verifyPenggunaResponseSchema,
-        404: ErrorSchema,
-        409: ErrorSchema,
-      },
+      params: PenggunaModel.ByIdVerifikasiPatch.Params,
+      response: PenggunaModel.ByIdVerifikasiPatch.Response,
     },
     ({ params }) => PenggunaService.verifyPengguna(params.id),
   )

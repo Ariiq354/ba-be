@@ -1,84 +1,69 @@
-import { t } from 'elysia'
-
-export interface AppErrorOptions {
-  readonly code: string
-  readonly message: string
-  readonly status: number
-}
-
-export class AppError extends Error {
-  readonly code: string
-  readonly status: number
-
-  constructor({ code, message, status }: AppErrorOptions) {
-    super(message)
-    this.name = new.target.name
-    this.code = code
-    this.status = status
-  }
-
-  toResponse() {
-    return Response.json(
-      {
-        code: this.code,
-        message: this.message,
-      },
-      {
-        status: this.status,
-      },
-    )
-  }
-}
+import { HTTPError, t } from 'elysia'
 
 export function logUnhandledError(error: unknown) {
-  if (!(error instanceof AppError)) {
+  if (!(error instanceof HTTPError)) {
     console.error('Unhandled application error:', error)
   }
 }
 
-export class ItemNotFoundError extends AppError {
+export class ItemNotFoundError extends HTTPError.id('ITEM_NOT_FOUND_ERROR', 404) {
   readonly id: number
 
   constructor({ id, message = 'Data tidak ditemukan' }: { id: number; message?: string }) {
-    super({
-      code: 'ITEM_NOT_FOUND_ERROR',
-      message,
-      status: 404,
-    })
+    super(message)
     this.id = id
   }
 }
 
-export class ItemsNotFoundError extends AppError {
+export class ItemsNotFoundError extends HTTPError.id('ITEM_NOT_FOUND_ERROR', 404) {
   readonly ids: number[]
 
   constructor({ ids, message = 'Data tidak ditemukan' }: { ids: number[]; message?: string }) {
-    super({
-      code: 'ITEM_NOT_FOUND_ERROR',
-      message,
-      status: 404,
-    })
+    super(message)
     this.ids = ids
   }
 }
 
-export class PenggunaAccessDeniedError extends AppError {
+export class PenggunaAccessDeniedError extends HTTPError.id('PENGGUNA_ACCESS_DENIED_ERROR', 403) {
   constructor() {
-    super({
-      code: 'PENGGUNA_ACCESS_DENIED_ERROR',
-      message: 'Tidak memiliki akses ke pengguna tersebut',
-      status: 403,
-    })
+    super('Tidak memiliki akses ke pengguna tersebut')
+  }
+}
+
+export class UnauthorizedError extends HTTPError.id('UNAUTHORIZED', 401) {
+  constructor() {
+    super('Unauthorized')
+  }
+}
+
+export class ForbiddenError extends HTTPError.id('FORBIDDEN', 403) {
+  constructor() {
+    super('Forbidden')
   }
 }
 
 export const ErrorSchema = t.Object({
+  type: t.String(),
   code: t.String(),
-  message: t.String(),
+  title: t.String(),
+  status: t.Integer(),
+  detail: t.Optional(t.String()),
+  instance: t.Optional(t.String()),
 })
 
-export const UnauthorizedSchema = t.Literal('Unauthorized')
-export const ForbiddenSchema = t.Literal('Forbidden')
+export const UnauthorizedSchema = t.Object({
+  ...ErrorSchema.properties,
+  type: t.Literal('UNAUTHORIZED'),
+  code: t.Literal('UNAUTHORIZED'),
+  status: t.Literal(401),
+})
+
+export const ForbiddenSchema = t.Object({
+  ...ErrorSchema.properties,
+  type: t.Literal('FORBIDDEN'),
+  code: t.Literal('FORBIDDEN'),
+  status: t.Literal(403),
+})
 
 export const ValidationErrorSchema = t.Object({
   type: t.Literal('validation'),
@@ -88,8 +73,6 @@ export const ValidationErrorSchema = t.Object({
   detail: t.Optional(t.String()),
   on: t.String(),
   property: t.Optional(t.String()),
-  message: t.Optional(t.String()),
-  summary: t.Optional(t.String()),
   expected: t.Optional(t.Unknown()),
   found: t.Optional(t.Unknown()),
   errors: t.Optional(t.Array(t.Unknown())),
