@@ -90,9 +90,9 @@ export const SimpananService = {
         const saldoTabungan = result.saldoTabungan ?? 0
         const jumlahSaham = result.jumlahSaham ?? 0
         const pending = await getPendingSimpanan(tx, userId)
-        const totalPenarikanPending = Number(pending.penarikan)
-        const totalPemindahbukuanPending = Number(pending.pemindahbukuanTabungan)
-        const totalSahamPending = Number(pending.pemindahbukuanSaham)
+        const totalPenarikanPending = pending.penarikan
+        const totalPemindahbukuanPending = pending.pemindahbukuanTabungan
+        const totalSahamPending = pending.pemindahbukuanSaham
 
         return {
           saldoTabungan,
@@ -300,9 +300,9 @@ export const SimpananService = {
       }
 
       const pending = await getPendingSimpanan(tx, userId)
-      const available = BigInt(balance?.saldoTabungan ?? 0) - pending.penarikan - pending.pemindahbukuanTabungan
+      const available = (balance?.saldoTabungan ?? 0) - pending.penarikan - pending.pemindahbukuanTabungan
 
-      if (available < BigInt(nilaiTransaksi)) {
+      if (available < nilaiTransaksi) {
         throw new InsufficientBalanceError()
       }
 
@@ -392,10 +392,9 @@ export const SimpananService = {
 
         if (target.jenisTransaksi === 'penarikan') {
           const otherPending = await getPendingSimpanan(tx, target.userId, { mutasiId: target.id })
-          const available =
-            BigInt(balance?.saldoTabungan ?? 0) - otherPending.penarikan - otherPending.pemindahbukuanTabungan
+          const available = (balance?.saldoTabungan ?? 0) - otherPending.penarikan - otherPending.pemindahbukuanTabungan
 
-          if (available < BigInt(target.nilaiTransaksi)) {
+          if (available < target.nilaiTransaksi) {
             throw new InsufficientBalanceError()
           }
 

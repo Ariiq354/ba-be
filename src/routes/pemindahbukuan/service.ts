@@ -110,13 +110,13 @@ async function assertAvailableBalance(
   const pending = await getPendingSimpanan(tx, target.idUserSumber, { pemindahbukuanId: excludeId })
 
   if (target.tipePemindahbukuan === 'saham_ke_saham') {
-    const available = BigInt(balance.jumlahSaham) - pending.pemindahbukuanSaham
-    if (available < BigInt(target.jumlahSaham)) {
+    const available = balance.jumlahSaham - pending.pemindahbukuanSaham
+    if (available < target.jumlahSaham) {
       throw new InsufficientSharesError()
     }
   } else {
-    const available = BigInt(balance.saldoTabungan) - pending.penarikan - pending.pemindahbukuanTabungan
-    if (available < BigInt(target.nominal)) {
+    const available = balance.saldoTabungan - pending.penarikan - pending.pemindahbukuanTabungan
+    if (available < target.nominal) {
       throw new InsufficientBalanceError()
     }
   }

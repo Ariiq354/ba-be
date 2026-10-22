@@ -9,15 +9,6 @@ export class PenggunaAlreadyVerifiedError extends HTTPError.id('PENGGUNA_ALREADY
   }
 }
 
-export class PenggunaNotPendingVerificationError extends HTTPError.id('PENGGUNA_NOT_PENDING_VERIFICATION_ERROR', 409) {
-  readonly penggunaId: number
-
-  constructor({ penggunaId }: { penggunaId: number }) {
-    super('Pengguna sedang diblokir secara administratif')
-    this.penggunaId = penggunaId
-  }
-}
-
 export class PenggunaUnverifiedError extends HTTPError.id('PENGGUNA_UNVERIFIED_ERROR', 400) {
   readonly penggunaId: number
 

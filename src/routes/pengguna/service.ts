@@ -1,6 +1,5 @@
 import { and, asc, desc, eq, ilike, isNull, like, ne, or, sql } from 'drizzle-orm'
 
-import { isPendingVerificationBanReason, PENDING_VERIFICATION_BAN_REASON } from '#/libs/auth'
 import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { files } from '#/libs/database/schema/files'
@@ -18,7 +17,6 @@ import {
   InvalidProfileImageError,
   KelompokNotFoundError,
   PenggunaAlreadyVerifiedError,
-  PenggunaNotPendingVerificationError,
   ProfileImageRequiredError,
 } from './errors'
 import { getMembershipPeriod, validateProfileWilayah } from './utils'
@@ -245,7 +243,7 @@ export const PenggunaService = {
     const conditions = []
 
     if (query.status === 'pending') {
-      conditions.push(and(eq(user.banned, true), eq(user.banReason, PENDING_VERIFICATION_BAN_REASON)))
+      conditions.push(eq(user.banned, true))
     } else if (query.status === 'verified') {
       conditions.push(or(eq(user.banned, false), isNull(user.banned)))
     }
@@ -296,7 +294,6 @@ export const PenggunaService = {
       const [targetPengguna] = await tx
         .select({
           banned: user.banned,
-          banReason: user.banReason,
           idKelompok: user.idKelompok,
         })
         .from(user)
@@ -312,12 +309,6 @@ export const PenggunaService = {
 
       if (targetPengguna.banned !== true) {
         throw new PenggunaAlreadyVerifiedError({
-          penggunaId,
-        })
-      }
-
-      if (!isPendingVerificationBanReason(targetPengguna.banReason)) {
-        throw new PenggunaNotPendingVerificationError({
           penggunaId,
         })
       }

@@ -5,15 +5,9 @@ export function calculateSahamAmounts(
   hargaPerSaham: number,
   hargaNominalPerSaham = HARGA_NOMINAL_SAHAM,
 ) {
-  const jumlah = jumlahSaham
-  const hargaJual = hargaPerSaham
-  const hargaNominal = hargaNominalPerSaham
-  const selisihHarga = hargaJual - hargaNominal
-
   return {
-    nilaiTransaksi: jumlah * hargaJual,
-    nilaiNominal: jumlah * hargaNominal,
-    agioSaham: jumlah * (selisihHarga < 0 ? -selisihHarga : selisihHarga),
-    posisiAgio: selisihHarga > 0 ? 'kredit' : selisihHarga < 0 ? 'debit' : null,
+    nilaiTransaksi: jumlahSaham * hargaPerSaham,
+    nilaiNominal: jumlahSaham * hargaNominalPerSaham,
+    agioSaham: jumlahSaham * Math.abs(hargaPerSaham - hargaNominalPerSaham),
   } as const
 }

@@ -15,7 +15,7 @@ export async function getPendingSimpanan(
   const [[withdrawals], [transfers]] = await Promise.all([
     connection
       .select({
-        total: sql<string>`coalesce(sum(${mutasiSimpanan.nilaiTransaksi}), 0)::text`,
+        total: sql`coalesce(sum(${mutasiSimpanan.nilaiTransaksi}), 0)`.mapWith(Number),
       })
       .from(mutasiSimpanan)
       .where(
@@ -29,8 +29,14 @@ export async function getPendingSimpanan(
       ),
     connection
       .select({
-        tabungan: sql<string>`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} <> 'saham_ke_saham' then ${pemindahbukuan.nominal} else 0 end), 0)::text`,
-        saham: sql<string>`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} = 'saham_ke_saham' then ${pemindahbukuan.jumlahSaham} else 0 end), 0)::text`,
+        tabungan:
+          sql`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} <> 'saham_ke_saham' then ${pemindahbukuan.nominal} else 0 end), 0)`.mapWith(
+            Number,
+          ),
+        saham:
+          sql`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} = 'saham_ke_saham' then ${pemindahbukuan.jumlahSaham} else 0 end), 0)`.mapWith(
+            Number,
+          ),
       })
       .from(pemindahbukuan)
       .where(
@@ -43,8 +49,8 @@ export async function getPendingSimpanan(
   ])
 
   return {
-    penarikan: BigInt(withdrawals?.total ?? '0'),
-    pemindahbukuanTabungan: BigInt(transfers?.tabungan ?? '0'),
-    pemindahbukuanSaham: BigInt(transfers?.saham ?? '0'),
+    penarikan: withdrawals?.total ?? 0,
+    pemindahbukuanTabungan: transfers?.tabungan ?? 0,
+    pemindahbukuanSaham: transfers?.saham ?? 0,
   }
 }
