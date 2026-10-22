@@ -1,11 +1,11 @@
-# Elysia with Bun runtime
+# Berkah Amanah Backend
 
 ## Getting Started
 
-To get started with this template, simply paste this command into your terminal:
+Install dependencies:
 
 ```bash
-bun create elysia ./elysia-example
+bun install
 ```
 
 ## Development
@@ -17,6 +17,23 @@ bun run dev
 ```
 
 Open http://localhost:3000/ with your browser to see the result.
+
+## Structure
+
+The application uses Bun and Elysia 2 RC, with matching CORS, cron, and OpenAPI plugins.
+
+- `src/app.ts`: application composition and exported `App` type, without opening a port.
+- `src/index.ts`: HTTP server entry point.
+- `src/routes/`: API routes, request/response models, and business services.
+- `src/libs/`: shared helpers, authentication, configuration, and database schema.
+- `src/plugins/`: authentication macros, CORS, and OpenAPI documentation.
+
+Business endpoints remain under `/api/v1`, Better Auth under `/api/auth`, and
+documentation under `/api/docs`. Database tables are unchanged by this migration.
+
+```bash
+bun test              # Routing, auth, validation, CORS, and documentation regression tests
+```
 
 ## Code quality
 
@@ -56,7 +73,7 @@ bun run db:push
 The migration runs in one transaction and preserves each detail's member using
 the old journal header and linked pemindahbukuan source/destination. Every journal
 detail requires `userId`; journal headers no longer contain it. See
-[`src/modules/jurnal/README.md`](src/modules/jurnal/README.md) for the API shape.
+[`src/routes/jurnal/README.md`](src/routes/jurnal/README.md) for the API shape.
 
 The `transaction_code_counter` table keeps daily simpanan and journal sequences so
 deleting a transaction does not reuse its code. Counters are initialized from

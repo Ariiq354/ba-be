@@ -1,30 +1,32 @@
 {
   "name": "ba-be",
   "version": "1.0.50",
-  "module": "src/index.js",
+  "type": "module",
+  "module": "src/index.ts",
   "scripts": {
-    "test": "bun test",
     "dev": "bun run --watch src/index.ts",
     "lint": "oxlint . --fix",
     "format": "oxfmt .",
-    "check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@elysia/cors": "^1.4.2",
-    "@elysia/cron": "^1.4.2",
-    "@elysia/openapi": "^1.4.16",
-    "better-auth": "^1.7.10",
+    "@elysia/cors": "^2.0.0-rc.0",
+    "@elysia/cron": "^2.0.0-rc.0",
+    "@elysia/openapi": "^2.0.0-rc.0",
+    "better-auth": "^1.7.12",
     "drizzle-orm": "^1.0.0-rc.5-ab785fc",
-    "elysia": "^1.4.30",
+    "elysia": "^2.0.0-rc.0",
+    "exact-mirror": "^1.2.6",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "bun-types": "^1.4.3",
+    "@types/bun": "^1.4.3",
     "drizzle-kit": "^1.0.0-rc.5-ab785fc",
-    "oxfmt": "^0.73.0",
-    "oxlint": "^1.88.0",
-    "typescript": "7.0.2"
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
   }
 }

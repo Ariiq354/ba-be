@@ -1,0 +1,77 @@
+import { boolean, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
+
+import { createdUpdated } from './common'
+import { kelompok } from './kelompok'
+
+export const user = snakeCase.table(
+  'user',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    name: text().notNull(),
+    username: text().unique(),
+    displayUsername: text(),
+    email: text().notNull().unique(),
+    emailVerified: boolean().notNull(),
+    noHp: text().notNull(),
+    image: text().notNull(),
+    role: text(),
+    banned: boolean(),
+    banReason: text(),
+    idKelompok: integer()
+      .notNull()
+      .references(() => kelompok.id),
+    banExpires: timestamp({ withTimezone: true }),
+    ...createdUpdated,
+  },
+  (table) => [index('user_kelompok_idx').on(table.idKelompok)],
+)
+
+export const session = snakeCase.table(
+  'session',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    token: text().notNull().unique(),
+    ipAddress: text(),
+    userAgent: text(),
+    userId: integer()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    impersonatedBy: text(),
+    ...createdUpdated,
+  },
+  (table) => [index('userid_idx_session').on(table.userId)],
+)
+
+export const account = snakeCase.table(
+  'account',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    accountId: text().notNull(),
+    providerId: text().notNull(),
+    userId: integer()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    accessToken: text(),
+    refreshToken: text(),
+    idToken: text(),
+    accessTokenExpiresAt: timestamp({ withTimezone: true }),
+    refreshTokenExpiresAt: timestamp({ withTimezone: true }),
+    scope: text(),
+    password: text(),
+    ...createdUpdated,
+  },
+  (table) => [index('userid_idx').on(table.userId)],
+)
+
+export const verification = snakeCase.table(
+  'verification',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    identifier: text().notNull(),
+    value: text().notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    ...createdUpdated,
+  },
+  (table) => [index('verification_identifier_idx').on(table.identifier)],
+)

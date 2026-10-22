@@ -5,24 +5,15 @@
   "languages": {
     "JavaScript": {
       "language_servers": ["...", "!eslint", "oxlint", "oxfmt"],
-      "formatter": [
-        { "code_action": "source.fixAll.oxc" },
-        { "language_server": { "name": "oxfmt" } }
-      ]
+      "formatter": [{ "code_action": "source.fixAll.oxc" }, { "language_server": { "name": "oxfmt" } }]
     },
     "TypeScript": {
       "language_servers": ["...", "!eslint", "oxlint", "oxfmt"],
-      "formatter": [
-        { "code_action": "source.fixAll.oxc" },
-        { "language_server": { "name": "oxfmt" } }
-      ]
+      "formatter": [{ "code_action": "source.fixAll.oxc" }, { "language_server": { "name": "oxfmt" } }]
     },
     "TSX": {
       "language_servers": ["...", "!eslint", "oxlint", "oxfmt"],
-      "formatter": [
-        { "code_action": "source.fixAll.oxc" },
-        { "language_server": { "name": "oxfmt" } }
-      ]
+      "formatter": [{ "code_action": "source.fixAll.oxc" }, { "language_server": { "name": "oxfmt" } }]
     },
     "HTML": {
       "language_servers": ["...", "!eslint", "oxfmt"]

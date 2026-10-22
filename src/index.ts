@@ -1,19 +1,6 @@
-import { Elysia } from 'elysia'
-import { Modules } from './modules'
-import { AuthModule } from './modules/auth'
-import { CorsPlugin } from './utils/cors'
-import { logUnhandledError } from './utils/errors'
-import { OpenApiPlugin } from './utils/openapi'
+import { app } from './app'
 
-export const app = new Elysia()
-  .onError(({ error }) => {
-    logUnhandledError(error)
-  })
-  .use(OpenApiPlugin)
-  .use(CorsPlugin)
-  .use(Modules)
-  .use(AuthModule)
-  .listen(3000)
-
-// oxlint-disable-next-line no-console
-console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
+app.listen(3000, ({ hostname, port }) => {
+  // oxlint-disable-next-line no-console
+  console.log(`Elysia is running at ${hostname}:${port}`)
+})
