@@ -1,9 +1,0 @@
-export enum AkunId {
-  KAS = 1,
-  BANKMUAMALAT = 2,
-  BANKBSM = 57,
-  BANKBCA = 58,
-  SIMPANANBERJANGKA = 12,
-  SAHAM50 = 19,
-  AGIOSAHAM = 50,
-}

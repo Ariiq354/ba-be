@@ -1,8 +1,8 @@
-import process from 'node:process'
 import { defineConfig } from 'drizzle-kit'
+import process from 'node:process'
 
 export default defineConfig({
-  schema: './src/database/schema',
+  schema: './src/libs/database/schema',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.DATABASE_URL as string,
