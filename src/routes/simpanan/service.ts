@@ -1,5 +1,7 @@
-import { and, asc, desc, eq, ilike, inArray, or } from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+
+import type { Transaction } from '#/libs/database'
 
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
@@ -9,27 +11,26 @@ import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
 import { mutasiSimpanan, saldoSimpanan } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
+import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { calculateSahamAmounts } from '#/libs/saham'
 import { getPendingSimpanan } from '#/libs/simpananBalance'
-import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/libs/transaction'
+import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
 import type * as SimpananModel from './model'
 
-import { PAYMENT_ACCOUNT_IDS } from './constants'
+import { PemindahbukuanService } from '../pemindahbukuan/service'
+import { PAYMENT_ACCOUNTS } from './constants'
 import {
   HargaSahamNotFoundError,
   InsufficientBalanceError,
   InvalidAccountError,
-  InvalidPaymentAccountError,
   InvalidRejectionReasonError,
   MutasiSimpananAlreadyProcessedError,
   MutasiSimpananNotDeletedError,
   MutasiSimpananNotFoundError,
   NotMemberError,
 } from './errors'
-
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 async function assertMember(connection: typeof db | Transaction, userId: number) {
   const [profile] = await connection
@@ -46,27 +47,19 @@ const member = alias(user, 'member')
 const creator = alias(user, 'creator')
 const approver = alias(user, 'approver')
 
-function assertPaymentAccount(akunId: number) {
-  if (!(PAYMENT_ACCOUNT_IDS as readonly number[]).includes(akunId)) {
-    throw new InvalidPaymentAccountError({ akunId })
+async function assertPaymentAccount(tx: Transaction, akunId: number) {
+  const [paymentAccount] = await tx
+    .select({ id: akun.id, isActive: akun.isActive })
+    .from(akun)
+    .where(eq(akun.id, akunId))
+    .for('share')
+
+  if (!paymentAccount?.isActive) {
+    throw new InvalidAccountError({ akunId })
   }
 }
 
 export const SimpananService = {
-  async getPaymentAccountOptions() {
-    const data = await db
-      .select({
-        id: akun.id,
-        kodeAkun: akun.kodeAkun,
-        namaAkun: akun.namaAkun,
-      })
-      .from(akun)
-      .where(and(inArray(akun.id, PAYMENT_ACCOUNT_IDS), eq(akun.isActive, true)))
-      .orderBy(asc(akun.namaAkun), asc(akun.id))
-
-    return { data } satisfies SimpananModel.AkunPembayaranOptionsGet['Response'][200]
-  },
-
   async getSaldo(actorId: number, userId: SimpananModel.SaldoGet['Query']['userId'] = actorId) {
     // Read balances and reservations from the same snapshot during approvals.
     return db.transaction(
@@ -194,54 +187,15 @@ export const SimpananService = {
     return { total, data } satisfies SimpananModel.MutasiGet['Response'][200]
   },
 
-  async createSetoran(actorId: number, data: SimpananModel.MutasiSetoranPost['Body']) {
+  async createSetoranTabungan(actorId: number, data: SimpananModel.MutasiSetoranTabunganPost['Body']) {
     const userId = data.userId ?? actorId
+    const akunId = PAYMENT_ACCOUNTS[data.metodePembayaran]
 
     await db.transaction(async (tx) => {
-      assertPaymentAccount(data.akunId)
-
       await assertPenggunaAccess(tx, actorId, userId)
       await assertMember(tx, userId)
-
       await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
-
-      const [paymentAccount] = await tx
-        .select({ id: akun.id, isActive: akun.isActive })
-        .from(akun)
-        .where(eq(akun.id, data.akunId))
-        .for('share')
-
-      if (!paymentAccount?.isActive) {
-        throw new InvalidAccountError({ akunId: data.akunId })
-      }
-
-      let nilaiTransaksi: number
-      let jumlahSaham = 0
-      let hargaPerSaham = 0
-      let hargaNominalPerSaham = 0
-      let agioSaham = 0
-
-      if (data.jenisSimpanan === 'tabungan') {
-        nilaiTransaksi = data.nilaiTransaksi
-      } else {
-        jumlahSaham = data.jumlahSaham
-
-        const [latestPrice] = await tx
-          .select({ hargaJual: hargaSaham.hargaJual })
-          .from(hargaSaham)
-          .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id))
-          .limit(1)
-
-        if (!latestPrice) {
-          throw new HargaSahamNotFoundError()
-        }
-
-        hargaPerSaham = latestPrice.hargaJual
-        hargaNominalPerSaham = HARGA_NOMINAL_SAHAM
-        const amounts = calculateSahamAmounts(jumlahSaham, hargaPerSaham, hargaNominalPerSaham)
-        nilaiTransaksi = amounts.nilaiTransaksi
-        agioSaham = amounts.agioSaham
-      }
+      await assertPaymentAccount(tx, akunId)
 
       const tanggalTransaksi = getJakartaDate()
       const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
@@ -249,8 +203,61 @@ export const SimpananService = {
       await tx.insert(mutasiSimpanan).values({
         kodeTransaksi,
         userId,
-        akunId: data.akunId,
-        jenisSimpanan: data.jenisSimpanan,
+        akunId,
+        jenisSimpanan: 'tabungan',
+        jenisTransaksi: 'setoran',
+        nilaiTransaksi: data.nilaiTransaksi,
+        tanggalTransaksi,
+        statusApproved: 'pending',
+        keterangan: data.keterangan?.trim() || null,
+        createdBy: actorId,
+      })
+    })
+  },
+
+  async createSetoranSaham(actorId: number, data: SimpananModel.MutasiSetoranSahamPost['Body']) {
+    const userId = data.userId ?? actorId
+
+    if (data.metodePembayaran === 'Tabungan') {
+      return PemindahbukuanService.createPemindahbukuan(actorId, {
+        tipePemindahbukuan: 'tabungan_ke_saham',
+        idUserSumber: userId,
+        idUserTujuan: userId,
+        jumlahSaham: data.jumlahSaham,
+        keterangan: data.keterangan,
+      })
+    }
+
+    const akunId = PAYMENT_ACCOUNTS[data.metodePembayaran]
+
+    await db.transaction(async (tx) => {
+      await assertPenggunaAccess(tx, actorId, userId)
+      await assertMember(tx, userId)
+      await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
+      await assertPaymentAccount(tx, akunId)
+
+      const [latestPrice] = await tx
+        .select({ hargaJual: hargaSaham.hargaJual })
+        .from(hargaSaham)
+        .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id))
+        .limit(1)
+
+      if (!latestPrice) {
+        throw new HargaSahamNotFoundError()
+      }
+
+      const jumlahSaham = data.jumlahSaham
+      const hargaPerSaham = latestPrice.hargaJual
+      const hargaNominalPerSaham = HARGA_NOMINAL_SAHAM
+      const { nilaiTransaksi, agioSaham } = calculateSahamAmounts(jumlahSaham, hargaPerSaham, hargaNominalPerSaham)
+      const tanggalTransaksi = getJakartaDate()
+      const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
+
+      await tx.insert(mutasiSimpanan).values({
+        kodeTransaksi,
+        userId,
+        akunId,
+        jenisSimpanan: 'saham',
         jenisTransaksi: 'setoran',
         nilaiTransaksi,
         jumlahSaham,
@@ -269,9 +276,9 @@ export const SimpananService = {
 
   async createPenarikan(actorId: number, data: SimpananModel.MutasiPenarikanPost['Body']) {
     const userId = data.userId ?? actorId
+    const akunId = PAYMENT_ACCOUNTS[data.metodePembayaran]
 
     await db.transaction(async (tx) => {
-      assertPaymentAccount(data.akunId)
       const nilaiTransaksi = data.nilaiTransaksi
 
       await assertPenggunaAccess(tx, actorId, userId)
@@ -284,15 +291,7 @@ export const SimpananService = {
         .where(eq(saldoSimpanan.userId, userId))
         .for('update')
 
-      const [paymentAccount] = await tx
-        .select({ id: akun.id, isActive: akun.isActive })
-        .from(akun)
-        .where(eq(akun.id, data.akunId))
-        .for('share')
-
-      if (!paymentAccount?.isActive) {
-        throw new InvalidAccountError({ akunId: data.akunId })
-      }
+      await assertPaymentAccount(tx, akunId)
 
       const pending = await getPendingSimpanan(tx, userId)
       const available = (balance?.saldoTabungan ?? 0) - pending.penarikan - pending.pemindahbukuanTabungan
@@ -307,7 +306,7 @@ export const SimpananService = {
       await tx.insert(mutasiSimpanan).values({
         kodeTransaksi,
         userId,
-        akunId: data.akunId,
+        akunId,
         jenisSimpanan: 'tabungan',
         jenisTransaksi: 'penarikan',
         nilaiTransaksi,

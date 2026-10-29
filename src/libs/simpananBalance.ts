@@ -1,10 +1,8 @@
 import { and, eq, ne, sql } from 'drizzle-orm'
 
-import type { db } from '#/libs/database'
+import type { db, Transaction } from '#/libs/database'
 
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
-
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 // Call after locking the source balance when reserving or spending funds.
 export async function getPendingSimpanan(

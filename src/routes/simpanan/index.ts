@@ -8,17 +8,6 @@ import { SimpananService } from './service'
 export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'] })
   .use(AuthMacro)
   .get(
-    '/akun-pembayaran/options',
-    {
-      auth: true,
-      response: SimpananModel.AkunPembayaranOptionsGet.Response,
-      detail: {
-        description: 'Pilihan akun kas/bank aktif yang dapat digunakan untuk setoran dan penarikan simpanan.',
-      },
-    },
-    () => SimpananService.getPaymentAccountOptions(),
-  )
-  .get(
     '/saldo',
     {
       auth: true,
@@ -41,14 +30,33 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     ({ user, query }) => SimpananService.getMutasi(user.id, query),
   )
   .post(
-    '/mutasi/setoran',
+    '/mutasi/setoran/tabungan',
     {
       auth: true,
-      body: SimpananModel.MutasiSetoranPost.Body,
-      response: SimpananModel.MutasiSetoranPost.Response,
+      body: SimpananModel.MutasiSetoranTabunganPost.Body,
+      response: SimpananModel.MutasiSetoranTabunganPost.Response,
+      detail: {
+        description: 'Mengajukan setoran tabungan. Transfer menggunakan BSM; Tunai menggunakan Kas.',
+      },
     },
     async ({ user, body }) => {
-      await SimpananService.createSetoran(user.id, body)
+      await SimpananService.createSetoranTabungan(user.id, body)
+      return status(201, { message: 'Success' })
+    },
+  )
+  .post(
+    '/mutasi/setoran/saham',
+    {
+      auth: true,
+      body: SimpananModel.MutasiSetoranSahamPost.Body,
+      response: SimpananModel.MutasiSetoranSahamPost.Response,
+      detail: {
+        description:
+          'Mengajukan setoran saham. Transfer menggunakan BSM; Tunai menggunakan Kas. Metode Tabungan membuat pemindahbukuan tabungan_ke_saham milik anggota yang sama, bukan mutasi simpanan. Daftar, approval, penolakan, dan pembatalannya menggunakan endpoint pemindahbukuan.',
+      },
+    },
+    async ({ user, body }) => {
+      await SimpananService.createSetoranSaham(user.id, body)
       return status(201, { message: 'Success' })
     },
   )
@@ -58,6 +66,9 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
       auth: true,
       body: SimpananModel.MutasiPenarikanPost.Body,
       response: SimpananModel.MutasiPenarikanPost.Response,
+      detail: {
+        description: 'Mengajukan penarikan tabungan. Transfer menggunakan BSM; Tunai menggunakan Kas.',
+      },
     },
     async ({ user, body }) => {
       await SimpananService.createPenarikan(user.id, body)

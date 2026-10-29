@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
+import type { Transaction } from '#/libs/database'
+
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
@@ -9,10 +11,11 @@ import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
 import { pemindahbukuan, saldoSimpanan } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
+import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { calculateSahamAmounts } from '#/libs/saham'
 import { getPendingSimpanan } from '#/libs/simpananBalance'
-import { allocateTransactionCode, getJakartaDate, retainTransactionCodes } from '#/libs/transaction'
+import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
 import type * as PemindahbukuanModel from './model'
 
@@ -32,7 +35,6 @@ import {
   PemindahbukuanNotFoundError,
 } from './errors'
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type Transfer = typeof pemindahbukuan.$inferSelect
 
 const sourceMember = alias(user, 'source_member')

@@ -1,12 +1,11 @@
 import { and, eq, or } from 'drizzle-orm'
 
-import type { db } from '#/libs/database'
+import type { db, Transaction } from '#/libs/database'
 
 import { user } from '#/libs/database/schema/auth'
 
 import { ItemNotFoundError, PenggunaAccessDeniedError } from './errors'
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type Connection = typeof db | Transaction
 
 export async function getPenggunaAccessCondition(connection: Connection, actorId: number) {
