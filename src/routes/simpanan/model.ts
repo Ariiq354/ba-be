@@ -28,7 +28,7 @@ const mutasiResponseSchema = t.Object({
   id: t.Integer(),
   kodeTransaksi: t.String(),
   userId: t.Integer(),
-  akunId: t.Integer(),
+  metodePembayaran: paymentMethodSchema,
   jenisSimpanan: t.UnionEnum(['tabungan', 'saham']),
   jenisTransaksi: t.UnionEnum(['setoran', 'penarikan']),
   nilaiTransaksi: t.Integer(),
@@ -49,7 +49,6 @@ const mutasiResponseSchema = t.Object({
   createdAt: t.String({ format: 'date-time' }),
   updatedAt: t.String({ format: 'date-time' }),
   memberName: t.String(),
-  accountName: t.String(),
   creatorName: t.String(),
   approverName: t.Nullable(t.String()),
 })

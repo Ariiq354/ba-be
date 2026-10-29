@@ -163,13 +163,11 @@ export const SimpananService = {
         createdAt: mutasiSimpanan.createdAt,
         updatedAt: mutasiSimpanan.updatedAt,
         memberName: member.name,
-        accountName: akun.namaAkun,
         creatorName: creator.name,
         approverName: approver.name,
       })
       .from(mutasiSimpanan)
       .innerJoin(member, eq(member.id, mutasiSimpanan.userId))
-      .innerJoin(akun, eq(akun.id, mutasiSimpanan.akunId))
       .innerJoin(creator, eq(creator.id, mutasiSimpanan.createdBy))
       .leftJoin(approver, eq(approver.id, mutasiSimpanan.approvedBy))
       .where(and(...conditions))
@@ -177,8 +175,9 @@ export const SimpananService = {
 
     const total = await db.$count(qb)
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
-    const data = rows.map((row) => ({
+    const data: SimpananModel.MutasiGet['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
       ...row,
+      metodePembayaran: akunId === AkunId.KAS ? 'Tunai' : 'Transfer',
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
