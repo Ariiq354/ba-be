@@ -9,3 +9,5 @@ export const db = drizzle({
   },
   relations,
 })
+
+export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]

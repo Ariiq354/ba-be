@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 
-import type { db } from '#/libs/database'
+import type { Transaction } from '#/libs/database'
 import type { userProfile } from '#/libs/database/schema/users'
 
 import { kecamatan, kelurahan, kota, provinsi } from '#/libs/database/schema/wilayah'
@@ -11,7 +11,6 @@ export type ProfileWilayah = Pick<
   typeof userProfile.$inferSelect,
   'idProvinsi' | 'idKota' | 'idKecamatan' | 'idKelurahan'
 >
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export async function validateProfileWilayah(tx: Transaction, wilayah: ProfileWilayah) {
   let hierarchy: Partial<ProfileWilayah> | undefined

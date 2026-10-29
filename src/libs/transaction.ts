@@ -1,12 +1,11 @@
 import { eq, sql } from 'drizzle-orm'
 
-import type { db } from '#/libs/database'
+import type { Transaction } from '#/libs/database'
 
 import { jurnal } from '#/libs/database/schema/jurnal'
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { transactionCodeCounter } from '#/libs/database/schema/transaction'
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan'
 
 const transactionSources = {
@@ -14,18 +13,6 @@ const transactionSources = {
   jurnal: { prefix: 'TRX', table: jurnal },
   pemindahbukuan: { prefix: 'PBK', table: pemindahbukuan },
 } as const
-
-export function getJakartaDate(date = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date)
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
-
-  return `${values.year}-${values.month}-${values.day}`
-}
 
 function getMaxTransactionSequence(prefix: string, existingCodes: string[]) {
   return existingCodes.reduce((max, code) => {

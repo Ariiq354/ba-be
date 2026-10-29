@@ -5,7 +5,7 @@ import { t } from 'elysia'
 import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { searchSchema } from '#/libs/schema'
 
-import { PAYMENT_ACCOUNT_IDS } from './constants'
+import { PAYMENT_METHODS, SHARE_PAYMENT_METHODS } from './constants'
 
 const databaseIdSchema = t.Integer({ minimum: 1 })
 const positiveIntegerSchema = t.Integer({ minimum: 1 })
@@ -13,7 +13,7 @@ const idParamsSchema = t.Object({
   id: databaseIdSchema,
 })
 
-const paymentAccountSchema = t.UnionEnum(PAYMENT_ACCOUNT_IDS)
+const paymentMethodSchema = t.UnionEnum(PAYMENT_METHODS)
 
 const nullableDescriptionSchema = t.Optional(t.Nullable(t.String()))
 const targetUserSchema = t.Optional(
@@ -53,23 +53,6 @@ const mutasiResponseSchema = t.Object({
   creatorName: t.String(),
   approverName: t.Nullable(t.String()),
 })
-
-export const AkunPembayaranOptionsGet = {
-  Response: {
-    200: t.Object({
-      data: t.Array(
-        t.Object({
-          id: t.Integer(),
-          kodeAkun: t.String(),
-          namaAkun: t.String(),
-        }),
-      ),
-    }),
-    401: UnauthorizedSchema,
-  },
-} as const
-
-export type AkunPembayaranOptionsGet = UnwrapModels<typeof AkunPembayaranOptionsGet>
 
 export const SaldoGet = {
   Query: t.Object({
@@ -128,23 +111,13 @@ export const MutasiGet = {
 
 export type MutasiGet = UnwrapModels<typeof MutasiGet>
 
-export const MutasiSetoranPost = {
-  Body: t.Union([
-    t.Object({
-      jenisSimpanan: t.Literal('tabungan'),
-      userId: targetUserSchema,
-      akunId: paymentAccountSchema,
-      nilaiTransaksi: positiveIntegerSchema,
-      keterangan: nullableDescriptionSchema,
-    }),
-    t.Object({
-      jenisSimpanan: t.Literal('saham'),
-      userId: targetUserSchema,
-      akunId: paymentAccountSchema,
-      jumlahSaham: positiveIntegerSchema,
-      keterangan: nullableDescriptionSchema,
-    }),
-  ]),
+export const MutasiSetoranTabunganPost = {
+  Body: t.Object({
+    userId: targetUserSchema,
+    metodePembayaran: paymentMethodSchema,
+    nilaiTransaksi: positiveIntegerSchema,
+    keterangan: nullableDescriptionSchema,
+  }),
 
   Response: {
     201: SuccessSchema,
@@ -156,12 +129,24 @@ export const MutasiSetoranPost = {
   },
 } as const
 
-export type MutasiSetoranPost = UnwrapModels<typeof MutasiSetoranPost>
+export type MutasiSetoranTabunganPost = UnwrapModels<typeof MutasiSetoranTabunganPost>
+
+export const MutasiSetoranSahamPost = {
+  Body: t.Object({
+    userId: targetUserSchema,
+    metodePembayaran: t.UnionEnum(SHARE_PAYMENT_METHODS),
+    jumlahSaham: positiveIntegerSchema,
+    keterangan: nullableDescriptionSchema,
+  }),
+  Response: MutasiSetoranTabunganPost.Response,
+} as const
+
+export type MutasiSetoranSahamPost = UnwrapModels<typeof MutasiSetoranSahamPost>
 
 export const MutasiPenarikanPost = {
   Body: t.Object({
     userId: targetUserSchema,
-    akunId: paymentAccountSchema,
+    metodePembayaran: paymentMethodSchema,
     nilaiTransaksi: positiveIntegerSchema,
     keterangan: nullableDescriptionSchema,
   }),
