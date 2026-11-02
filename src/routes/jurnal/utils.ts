@@ -42,7 +42,7 @@ export async function getMutasiBulanan(tahun: number, kategori: Array<typeof aku
     .groupBy(jurnalDetail.akunId, bulan)
     .as('mutasi_bulanan')
 
-  // Keep accounts without transactions, including inactive accounts with historical data.
+  // Keep active accounts even when they have no transactions in the selected year.
   return db
     .select({
       id: akun.id,
@@ -54,7 +54,7 @@ export async function getMutasiBulanan(tahun: number, kategori: Array<typeof aku
     })
     .from(akun)
     .leftJoin(mutasiBulanan, eq(mutasiBulanan.akunId, akun.id))
-    .where(inArray(akun.kategori, kategori))
+    .where(and(inArray(akun.kategori, kategori), eq(akun.isActive, true)))
     .orderBy(asc(akun.kodeAkun), asc(mutasiBulanan.bulan))
 }
 
