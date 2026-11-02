@@ -6,10 +6,8 @@ import { deleteFiles, generatePresignedUrl } from '#/libs/file'
 
 import type * as FilesModel from './model'
 
-import { PENDING_FILE_MAX_AGE_MS, PRESIGNED_URL_EXPIRY_SECONDS, UPLOAD_CONFIG } from './config'
+import { CLEANUP_LOCK_KEY, PENDING_FILE_MAX_AGE_MS, PRESIGNED_URL_EXPIRY_SECONDS, UPLOAD_CONFIG } from './config'
 import { FileTooLargeError, InvalidUploadDirectoryError, UnsupportedFileTypeError } from './errors'
-
-const CLEANUP_LOCK_KEY = 'files:cleanup-pending'
 
 export const FilesService = {
   async generatePresignedUpload(input: FilesModel.PresignedPost['Body']) {

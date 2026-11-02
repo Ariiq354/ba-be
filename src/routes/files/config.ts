@@ -20,3 +20,4 @@ export const UPLOAD_CONFIG = new Map<string, FileDirConfig>([
 
 export const PRESIGNED_URL_EXPIRY_SECONDS = 15 * 60
 export const PENDING_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+export const CLEANUP_LOCK_KEY = 'files:cleanup-pending'

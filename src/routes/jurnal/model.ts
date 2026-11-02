@@ -6,6 +6,24 @@ import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema } from 
 
 const amountSchema = t.Integer({ minimum: 0 })
 
+const laporanQuerySchema = t.Object({
+  tahun: t.Integer({ minimum: 1, maximum: 9999 }),
+})
+
+const jumlahBulananSchema = t.Array(t.Integer(), {
+  minItems: 12,
+  maxItems: 12,
+  description: 'Mutasi bersih Januari sampai Desember, tanpa saldo bulan sebelumnya.',
+})
+
+const laporanAkunProperties = {
+  id: t.Integer(),
+  kodeAkun: t.String(),
+  namaAkun: t.String(),
+  jumlahBulanan: jumlahBulananSchema,
+  jumlah: t.Integer(),
+}
+
 const jurnalDetailResponseSchema = t.Object({
   id: t.Integer(),
   jurnalId: t.Integer(),
@@ -49,6 +67,58 @@ export const Get = {
 } as const
 
 export type Get = UnwrapModels<typeof Get>
+
+export const NeracaGet = {
+  Query: laporanQuerySchema,
+  Response: {
+    200: t.Object({
+      total: t.Integer({ minimum: 0 }),
+      data: t.Array(
+        t.Object({
+          ...laporanAkunProperties,
+          kategori: t.UnionEnum(['aktiva', 'pasiva']),
+        }),
+      ),
+      ringkasan: t.Object({
+        aktivaBulanan: jumlahBulananSchema,
+        pasivaBulanan: jumlahBulananSchema,
+        totalAktiva: t.Integer(),
+        totalPasiva: t.Integer(),
+      }),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type NeracaGet = UnwrapModels<typeof NeracaGet>
+
+export const LabaRugiGet = {
+  Query: laporanQuerySchema,
+  Response: {
+    200: t.Object({
+      total: t.Integer({ minimum: 0 }),
+      data: t.Array(
+        t.Object({
+          ...laporanAkunProperties,
+          kategori: t.UnionEnum(['pendapatan', 'biaya']),
+        }),
+      ),
+      ringkasan: t.Object({
+        pendapatanBulanan: jumlahBulananSchema,
+        biayaBulanan: jumlahBulananSchema,
+        labaRugiBulanan: jumlahBulananSchema,
+        totalPendapatan: t.Integer(),
+        totalBiaya: t.Integer(),
+        totalLabaRugi: t.Integer(),
+      }),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type LabaRugiGet = UnwrapModels<typeof LabaRugiGet>
 
 export const ByIdGet = {
   Params: t.Object({

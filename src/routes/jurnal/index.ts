@@ -17,6 +17,24 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
     ({ query }) => JurnalService.getPaginatedJurnal(query),
   )
   .get(
+    '/neraca',
+    {
+      admin: true,
+      query: JurnalModel.NeracaGet.Query,
+      response: JurnalModel.NeracaGet.Response,
+    },
+    ({ query }) => JurnalService.getNeraca(query),
+  )
+  .get(
+    '/laba-rugi',
+    {
+      admin: true,
+      query: JurnalModel.LabaRugiGet.Query,
+      response: JurnalModel.LabaRugiGet.Response,
+    },
+    ({ query }) => JurnalService.getLabaRugi(query),
+  )
+  .get(
     '/:id',
     {
       admin: true,

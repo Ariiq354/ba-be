@@ -19,80 +19,55 @@ import {
   JurnalsNotFoundError,
   UnbalancedJurnalError,
 } from './errors'
-
-const jurnalHeaderSelection = {
-  id: jurnal.id,
-  kodeTransaksi: jurnal.kodeTransaksi,
-  tanggalTransaksi: jurnal.tanggalTransaksi,
-  keterangan: jurnal.keterangan,
-  createdAt: jurnal.createdAt,
-}
-
-const jurnalDetailSelection = {
-  id: jurnalDetail.id,
-  jurnalId: jurnalDetail.jurnalId,
-  akunId: jurnalDetail.akunId,
-  kodeAkun: akun.kodeAkun,
-  namaAkun: akun.namaAkun,
-  userId: jurnalDetail.userId,
-  userName: user.name,
-  debit: jurnalDetail.debit,
-  kredit: jurnalDetail.kredit,
-}
-
-function isValidTransactionDate(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (!match) {
-    return false
-  }
-
-  const year = Number(match[1])
-  const month = Number(match[2])
-  const day = Number(match[3])
-  if (year === 0) {
-    return false
-  }
-
-  const date = new Date(0)
-  date.setUTCHours(0, 0, 0, 0)
-  date.setUTCFullYear(year, month - 1, day)
-
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
-}
-
-function validateJurnalInput(data: JurnalModel.Post['Body']) {
-  if (!isValidTransactionDate(data.tanggalTransaksi)) {
-    throw new InvalidJurnalError({ reason: 'invalid_date' })
-  }
-
-  if (
-    data.details.length < 2 ||
-    data.details.some(
-      (detail) =>
-        !Number.isInteger(detail.akunId) ||
-        detail.akunId < 1 ||
-        !Number.isInteger(detail.debit) ||
-        detail.debit < 0 ||
-        !Number.isInteger(detail.kredit) ||
-        detail.kredit < 0,
-    )
-  ) {
-    throw new InvalidJurnalError({ reason: 'invalid_details' })
-  }
-
-  const totalDebit = data.details.reduce((total, detail) => total + detail.debit, 0)
-  const totalKredit = data.details.reduce((total, detail) => total + detail.kredit, 0)
-
-  if (totalDebit <= 0 || totalKredit <= 0) {
-    throw new InvalidJurnalError({ reason: 'non_positive_totals' })
-  }
-
-  if (totalDebit !== totalKredit) {
-    throw new UnbalancedJurnalError({ totalDebit, totalKredit })
-  }
-}
+import {
+  buildLaporanAkun,
+  getMutasiBulanan,
+  jurnalDetailSelection,
+  jurnalHeaderSelection,
+  sum,
+  sumKategori,
+} from './utils'
 
 export const JurnalService = {
+  async getNeraca(query: JurnalModel.NeracaGet['Query']) {
+    const rows = await getMutasiBulanan(query.tahun, ['aktiva', 'pasiva'])
+    const data = buildLaporanAkun(rows, ['aktiva', 'pasiva'])
+    const aktivaBulanan = sumKategori(data, 'aktiva')
+    const pasivaBulanan = sumKategori(data, 'pasiva')
+
+    return {
+      total: data.length,
+      data,
+      ringkasan: {
+        aktivaBulanan,
+        pasivaBulanan,
+        totalAktiva: sum(aktivaBulanan),
+        totalPasiva: sum(pasivaBulanan),
+      },
+    } satisfies JurnalModel.NeracaGet['Response'][200]
+  },
+
+  async getLabaRugi(query: JurnalModel.LabaRugiGet['Query']) {
+    const rows = await getMutasiBulanan(query.tahun, ['pendapatan', 'biaya'])
+    const data = buildLaporanAkun(rows, ['pendapatan', 'biaya'])
+    const pendapatanBulanan = sumKategori(data, 'pendapatan')
+    const biayaBulanan = sumKategori(data, 'biaya')
+    const labaRugiBulanan = pendapatanBulanan.map((jumlah, index) => jumlah - (biayaBulanan[index] ?? 0))
+
+    return {
+      total: data.length,
+      data,
+      ringkasan: {
+        pendapatanBulanan,
+        biayaBulanan,
+        labaRugiBulanan,
+        totalPendapatan: sum(pendapatanBulanan),
+        totalBiaya: sum(biayaBulanan),
+        totalLabaRugi: sum(labaRugiBulanan),
+      },
+    } satisfies JurnalModel.LabaRugiGet['Response'][200]
+  },
+
   async getPaginatedJurnal(query: JurnalModel.Get['Query']) {
     const condition = query.search ? ilike(jurnal.kodeTransaksi, `%${query.search}%`) : undefined
     const offset = (query.page - 1) * query.limit
@@ -179,7 +154,47 @@ export const JurnalService = {
   },
 
   async createJurnal(userId: number, data: JurnalModel.Post['Body']) {
-    validateJurnalInput(data)
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data.tanggalTransaksi)
+    if (!match) {
+      throw new InvalidJurnalError({ reason: 'invalid_date' })
+    }
+
+    const year = Number(match[1])
+    const month = Number(match[2])
+    const day = Number(match[3])
+    const date = new Date(0)
+    date.setUTCHours(0, 0, 0, 0)
+    date.setUTCFullYear(year, month - 1, day)
+
+    if (year === 0 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      throw new InvalidJurnalError({ reason: 'invalid_date' })
+    }
+
+    if (
+      data.details.length < 2 ||
+      data.details.some(
+        (detail) =>
+          !Number.isInteger(detail.akunId) ||
+          detail.akunId < 1 ||
+          !Number.isInteger(detail.debit) ||
+          detail.debit < 0 ||
+          !Number.isInteger(detail.kredit) ||
+          detail.kredit < 0,
+      )
+    ) {
+      throw new InvalidJurnalError({ reason: 'invalid_details' })
+    }
+
+    const totalDebit = data.details.reduce((total, detail) => total + detail.debit, 0)
+    const totalKredit = data.details.reduce((total, detail) => total + detail.kredit, 0)
+
+    if (totalDebit <= 0 || totalKredit <= 0) {
+      throw new InvalidJurnalError({ reason: 'non_positive_totals' })
+    }
+
+    if (totalDebit !== totalKredit) {
+      throw new UnbalancedJurnalError({ totalDebit, totalKredit })
+    }
 
     await db.transaction(async (tx) => {
       const akunIds = [...new Set(data.details.map((detail) => detail.akunId))]

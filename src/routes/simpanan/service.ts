@@ -1,7 +1,4 @@
 import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm'
-import { alias } from 'drizzle-orm/pg-core'
-
-import type { Transaction } from '#/libs/database'
 
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
@@ -31,33 +28,7 @@ import {
   MutasiSimpananNotFoundError,
   NotMemberError,
 } from './errors'
-
-async function assertMember(connection: typeof db | Transaction, userId: number) {
-  const [profile] = await connection
-    .select({ noAnggota: userProfile.noAnggota })
-    .from(userProfile)
-    .where(eq(userProfile.idUser, userId))
-
-  if (!profile?.noAnggota?.trim()) {
-    throw new NotMemberError({ userId })
-  }
-}
-
-const member = alias(user, 'member')
-const creator = alias(user, 'creator')
-const approver = alias(user, 'approver')
-
-async function assertPaymentAccount(tx: Transaction, akunId: number) {
-  const [paymentAccount] = await tx
-    .select({ id: akun.id, isActive: akun.isActive })
-    .from(akun)
-    .where(eq(akun.id, akunId))
-    .for('share')
-
-  if (!paymentAccount?.isActive) {
-    throw new InvalidAccountError({ akunId })
-  }
-}
+import { approver, assertMember, assertPaymentAccount, creator, member } from './utils'
 
 export const SimpananService = {
   async getSaldo(actorId: number, userId: SimpananModel.SaldoGet['Query']['userId'] = actorId) {

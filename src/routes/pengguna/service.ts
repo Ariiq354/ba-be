@@ -5,22 +5,22 @@ import { user } from '#/libs/database/schema/auth'
 import { files } from '#/libs/database/schema/files'
 import { kelompok } from '#/libs/database/schema/kelompok'
 import { userProfile } from '#/libs/database/schema/users'
+import { kecamatan, kelurahan, kota, provinsi } from '#/libs/database/schema/wilayah'
 import { ItemNotFoundError, logUnhandledError } from '#/libs/errors'
 import { deleteFiles } from '#/libs/file'
 import { getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { isUniqueViolation } from '#/libs/pgcode'
 
 import type * as PenggunaModel from './model'
-import type { ProfileWilayah } from './utils'
 
 import {
   DuplicateNikError,
   InvalidProfileImageError,
+  InvalidProfileWilayahError,
   KelompokNotFoundError,
   PenggunaAlreadyVerifiedError,
   ProfileImageRequiredError,
 } from './errors'
-import { getMembershipPeriod, validateProfileWilayah } from './utils'
 
 export const PenggunaService = {
   async getPenggunaOptions(actorId: number) {
@@ -76,6 +76,8 @@ export const PenggunaService = {
   },
 
   async updateProfile(penggunaId: number, data: PenggunaModel.ProfilePatch['Body']) {
+    type ProfileWilayah = Pick<typeof userProfile.$inferSelect, 'idProvinsi' | 'idKota' | 'idKecamatan' | 'idKelurahan'>
+
     const imageAction = data.imageAction ?? 'keep'
 
     if (imageAction === 'update' && !data.image) {
@@ -187,7 +189,50 @@ export const PenggunaService = {
             }
           }
 
-          await validateProfileWilayah(tx, nextWilayah)
+          let hierarchy: Partial<ProfileWilayah> | undefined
+
+          if (nextWilayah.idKelurahan) {
+            ;[hierarchy] = await tx
+              .select({
+                idProvinsi: kota.idProvinsi,
+                idKota: kecamatan.idKota,
+                idKecamatan: kecamatan.id,
+                idKelurahan: kelurahan.id,
+              })
+              .from(kelurahan)
+              .innerJoin(kecamatan, eq(kecamatan.id, kelurahan.idKecamatan))
+              .innerJoin(kota, eq(kota.id, kecamatan.idKota))
+              .where(eq(kelurahan.id, nextWilayah.idKelurahan))
+          } else if (nextWilayah.idKecamatan) {
+            ;[hierarchy] = await tx
+              .select({
+                idProvinsi: kota.idProvinsi,
+                idKota: kecamatan.idKota,
+                idKecamatan: kecamatan.id,
+              })
+              .from(kecamatan)
+              .innerJoin(kota, eq(kota.id, kecamatan.idKota))
+              .where(eq(kecamatan.id, nextWilayah.idKecamatan))
+          } else if (nextWilayah.idKota) {
+            ;[hierarchy] = await tx
+              .select({ idProvinsi: kota.idProvinsi, idKota: kota.id })
+              .from(kota)
+              .where(eq(kota.id, nextWilayah.idKota))
+          } else if (nextWilayah.idProvinsi) {
+            ;[hierarchy] = await tx
+              .select({ idProvinsi: provinsi.id })
+              .from(provinsi)
+              .where(eq(provinsi.id, nextWilayah.idProvinsi))
+          }
+
+          if (
+            fields.some((field) => nextWilayah[field]) &&
+            (!hierarchy ||
+              fields.some((field) => nextWilayah[field] !== null && nextWilayah[field] !== hierarchy[field]))
+          ) {
+            throw new InvalidProfileWilayahError()
+          }
+
           Object.assign(profileData, wilayahUpdates)
         }
 
@@ -303,7 +348,10 @@ export const PenggunaService = {
         })
       }
 
-      const period = getMembershipPeriod(new Date())
+      const date = new Date()
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+      const year = String(date.getUTCFullYear()).slice(-2)
+      const period = `${month}${year}`
       const lockKey = `nomor-anggota:${targetPengguna.idKelompok}:${period}`
 
       await tx.execute(sql`
