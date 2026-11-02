@@ -171,7 +171,11 @@ export const SimpananService = {
       .innerJoin(creator, eq(creator.id, mutasiSimpanan.createdBy))
       .leftJoin(approver, eq(approver.id, mutasiSimpanan.approvedBy))
       .where(and(...conditions))
-      .orderBy(desc(mutasiSimpanan.createdAt), desc(mutasiSimpanan.id))
+      .orderBy(
+        desc(eq(mutasiSimpanan.statusApproved, 'pending')),
+        desc(mutasiSimpanan.createdAt),
+        desc(mutasiSimpanan.id),
+      )
 
     const total = await db.$count(qb)
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
