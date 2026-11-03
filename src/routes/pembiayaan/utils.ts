@@ -41,7 +41,7 @@ export async function recordWakalahTransfer(tx: Transaction, target: typeof pemb
     .values({
       kodeTransaksi: target.kodeTransaksi,
       tanggalTransaksi: tanggalTransfer,
-      keterangan: `Akad wakalah ${target.kodeTransaksi}: ${target.tujuan}`,
+      keterangan: 'Akad wakalah',
     })
     .returning({ id: jurnal.id })
   if (!createdJournal) {
