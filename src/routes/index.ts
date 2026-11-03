@@ -1,5 +1,6 @@
 import Elysia from 'elysia'
 
+import { AngsuranRoutes } from './angsuran'
 import { FilesRoutes } from './files'
 import { JurnalRoutes } from './jurnal'
 import { KelompokRoutes } from './kelompok'
@@ -13,6 +14,7 @@ import { SimpananRoutes } from './simpanan'
 import { WilayahRoutes } from './wilayah'
 
 export const Routes = new Elysia({ prefix: 'api/v1' })
+  .use(AngsuranRoutes)
   .use(FilesRoutes)
   .use(JurnalRoutes)
   .use(MasterAkunRoutes)

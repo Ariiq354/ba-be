@@ -1,0 +1,366 @@
+import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+
+import type { Transaction } from '#/libs/database'
+
+import { AkunId } from '#/libs/config'
+import { db } from '#/libs/database'
+import { akun } from '#/libs/database/schema/akun'
+import { user } from '#/libs/database/schema/auth'
+import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
+import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
+import { getJakartaDate } from '#/libs/date'
+import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
+import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
+
+import type * as AngsuranModel from './model'
+
+import { PembiayaanNotFoundError } from '../pembiayaan/errors'
+import { PAYMENT_ACCOUNTS } from '../simpanan/constants'
+import { InvalidAccountError, InvalidRejectionReasonError } from '../simpanan/errors'
+import { approver, assertMember, assertPaymentAccount, creator, member } from '../simpanan/utils'
+import {
+  AngsuranAlreadyProcessedError,
+  AngsuranExceedsRemainingError,
+  AngsuranNotDeletedError,
+  AngsuranNotFoundError,
+  PembiayaanNotApprovedError,
+} from './errors'
+import { roundProportion } from './utils'
+
+async function getApprovedTotals(tx: Transaction, pembiayaanId: number) {
+  const [totals] = await tx
+    .select({
+      totalPembayaran: sql<number>`coalesce(sum(${angsuran.jumlahPembayaran}), 0)`.mapWith(Number),
+      totalMargin: sql<number>`coalesce(sum(${angsuran.jumlahMargin}), 0)`.mapWith(Number),
+    })
+    .from(angsuran)
+    .where(and(eq(angsuran.pembiayaanId, pembiayaanId), eq(angsuran.statusApproved, 'approved')))
+
+  return totals ?? { totalPembayaran: 0, totalMargin: 0 }
+}
+
+export const AngsuranService = {
+  async getAngsuran(actorId: number, query: AngsuranModel.Get['Query']) {
+    const accessCondition = await getPenggunaAccessCondition(db, actorId)
+    if (accessCondition !== undefined) {
+      await assertMember(db, actorId)
+    }
+
+    const conditions = []
+    if (accessCondition !== undefined) {
+      const accessibleUsers = db.select({ id: user.id }).from(user).where(accessCondition)
+      conditions.push(inArray(pembiayaan.userId, accessibleUsers))
+    }
+    if (query.userId !== undefined) {
+      await assertPenggunaAccess(db, actorId, query.userId)
+      conditions.push(eq(pembiayaan.userId, query.userId))
+    }
+    if (query.pembiayaanId !== undefined) {
+      conditions.push(eq(angsuran.pembiayaanId, query.pembiayaanId))
+    }
+    if (query.status !== 'all') {
+      conditions.push(eq(angsuran.statusApproved, query.status))
+    }
+    if (query.search) {
+      conditions.push(ilike(angsuran.kodeTransaksi, `%${query.search}%`))
+    }
+
+    const qb = db
+      .select({
+        id: angsuran.id,
+        pembiayaanId: angsuran.pembiayaanId,
+        kodePembiayaan: pembiayaan.kodeTransaksi,
+        userId: pembiayaan.userId,
+        kodeTransaksi: angsuran.kodeTransaksi,
+        tanggalTransaksi: angsuran.tanggalTransaksi,
+        jumlahPembayaran: angsuran.jumlahPembayaran,
+        akunId: angsuran.akunId,
+        statusApproved: angsuran.statusApproved,
+        alasanPenolakan: angsuran.alasanPenolakan,
+        jurnalId: angsuran.jurnalId,
+        keterangan: angsuran.keterangan,
+        createdBy: angsuran.createdBy,
+        approvedBy: angsuran.approvedBy,
+        approvedAt: angsuran.approvedAt,
+        createdAt: angsuran.createdAt,
+        updatedAt: angsuran.updatedAt,
+        memberName: member.name,
+        creatorName: creator.name,
+        approverName: approver.name,
+      })
+      .from(angsuran)
+      .innerJoin(pembiayaan, eq(pembiayaan.id, angsuran.pembiayaanId))
+      .innerJoin(member, eq(member.id, pembiayaan.userId))
+      .innerJoin(creator, eq(creator.id, angsuran.createdBy))
+      .leftJoin(approver, eq(approver.id, angsuran.approvedBy))
+      .where(and(...conditions))
+      .orderBy(desc(eq(angsuran.statusApproved, 'pending')), desc(angsuran.createdAt), desc(angsuran.id))
+
+    const total = await db.$count(qb)
+    const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
+    const data: AngsuranModel.Get['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
+      ...row,
+      metodePembayaran: akunId === AkunId.KAS ? 'Tunai' : 'Transfer',
+      approvedAt: row.approvedAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    }))
+
+    return { total, data } satisfies AngsuranModel.Get['Response'][200]
+  },
+
+  async getRingkasan(actorId: number, pembiayaanId: number) {
+    return db.transaction(
+      async (tx) => {
+        const [target] = await tx.select().from(pembiayaan).where(eq(pembiayaan.id, pembiayaanId))
+        if (!target) {
+          throw new PembiayaanNotFoundError({ id: pembiayaanId })
+        }
+        await assertPenggunaAccess(tx, actorId, target.userId)
+        await assertMember(tx, target.userId)
+        if (target.statusApproved !== 'approved') {
+          throw new PembiayaanNotApprovedError()
+        }
+
+        const { totalPembayaran } = await getApprovedTotals(tx, target.id)
+        const totalTagihan = target.jumlahPokok + target.jumlahMargin
+        const tanggalSekarang = getJakartaDate()
+        const [startYear, startMonth, startDay] = target.tanggalPembiayaan.split('-').map(Number) as [
+          number,
+          number,
+          number,
+        ]
+        const [currentYear, currentMonth] = tanggalSekarang.split('-').map(Number) as [number, number]
+        let monthsDue = Math.max(0, (currentYear - startYear) * 12 + currentMonth - startMonth)
+        if (monthsDue > 0) {
+          const targetDate = new Date(0)
+          targetDate.setUTCFullYear(startYear, startMonth - 1 + monthsDue + 1, 0)
+          targetDate.setUTCDate(Math.min(startDay, targetDate.getUTCDate()))
+          if (tanggalSekarang < targetDate.toISOString().slice(0, 10)) {
+            monthsDue--
+          }
+        }
+        monthsDue = Math.min(monthsDue, target.jangkaWaktuBulan)
+
+        const targetPembayaranKumulatif = roundProportion(totalTagihan, monthsDue, target.jangkaWaktuBulan)
+        const sisaTagihan = Math.max(0, totalTagihan - totalPembayaran)
+        return {
+          pembiayaanId: target.id,
+          totalTagihan,
+          totalPembayaran,
+          sisaTagihan,
+          angsuranBulanan: roundProportion(totalTagihan, 1, target.jangkaWaktuBulan),
+          targetPembayaranKumulatif,
+          sisaPembayaranBulanIni: Math.max(0, targetPembayaranKumulatif - totalPembayaran),
+          statusPelunasan: sisaTagihan === 0 ? 'lunas' : 'belum_lunas',
+        } satisfies AngsuranModel.RingkasanGet['Response'][200]
+      },
+      { isolationLevel: 'repeatable read' },
+    )
+  },
+
+  async createAngsuran(actorId: number, data: AngsuranModel.Post['Body']) {
+    await db.transaction(async (tx) => {
+      const [target] = await tx.select().from(pembiayaan).where(eq(pembiayaan.id, data.pembiayaanId)).for('update')
+      if (!target) {
+        throw new PembiayaanNotFoundError({ id: data.pembiayaanId })
+      }
+      await assertPenggunaAccess(tx, actorId, target.userId)
+      await assertMember(tx, target.userId)
+      if (target.statusApproved !== 'approved') {
+        throw new PembiayaanNotApprovedError()
+      }
+
+      const { totalPembayaran } = await getApprovedTotals(tx, target.id)
+      if (data.jumlahPembayaran > target.jumlahPokok + target.jumlahMargin - totalPembayaran) {
+        throw new AngsuranExceedsRemainingError()
+      }
+
+      const akunId = PAYMENT_ACCOUNTS[data.metodePembayaran]
+      await assertPaymentAccount(tx, akunId)
+      const tanggalTransaksi = getJakartaDate()
+      const kodeTransaksi = await allocateTransactionCode(tx, 'angsuran', tanggalTransaksi)
+      await tx.insert(angsuran).values({
+        pembiayaanId: target.id,
+        kodeTransaksi,
+        tanggalTransaksi,
+        jumlahPembayaran: data.jumlahPembayaran,
+        akunId,
+        statusApproved: 'pending',
+        keterangan: data.keterangan?.trim() || null,
+        createdBy: actorId,
+      })
+    })
+  },
+
+  async deleteAngsuran(actorId: number, ids: AngsuranModel.Delete['Body']['ids']) {
+    await db.transaction(async (tx) => {
+      const accessCondition = await getPenggunaAccessCondition(tx, actorId)
+      const accessibleUsers = tx.select({ id: user.id }).from(user).where(accessCondition)
+      const accessiblePembiayaan = tx
+        .select({ id: pembiayaan.id })
+        .from(pembiayaan)
+        .where(inArray(pembiayaan.userId, accessibleUsers))
+      const ownPembiayaan = tx.select({ id: pembiayaan.id }).from(pembiayaan).where(eq(pembiayaan.userId, actorId))
+
+      const deleted = await tx
+        .delete(angsuran)
+        .where(
+          and(
+            inArray(angsuran.id, ids),
+            inArray(angsuran.pembiayaanId, accessiblePembiayaan),
+            or(inArray(angsuran.pembiayaanId, ownPembiayaan), eq(angsuran.createdBy, actorId)),
+            eq(angsuran.statusApproved, 'pending'),
+          ),
+        )
+        .returning({
+          id: angsuran.id,
+          kodeTransaksi: angsuran.kodeTransaksi,
+          tanggalTransaksi: angsuran.tanggalTransaksi,
+        })
+
+      const deletedIds = new Set(deleted.map((item) => item.id))
+      const invalidIds = ids.filter((id) => !deletedIds.has(id))
+      if (deleted.length === 0 || invalidIds.length > 0) {
+        throw new AngsuranNotDeletedError({ ids: invalidIds })
+      }
+      await retainTransactionCodes(tx, 'angsuran', deleted)
+    })
+  },
+
+  async approveAngsuran(id: AngsuranModel.ByIdApprovePatch['Params']['id'], adminId: number) {
+    await db.transaction(async (tx) => {
+      const [reference] = await tx
+        .select({ pembiayaanId: angsuran.pembiayaanId })
+        .from(angsuran)
+        .where(eq(angsuran.id, id))
+      if (!reference) {
+        throw new AngsuranNotFoundError({ id })
+      }
+
+      // Always lock the financing before its installment, serializing approvals for the same receivable.
+      const [targetPembiayaan] = await tx
+        .select()
+        .from(pembiayaan)
+        .where(eq(pembiayaan.id, reference.pembiayaanId))
+        .for('update')
+      if (!targetPembiayaan) {
+        throw new PembiayaanNotFoundError({ id: reference.pembiayaanId })
+      }
+      const [target] = await tx
+        .select()
+        .from(angsuran)
+        .where(and(eq(angsuran.id, id), eq(angsuran.pembiayaanId, targetPembiayaan.id)))
+        .for('update')
+      if (!target) {
+        throw new AngsuranNotFoundError({ id })
+      }
+      if (target.statusApproved !== 'pending') {
+        throw new AngsuranAlreadyProcessedError({ id })
+      }
+      if (targetPembiayaan.statusApproved !== 'approved') {
+        throw new PembiayaanNotApprovedError()
+      }
+      await assertMember(tx, targetPembiayaan.userId)
+
+      const { totalPembayaran, totalMargin } = await getApprovedTotals(tx, targetPembiayaan.id)
+      const totalTagihan = targetPembiayaan.jumlahPokok + targetPembiayaan.jumlahMargin
+      if (target.jumlahPembayaran > totalTagihan - totalPembayaran) {
+        throw new AngsuranExceedsRemainingError()
+      }
+      // Allocate the difference in cumulative margin so arbitrary payments settle both balances exactly.
+      const jumlahMargin =
+        roundProportion(totalPembayaran + target.jumlahPembayaran, targetPembiayaan.jumlahMargin, totalTagihan) -
+        totalMargin
+      const requiredAccountIds = [
+        target.akunId,
+        AkunId.PIUTANGMURABAHAH,
+        ...(jumlahMargin > 0 ? [AkunId.PENDAPATANMURABAHAHDITANGGUHKAN, AkunId.PENDAPATANMURABAHAH] : []),
+      ]
+      const accounts = await tx
+        .select({ id: akun.id, isActive: akun.isActive })
+        .from(akun)
+        .where(inArray(akun.id, requiredAccountIds))
+        .orderBy(akun.id)
+        .for('share')
+      const accountsById = new Map(accounts.map((account) => [account.id, account]))
+      for (const requiredAccountId of requiredAccountIds) {
+        if (!accountsById.get(requiredAccountId)?.isActive) {
+          throw new InvalidAccountError({
+            akunId: requiredAccountId,
+            message: 'Akun jurnal yang diperlukan tidak tersedia',
+          })
+        }
+      }
+
+      const [createdJournal] = await tx
+        .insert(jurnal)
+        .values({
+          kodeTransaksi: target.kodeTransaksi,
+          tanggalTransaksi: target.tanggalTransaksi,
+          keterangan: target.keterangan,
+        })
+        .returning({ id: jurnal.id })
+      if (!createdJournal) {
+        throw new Error('Jurnal gagal dibuat')
+      }
+      const details = [
+        { akunId: target.akunId, debit: target.jumlahPembayaran, kredit: 0 },
+        { akunId: AkunId.PIUTANGMURABAHAH, debit: 0, kredit: target.jumlahPembayaran },
+      ]
+      if (jumlahMargin > 0) {
+        details.push(
+          { akunId: AkunId.PENDAPATANMURABAHAHDITANGGUHKAN, debit: jumlahMargin, kredit: 0 },
+          { akunId: AkunId.PENDAPATANMURABAHAH, debit: 0, kredit: jumlahMargin },
+        )
+      }
+      await tx.insert(jurnalDetail).values(
+        details.map((detail) => ({
+          ...detail,
+          jurnalId: createdJournal.id,
+          userId: targetPembiayaan.userId,
+        })),
+      )
+      await tx
+        .update(angsuran)
+        .set({
+          jumlahMargin,
+          jurnalId: createdJournal.id,
+          statusApproved: 'approved',
+          alasanPenolakan: null,
+          approvedBy: adminId,
+          approvedAt: new Date(),
+        })
+        .where(eq(angsuran.id, id))
+    })
+  },
+
+  async rejectAngsuran(
+    id: AngsuranModel.ByIdRejectPatch['Params']['id'],
+    adminId: number,
+    reason: AngsuranModel.ByIdRejectPatch['Body']['alasanPenolakan'],
+  ) {
+    const alasanPenolakan = reason.trim()
+    if (!alasanPenolakan) {
+      throw new InvalidRejectionReasonError()
+    }
+
+    await db.transaction(async (tx) => {
+      const [target] = await tx
+        .select({ statusApproved: angsuran.statusApproved })
+        .from(angsuran)
+        .where(eq(angsuran.id, id))
+        .for('update')
+      if (!target) {
+        throw new AngsuranNotFoundError({ id })
+      }
+      if (target.statusApproved !== 'pending') {
+        throw new AngsuranAlreadyProcessedError({ id })
+      }
+      await tx
+        .update(angsuran)
+        .set({ statusApproved: 'rejected', alasanPenolakan, approvedBy: adminId, approvedAt: new Date() })
+        .where(eq(angsuran.id, id))
+    })
+  },
+}

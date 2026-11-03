@@ -4,7 +4,7 @@ import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
-import { pembiayaan } from '#/libs/database/schema/pembiayaan'
+import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
@@ -249,8 +249,15 @@ export const JurnalService = {
         .from(pembiayaan)
         .where(inArray(pembiayaan.jurnalId, uniqueIds))
 
+      const installmentReferences = await tx
+        .select({ jurnalId: angsuran.jurnalId })
+        .from(angsuran)
+        .where(inArray(angsuran.jurnalId, uniqueIds))
+
       const referencedIds = new Set(
-        [...references, ...transferReferences, ...financingReferences].map((reference) => reference.jurnalId),
+        [...references, ...transferReferences, ...financingReferences, ...installmentReferences].map(
+          (reference) => reference.jurnalId,
+        ),
       )
       const protectedIds = uniqueIds.filter((id) => referencedIds.has(id))
       if (protectedIds.length > 0) {

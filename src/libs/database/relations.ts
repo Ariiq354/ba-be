@@ -166,6 +166,10 @@ export const relations = defineRelations(
         from: r.akun.id,
         to: r.pembiayaan.akunId,
       }),
+      angsuran: r.many.angsuran({
+        from: r.akun.id,
+        to: r.angsuran.akunId,
+      }),
     },
     jurnal: {
       mutasiSimpanan: r.one.mutasiSimpanan({
@@ -179,6 +183,10 @@ export const relations = defineRelations(
       pembiayaan: r.one.pembiayaan({
         from: r.jurnal.id,
         to: r.pembiayaan.jurnalId,
+      }),
+      angsuran: r.one.angsuran({
+        from: r.jurnal.id,
+        to: r.angsuran.jurnalId,
       }),
       details: r.many.jurnalDetail({
         from: r.jurnal.id,
@@ -284,6 +292,14 @@ export const relations = defineRelations(
       }),
     },
     angsuran: {
+      akun: r.one.akun({
+        from: r.angsuran.akunId,
+        to: r.akun.id,
+      }),
+      jurnal: r.one.jurnal({
+        from: r.angsuran.jurnalId,
+        to: r.jurnal.id,
+      }),
       pembiayaan: r.one.pembiayaan({
         from: r.angsuran.pembiayaanId,
         to: r.pembiayaan.id,

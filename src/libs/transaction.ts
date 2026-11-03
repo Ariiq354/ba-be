@@ -3,17 +3,18 @@ import { eq, sql } from 'drizzle-orm'
 import type { Transaction } from '#/libs/database'
 
 import { jurnal } from '#/libs/database/schema/jurnal'
-import { pembiayaan } from '#/libs/database/schema/pembiayaan'
+import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { transactionCodeCounter } from '#/libs/database/schema/transaction'
 
-type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan' | 'pembiayaan'
+type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan' | 'pembiayaan' | 'angsuran'
 
 const transactionSources = {
   simpanan: { prefix: 'STR', table: mutasiSimpanan },
   jurnal: { prefix: 'TRX', table: jurnal },
   pemindahbukuan: { prefix: 'PBK', table: pemindahbukuan },
-  pembiayaan: { prefix: 'PMB', table: pembiayaan },
+  pembiayaan: { prefix: 'PEMB', table: pembiayaan },
+  angsuran: { prefix: 'AGS', table: angsuran },
 } as const
 
 function getMaxTransactionSequence(prefix: string, existingCodes: string[]) {
