@@ -2,10 +2,18 @@ import type { UnwrapModels } from 'elysia'
 
 import { t } from 'elysia'
 
-import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema } from '#/libs/errors'
+import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { idParamsSchema, paginationSchema, searchSchema } from '#/libs/schema'
 
 export const OptionsGet = {
+  Query: t.Object({
+    all: t.Boolean({
+      default: false,
+      description:
+        'Jika true, menampilkan semua pengguna untuk pilihan tujuan pemindahbukuan tanpa batasan cakupan akses.',
+    }),
+  }),
+
   Response: {
     200: t.Object({
       data: t.Array(
@@ -21,6 +29,7 @@ export const OptionsGet = {
 
     401: UnauthorizedSchema,
     404: ErrorSchema,
+    422: ValidationErrorSchema,
   },
 } as const
 

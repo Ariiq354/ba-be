@@ -6,6 +6,7 @@ import * as filesSchema from './schema/files'
 import * as jurnalSchema from './schema/jurnal'
 import * as kelompokSchema from './schema/kelompok'
 import * as masterSchema from './schema/master'
+import * as pembiayaanSchema from './schema/pembiayaan'
 import * as simpananSchema from './schema/simpanan'
 import * as transactionSchema from './schema/transaction'
 import * as usersSchema from './schema/users'
@@ -19,6 +20,7 @@ export const relations = defineRelations(
     ...jurnalSchema,
     ...kelompokSchema,
     ...masterSchema,
+    ...pembiayaanSchema,
     ...simpananSchema,
     ...transactionSchema,
     ...usersSchema,
@@ -81,6 +83,26 @@ export const relations = defineRelations(
       sahamUpdated: r.many.saham({
         from: r.user.id,
         to: r.saham.updatedBy,
+      }),
+      pembiayaan: r.many.pembiayaan({
+        from: r.user.id,
+        to: r.pembiayaan.userId,
+      }),
+      pembiayaanCreated: r.many.pembiayaan({
+        from: r.user.id,
+        to: r.pembiayaan.createdBy,
+      }),
+      pembiayaanApproved: r.many.pembiayaan({
+        from: r.user.id,
+        to: r.pembiayaan.approvedBy,
+      }),
+      angsuranCreated: r.many.angsuran({
+        from: r.user.id,
+        to: r.angsuran.createdBy,
+      }),
+      angsuranApproved: r.many.angsuran({
+        from: r.user.id,
+        to: r.angsuran.approvedBy,
       }),
     },
     session: {
@@ -224,6 +246,38 @@ export const relations = defineRelations(
       }),
       approver: r.one.user({
         from: r.pemindahbukuan.approvedBy,
+        to: r.user.id,
+      }),
+    },
+    pembiayaan: {
+      user: r.one.user({
+        from: r.pembiayaan.userId,
+        to: r.user.id,
+      }),
+      creator: r.one.user({
+        from: r.pembiayaan.createdBy,
+        to: r.user.id,
+      }),
+      approver: r.one.user({
+        from: r.pembiayaan.approvedBy,
+        to: r.user.id,
+      }),
+      angsuran: r.many.angsuran({
+        from: r.pembiayaan.id,
+        to: r.angsuran.pembiayaanId,
+      }),
+    },
+    angsuran: {
+      pembiayaan: r.one.pembiayaan({
+        from: r.angsuran.pembiayaanId,
+        to: r.pembiayaan.id,
+      }),
+      creator: r.one.user({
+        from: r.angsuran.createdBy,
+        to: r.user.id,
+      }),
+      approver: r.one.user({
+        from: r.angsuran.approvedBy,
         to: r.user.id,
       }),
     },

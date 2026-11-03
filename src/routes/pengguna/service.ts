@@ -23,8 +23,8 @@ import {
 } from './errors'
 
 export const PenggunaService = {
-  async getPenggunaOptions(actorId: number) {
-    const condition = await getPenggunaAccessCondition(db, actorId)
+  async getPenggunaOptions(actorId: number, query: PenggunaModel.OptionsGet['Query']) {
+    const condition = query.all ? undefined : await getPenggunaAccessCondition(db, actorId)
     const data = await db
       .select({
         id: user.id,

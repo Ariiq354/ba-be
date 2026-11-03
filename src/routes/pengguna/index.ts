@@ -11,9 +11,14 @@ export const PenggunaRoutes = new Elysia({ prefix: 'pengguna', tags: ['Pengguna'
     '/options',
     {
       auth: true,
+      query: PenggunaModel.OptionsGet.Query,
       response: PenggunaModel.OptionsGet.Response,
+      detail: {
+        description:
+          'Daftar pilihan pengguna sesuai cakupan akses. Gunakan all=true untuk mengambil semua pengguna; tidak mengubah hak akses transaksi.',
+      },
     },
-    ({ user }) => PenggunaService.getPenggunaOptions(user.id),
+    ({ user, query }) => PenggunaService.getPenggunaOptions(user.id, query),
   )
   .get(
     '/profile',
