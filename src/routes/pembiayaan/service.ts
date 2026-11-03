@@ -230,7 +230,7 @@ export const PembiayaanService = {
         .values({
           kodeTransaksi: target.kodeTransaksi,
           tanggalTransaksi: target.tanggalPembiayaan,
-          keterangan: `Pembiayaan ${target.kodeTransaksi}: ${target.tujuan}`,
+          keterangan: target.tujuan,
         })
         .returning({ id: jurnal.id })
       if (!createdJournal) {
