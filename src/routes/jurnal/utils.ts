@@ -125,3 +125,18 @@ export function sumKategori(data: Array<LaporanAkun<KategoriAkun>>, kategori: Ka
 export function sum(values: number[]) {
   return values.reduce((total, value) => total + value, 0)
 }
+
+export function buildRingkasanLabaRugi(data: Array<LaporanAkun<'pendapatan' | 'biaya'>>) {
+  const pendapatanBulanan = sumKategori(data, 'pendapatan')
+  const biayaBulanan = sumKategori(data, 'biaya')
+  const labaRugiBulanan = pendapatanBulanan.map((jumlah, index) => jumlah - (biayaBulanan[index] ?? 0))
+
+  return {
+    pendapatanBulanan,
+    biayaBulanan,
+    labaRugiBulanan,
+    totalPendapatan: sum(pendapatanBulanan),
+    totalBiaya: sum(biayaBulanan),
+    totalLabaRugi: sum(labaRugiBulanan),
+  }
+}

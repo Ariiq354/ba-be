@@ -1,5 +1,6 @@
 import { asc, desc, eq, ilike, inArray } from 'drizzle-orm'
 
+import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
@@ -21,6 +22,7 @@ import {
 } from './errors'
 import {
   buildLaporanAkun,
+  buildRingkasanLabaRugi,
   getMutasiBulanan,
   jurnalDetailSelection,
   jurnalHeaderSelection,
@@ -30,8 +32,18 @@ import {
 
 export const JurnalService = {
   async getNeraca(query: JurnalModel.NeracaGet['Query']) {
-    const rows = await getMutasiBulanan(query.tahun, ['aktiva', 'pasiva'])
+    const rows = await getMutasiBulanan(query.tahun, ['aktiva', 'pasiva', 'pendapatan', 'biaya'])
     const data = buildLaporanAkun(rows, ['aktiva', 'pasiva'])
+    const labaRugi = buildRingkasanLabaRugi(buildLaporanAkun(rows, ['pendapatan', 'biaya']))
+    const labaRugiTahunBerjalan = data.find(
+      (account) => account.id === AkunId.LABARUGITAHUNBERJALAN && account.kategori === 'pasiva',
+    )
+
+    if (labaRugiTahunBerjalan) {
+      labaRugiTahunBerjalan.jumlahBulanan = labaRugi.labaRugiBulanan
+      labaRugiTahunBerjalan.jumlah = labaRugi.totalLabaRugi
+    }
+
     const aktivaBulanan = sumKategori(data, 'aktiva')
     const pasivaBulanan = sumKategori(data, 'pasiva')
 
@@ -50,21 +62,11 @@ export const JurnalService = {
   async getLabaRugi(query: JurnalModel.LabaRugiGet['Query']) {
     const rows = await getMutasiBulanan(query.tahun, ['pendapatan', 'biaya'])
     const data = buildLaporanAkun(rows, ['pendapatan', 'biaya'])
-    const pendapatanBulanan = sumKategori(data, 'pendapatan')
-    const biayaBulanan = sumKategori(data, 'biaya')
-    const labaRugiBulanan = pendapatanBulanan.map((jumlah, index) => jumlah - (biayaBulanan[index] ?? 0))
 
     return {
       total: data.length,
       data,
-      ringkasan: {
-        pendapatanBulanan,
-        biayaBulanan,
-        labaRugiBulanan,
-        totalPendapatan: sum(pendapatanBulanan),
-        totalBiaya: sum(biayaBulanan),
-        totalLabaRugi: sum(labaRugiBulanan),
-      },
+      ringkasan: buildRingkasanLabaRugi(data),
     } satisfies JurnalModel.LabaRugiGet['Response'][200]
   },
 
