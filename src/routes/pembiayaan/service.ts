@@ -138,7 +138,7 @@ export const PembiayaanService = {
       if (!selectedMargin) {
         throw new MarginPembiayaanNotFoundError()
       }
-      const persenMarginTahun = Number((data.persenMarginTahun ?? selectedMargin.persenMarginTahun).toFixed(2))
+      const persenMarginTahun = data.persenMarginTahun ?? selectedMargin.persenMarginTahun
       const jumlahMargin = Math.round((data.jumlahPokok * persenMarginTahun * data.jangkaWaktuBulan) / (100 * 12))
       const biayaAkad = selectedMargin.biayaAkad
 

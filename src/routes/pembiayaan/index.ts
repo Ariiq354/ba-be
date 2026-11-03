@@ -28,7 +28,7 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
       response: PembiayaanModel.Post.Response,
       detail: {
         description:
-          'Mengajukan pembiayaan pending. Master margin dan biaya akad otomatis berdasarkan jumlah pokok; persenMarginTahun opsional khusus admin (dibulatkan ke 2 desimal). Margin flat tahunan dikalikan tenor bulan/12, dibulatkan ke rupiah terdekat, lalu dikunci bersama biaya akad. Transfer menggunakan BSM; Tunai menggunakan Kas. Belum ada jurnal sampai approval.',
+          'Mengajukan pembiayaan pending. Master margin dan biaya akad otomatis berdasarkan jumlah pokok; persenMarginTahun opsional khusus admin dan harus bilangan bulat. Margin flat tahunan dikalikan tenor bulan/12, dibulatkan ke rupiah terdekat, lalu dikunci bersama biaya akad. Transfer menggunakan BSM; Tunai menggunakan Kas. Belum ada jurnal sampai approval.',
       },
     },
     async ({ user, body }) => {

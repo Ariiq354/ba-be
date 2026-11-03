@@ -10,7 +10,7 @@ import { PAYMENT_METHODS } from '../simpanan/constants'
 const databaseIdSchema = t.Integer({ minimum: 1 })
 const idParamsSchema = t.Object({ id: databaseIdSchema })
 const paymentMethodSchema = t.UnionEnum(PAYMENT_METHODS)
-const marginPercentSchema = t.Number({ minimum: 0 })
+const marginPercentSchema = t.Integer({ minimum: 0 })
 
 const pembiayaanResponseSchema = t.Object({
   id: t.Integer(),
@@ -18,7 +18,7 @@ const pembiayaanResponseSchema = t.Object({
   userId: t.Integer(),
   metodePembayaran: paymentMethodSchema,
   jumlahPokok: t.Integer(),
-  persenMarginTahun: t.Number(),
+  persenMarginTahun: t.Integer(),
   jumlahMargin: t.Integer(),
   biayaAkad: t.Integer(),
   totalPembiayaan: t.Integer(),
@@ -77,8 +77,7 @@ export const Post = {
     metodePembayaran: paymentMethodSchema,
     persenMarginTahun: t.Optional({
       ...marginPercentSchema,
-      description:
-        'Override khusus admin, dibulatkan ke 2 angka desimal. Jika tidak dikirim, menggunakan master margin.',
+      description: 'Override khusus admin berupa bilangan bulat. Jika tidak dikirim, menggunakan master margin.',
     }),
   }),
   Response: { 201: SuccessSchema, ...errorResponses },
