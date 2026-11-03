@@ -62,6 +62,26 @@ export const Get = {
 
 export type Get = UnwrapModels<typeof Get>
 
+export const SimulasiMarginPost = {
+  Body: t.Object({
+    jumlahPokok: t.Integer({ minimum: 1 }),
+    jangkaWaktuBulan: t.Optional(t.Integer({ minimum: 1 })),
+    persenMarginTahun: t.Optional({
+      ...marginPercentSchema,
+      description: 'Persen margin tahunan manual. Jika tidak dikirim, menggunakan master margin.',
+    }),
+  }),
+  Response: {
+    200: t.Object({
+      persenMarginTahun: t.Optional(marginPercentSchema),
+      jumlahMargin: t.Optional(t.Integer({ minimum: 0 })),
+    }),
+    ...errorResponses,
+  },
+} as const
+
+export type SimulasiMarginPost = UnwrapModels<typeof SimulasiMarginPost>
+
 export const Post = {
   Body: t.Object({
     userId: t.Optional(

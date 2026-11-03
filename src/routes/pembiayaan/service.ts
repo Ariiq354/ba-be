@@ -100,6 +100,38 @@ export const PembiayaanService = {
     return { total, data } satisfies PembiayaanModel.Get['Response'][200]
   },
 
+  async simulasiMargin(data: PembiayaanModel.SimulasiMarginPost['Body']) {
+    if (data.jumlahPokok === undefined) {
+      return {} satisfies PembiayaanModel.SimulasiMarginPost['Response'][200]
+    }
+
+    let persenMarginTahun = data.persenMarginTahun
+    if (persenMarginTahun === undefined) {
+      const [selectedMargin] = await db
+        .select({ persenMarginTahun: margin.persenMarginTahun })
+        .from(margin)
+        .where(
+          and(
+            lte(margin.minNominal, data.jumlahPokok),
+            or(isNull(margin.maxNominal), gte(margin.maxNominal, data.jumlahPokok)),
+          ),
+        )
+        .orderBy(desc(margin.minNominal), desc(margin.id))
+        .limit(1)
+      if (!selectedMargin) {
+        throw new MarginPembiayaanNotFoundError()
+      }
+      persenMarginTahun = selectedMargin.persenMarginTahun
+    }
+
+    const jumlahMargin =
+      data.jangkaWaktuBulan === undefined
+        ? undefined
+        : Math.round((data.jumlahPokok * persenMarginTahun * data.jangkaWaktuBulan) / (100 * 12))
+
+    return { persenMarginTahun, jumlahMargin } satisfies PembiayaanModel.SimulasiMarginPost['Response'][200]
+  },
+
   async createPembiayaan(actorId: number, data: PembiayaanModel.Post['Body']) {
     const userId = data.userId ?? actorId
     const akunId = PAYMENT_ACCOUNTS[data.metodePembayaran]
