@@ -24,8 +24,12 @@ const pembiayaanResponseSchema = t.Object({
   totalPembiayaan: t.Integer(),
   jangkaWaktuBulan: t.Integer(),
   tujuan: t.String(),
-  tanggalPembiayaan: t.String({ format: 'date' }),
-  jurnalId: t.Nullable(t.Integer()),
+  tanggalPengajuan: t.String({ format: 'date' }),
+  tanggalTransfer: t.Nullable(t.String({ format: 'date' })),
+  tanggalPembiayaan: t.Nullable(t.String({ format: 'date' })),
+  statusTransfer: t.UnionEnum(['belum_transfer', 'sudah_transfer']),
+  transferredBy: t.Nullable(t.Integer()),
+  transferredAt: t.Nullable(t.String({ format: 'date-time' })),
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),
   alasanPenolakan: t.Nullable(t.String()),
   createdBy: t.Integer(),
@@ -53,6 +57,7 @@ export const Get = {
     ...searchSchema.properties,
     userId: t.Optional(databaseIdSchema),
     status: t.UnionEnum(['all', 'pending', 'approved', 'rejected'], { default: 'all' }),
+    statusTransfer: t.UnionEnum(['all', 'belum_transfer', 'sudah_transfer'], { default: 'all' }),
   }),
   Response: {
     200: t.Object({ total: t.Integer(), data: t.Array(pembiayaanResponseSchema) }),
@@ -123,6 +128,13 @@ export const ByIdApprovePatch = {
 } as const
 
 export type ByIdApprovePatch = UnwrapModels<typeof ByIdApprovePatch>
+
+export const ByIdTransferPatch = {
+  Params: idParamsSchema,
+  Response: ByIdApprovePatch.Response,
+} as const
+
+export type ByIdTransferPatch = UnwrapModels<typeof ByIdTransferPatch>
 
 export const ByIdRejectPatch = {
   Params: idParamsSchema,

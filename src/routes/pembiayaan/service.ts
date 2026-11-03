@@ -1,9 +1,8 @@
-import { and, desc, eq, gte, ilike, inArray, isNull, lte, or } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { margin } from '#/libs/database/schema/master'
@@ -16,16 +15,20 @@ import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transact
 import type * as PembiayaanModel from './model'
 
 import { PAYMENT_ACCOUNTS } from '../simpanan/constants'
-import { InvalidAccountError, InvalidRejectionReasonError } from '../simpanan/errors'
+import { InvalidRejectionReasonError } from '../simpanan/errors'
 import { assertMember, assertPaymentAccount } from '../simpanan/utils'
 import {
   InvalidPembiayaanError,
   MarginOverrideForbiddenError,
   MarginPembiayaanNotFoundError,
   PembiayaanAlreadyProcessedError,
+  PembiayaanAlreadyTransferredError,
   PembiayaanNotDeletedError,
   PembiayaanNotFoundError,
+  PembiayaanNotTransferredError,
+  PembiayaanTransferredCancellationError,
 } from './errors'
+import { assertJournalAccounts, recordWakalahTransfer } from './utils'
 
 const member = alias(user, 'member')
 const creator = alias(user, 'creator')
@@ -50,6 +53,13 @@ export const PembiayaanService = {
     if (query.status !== 'all') {
       conditions.push(eq(pembiayaan.statusApproved, query.status))
     }
+    if (query.statusTransfer !== 'all') {
+      conditions.push(
+        query.statusTransfer === 'sudah_transfer'
+          ? isNotNull(pembiayaan.transferredAt)
+          : isNull(pembiayaan.transferredAt),
+      )
+    }
     if (query.search) {
       conditions.push(ilike(pembiayaan.kodeTransaksi, `%${query.search}%`))
     }
@@ -66,8 +76,11 @@ export const PembiayaanService = {
         biayaAkad: pembiayaan.biayaAkad,
         jangkaWaktuBulan: pembiayaan.jangkaWaktuBulan,
         tujuan: pembiayaan.tujuan,
+        tanggalPengajuan: pembiayaan.tanggalPengajuan,
+        tanggalTransfer: pembiayaan.tanggalTransfer,
         tanggalPembiayaan: pembiayaan.tanggalPembiayaan,
-        jurnalId: pembiayaan.jurnalId,
+        transferredBy: pembiayaan.transferredBy,
+        transferredAt: pembiayaan.transferredAt,
         statusApproved: pembiayaan.statusApproved,
         alasanPenolakan: pembiayaan.alasanPenolakan,
         createdBy: pembiayaan.createdBy,
@@ -92,6 +105,8 @@ export const PembiayaanService = {
       ...row,
       metodePembayaran: akunId === AkunId.KAS ? 'Tunai' : 'Transfer',
       totalPembiayaan: row.jumlahPokok + row.jumlahMargin,
+      statusTransfer: row.transferredAt === null ? 'belum_transfer' : 'sudah_transfer',
+      transferredAt: row.transferredAt?.toISOString() ?? null,
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -141,14 +156,12 @@ export const PembiayaanService = {
     }
 
     await db.transaction(async (tx) => {
-      if (data.persenMarginTahun !== undefined) {
-        const [actor] = await tx.select({ role: user.role }).from(user).where(eq(user.id, actorId)).for('share')
-        if (!actor) {
-          throw new ItemNotFoundError({ id: actorId, message: 'Pengguna tidak ditemukan' })
-        }
-        if (actor.role !== 'admin') {
-          throw new MarginOverrideForbiddenError()
-        }
+      const [actor] = await tx.select({ role: user.role }).from(user).where(eq(user.id, actorId)).for('share')
+      if (!actor) {
+        throw new ItemNotFoundError({ id: actorId, message: 'Pengguna tidak ditemukan' })
+      }
+      if (data.persenMarginTahun !== undefined && actor.role !== 'admin') {
+        throw new MarginOverrideForbiddenError()
       }
 
       await assertPenggunaAccess(tx, actorId, userId)
@@ -174,22 +187,31 @@ export const PembiayaanService = {
       const jumlahMargin = Math.round((data.jumlahPokok * persenMarginTahun * data.jangkaWaktuBulan) / (100 * 12))
       const biayaAkad = selectedMargin.biayaAkad
 
-      const tanggalPembiayaan = getJakartaDate()
-      const kodeTransaksi = await allocateTransactionCode(tx, 'pembiayaan', tanggalPembiayaan)
-      await tx.insert(pembiayaan).values({
-        kodeTransaksi,
-        userId,
-        akunId,
-        jumlahPokok: data.jumlahPokok,
-        persenMarginTahun,
-        jumlahMargin,
-        biayaAkad,
-        jangkaWaktuBulan: data.jangkaWaktuBulan,
-        tujuan,
-        tanggalPembiayaan,
-        statusApproved: 'pending',
-        createdBy: actorId,
-      })
+      const tanggalPengajuan = getJakartaDate()
+      const kodeTransaksi = await allocateTransactionCode(tx, 'pembiayaan', tanggalPengajuan)
+      const [created] = await tx
+        .insert(pembiayaan)
+        .values({
+          kodeTransaksi,
+          userId,
+          akunId,
+          jumlahPokok: data.jumlahPokok,
+          persenMarginTahun,
+          jumlahMargin,
+          biayaAkad,
+          jangkaWaktuBulan: data.jangkaWaktuBulan,
+          tujuan,
+          tanggalPengajuan,
+          statusApproved: 'pending',
+          createdBy: actorId,
+        })
+        .returning()
+      if (!created) {
+        throw new Error('Pengajuan pembiayaan gagal dibuat')
+      }
+      if (actor.role === 'admin') {
+        await recordWakalahTransfer(tx, created, actorId)
+      }
     })
   },
 
@@ -205,12 +227,13 @@ export const PembiayaanService = {
             or(eq(pembiayaan.userId, actorId), eq(pembiayaan.createdBy, actorId)),
             inArray(pembiayaan.userId, accessibleUsers),
             eq(pembiayaan.statusApproved, 'pending'),
+            isNull(pembiayaan.transferredAt),
           ),
         )
         .returning({
           id: pembiayaan.id,
           kodeTransaksi: pembiayaan.kodeTransaksi,
-          tanggalTransaksi: pembiayaan.tanggalPembiayaan,
+          tanggalTransaksi: pembiayaan.tanggalPengajuan,
         })
 
       const deletedIds = new Set(deleted.map((item) => item.id))
@@ -223,6 +246,23 @@ export const PembiayaanService = {
     })
   },
 
+  async transferPembiayaan(id: PembiayaanModel.ByIdTransferPatch['Params']['id'], adminId: number) {
+    await db.transaction(async (tx) => {
+      const [target] = await tx.select().from(pembiayaan).where(eq(pembiayaan.id, id)).for('update')
+      if (!target) {
+        throw new PembiayaanNotFoundError({ id })
+      }
+      if (target.statusApproved !== 'pending') {
+        throw new PembiayaanAlreadyProcessedError({ id })
+      }
+      if (target.transferredAt !== null) {
+        throw new PembiayaanAlreadyTransferredError()
+      }
+
+      await recordWakalahTransfer(tx, target, adminId)
+    })
+  },
+
   async approvePembiayaan(id: PembiayaanModel.ByIdApprovePatch['Params']['id'], adminId: number) {
     await db.transaction(async (tx) => {
       const [target] = await tx.select().from(pembiayaan).where(eq(pembiayaan.id, id)).for('update')
@@ -232,36 +272,27 @@ export const PembiayaanService = {
       if (target.statusApproved !== 'pending') {
         throw new PembiayaanAlreadyProcessedError({ id })
       }
+      if (target.transferredAt === null) {
+        throw new PembiayaanNotTransferredError()
+      }
+
+      const approvedAt = new Date()
+      const tanggalPembiayaan = getJakartaDate(approvedAt)
 
       await assertMember(tx, target.userId)
       const requiredAccountIds = [
-        target.akunId,
+        AkunId.UANGMUKAPEMBELIAN,
         AkunId.PIUTANGMURABAHAH,
         ...(target.jumlahMargin > 0 ? [AkunId.PENDAPATANMURABAHAHDITANGGUHKAN] : []),
-        ...(target.biayaAkad > 0 ? [AkunId.PENDAPATANADMINISTRASIAKAD] : []),
+        ...(target.biayaAkad > 0 ? [target.akunId, AkunId.PENDAPATANADMINISTRASIAKAD] : []),
       ]
-      const accounts = await tx
-        .select({ id: akun.id, isActive: akun.isActive })
-        .from(akun)
-        .where(inArray(akun.id, requiredAccountIds))
-        .orderBy(akun.id)
-        .for('share')
-      const accountsById = new Map(accounts.map((account) => [account.id, account]))
-
-      for (const requiredAccountId of requiredAccountIds) {
-        if (!accountsById.get(requiredAccountId)?.isActive) {
-          throw new InvalidAccountError({
-            akunId: requiredAccountId,
-            message: 'Akun jurnal yang diperlukan tidak tersedia',
-          })
-        }
-      }
+      await assertJournalAccounts(tx, requiredAccountIds)
 
       const [createdJournal] = await tx
         .insert(jurnal)
         .values({
           kodeTransaksi: target.kodeTransaksi,
-          tanggalTransaksi: target.tanggalPembiayaan,
+          tanggalTransaksi: tanggalPembiayaan,
           keterangan: target.tujuan,
         })
         .returning({ id: jurnal.id })
@@ -271,7 +302,7 @@ export const PembiayaanService = {
 
       const details = [
         { akunId: AkunId.PIUTANGMURABAHAH, debit: target.jumlahPokok + target.jumlahMargin, kredit: 0 },
-        { akunId: target.akunId, debit: 0, kredit: target.jumlahPokok },
+        { akunId: AkunId.UANGMUKAPEMBELIAN, debit: 0, kredit: target.jumlahPokok },
       ]
       if (target.jumlahMargin > 0) {
         details.push({ akunId: AkunId.PENDAPATANMURABAHAHDITANGGUHKAN, debit: 0, kredit: target.jumlahMargin })
@@ -290,11 +321,11 @@ export const PembiayaanService = {
       await tx
         .update(pembiayaan)
         .set({
-          jurnalId: createdJournal.id,
+          tanggalPembiayaan,
           statusApproved: 'approved',
           alasanPenolakan: null,
           approvedBy: adminId,
-          approvedAt: new Date(),
+          approvedAt,
         })
         .where(eq(pembiayaan.id, id))
     })
@@ -312,7 +343,7 @@ export const PembiayaanService = {
 
     await db.transaction(async (tx) => {
       const [target] = await tx
-        .select({ statusApproved: pembiayaan.statusApproved })
+        .select({ statusApproved: pembiayaan.statusApproved, transferredAt: pembiayaan.transferredAt })
         .from(pembiayaan)
         .where(eq(pembiayaan.id, id))
         .for('update')
@@ -321,6 +352,9 @@ export const PembiayaanService = {
       }
       if (target.statusApproved !== 'pending') {
         throw new PembiayaanAlreadyProcessedError({ id })
+      }
+      if (target.transferredAt !== null) {
+        throw new PembiayaanTransferredCancellationError()
       }
 
       await tx

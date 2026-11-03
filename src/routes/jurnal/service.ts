@@ -5,8 +5,6 @@ import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
-import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
-import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
 import type * as JurnalModel from './model'
@@ -236,32 +234,9 @@ export const JurnalService = {
         throw new JurnalsNotFoundError({ ids: missingIds })
       }
 
-      const references = await tx
-        .select({ jurnalId: mutasiSimpanan.jurnalId })
-        .from(mutasiSimpanan)
-        .where(inArray(mutasiSimpanan.jurnalId, uniqueIds))
-
-      const transferReferences = await tx
-        .select({ jurnalId: pemindahbukuan.jurnalId })
-        .from(pemindahbukuan)
-        .where(inArray(pemindahbukuan.jurnalId, uniqueIds))
-
-      const financingReferences = await tx
-        .select({ jurnalId: pembiayaan.jurnalId })
-        .from(pembiayaan)
-        .where(inArray(pembiayaan.jurnalId, uniqueIds))
-
-      const installmentReferences = await tx
-        .select({ jurnalId: angsuran.jurnalId })
-        .from(angsuran)
-        .where(inArray(angsuran.jurnalId, uniqueIds))
-
-      const referencedIds = new Set(
-        [...references, ...transferReferences, ...financingReferences, ...installmentReferences].map(
-          (reference) => reference.jurnalId,
-        ),
-      )
-      const protectedIds = uniqueIds.filter((id) => referencedIds.has(id))
+      const protectedIds = existing
+        .filter((header) => !header.kodeTransaksi.startsWith('TRX-'))
+        .map((header) => header.id)
       if (protectedIds.length > 0) {
         throw new AutoJurnalsImmutableError({ ids: protectedIds })
       }

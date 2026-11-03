@@ -1,5 +1,11 @@
 # Agent Instructions
 
+## Route Services
+
+- Keep route operations inside the exported service object in `src/routes/**/service.ts`.
+- Put reusable helper functions in the route's `utils.ts`, rather than declaring standalone helpers in `service.ts`.
+- Inline logic used at only one call site in its service method instead of extracting a helper function.
+
 ## Testing
 
 - Don't create test files (no `*.test.*`, `*.spec.*`, `test_*.py`, `tests/` directories, etc.) and don't add them to the repo.

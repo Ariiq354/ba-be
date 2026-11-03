@@ -1,6 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
-
-import type { Transaction } from '#/libs/database'
+import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 
 import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
@@ -25,19 +23,7 @@ import {
   AngsuranNotFoundError,
   PembiayaanNotApprovedError,
 } from './errors'
-import { roundProportion } from './utils'
-
-async function getApprovedTotals(tx: Transaction, pembiayaanId: number) {
-  const [totals] = await tx
-    .select({
-      totalPembayaran: sql<number>`coalesce(sum(${angsuran.jumlahPembayaran}), 0)`.mapWith(Number),
-      totalMargin: sql<number>`coalesce(sum(${angsuran.jumlahMargin}), 0)`.mapWith(Number),
-    })
-    .from(angsuran)
-    .where(and(eq(angsuran.pembiayaanId, pembiayaanId), eq(angsuran.statusApproved, 'approved')))
-
-  return totals ?? { totalPembayaran: 0, totalMargin: 0 }
-}
+import { getApprovedTotals, roundProportion } from './utils'
 
 export const AngsuranService = {
   async getAngsuran(actorId: number, query: AngsuranModel.Get['Query']) {
@@ -77,7 +63,6 @@ export const AngsuranService = {
         akunId: angsuran.akunId,
         statusApproved: angsuran.statusApproved,
         alasanPenolakan: angsuran.alasanPenolakan,
-        jurnalId: angsuran.jurnalId,
         keterangan: angsuran.keterangan,
         createdBy: angsuran.createdBy,
         approvedBy: angsuran.approvedBy,
@@ -118,7 +103,7 @@ export const AngsuranService = {
         }
         await assertPenggunaAccess(tx, actorId, target.userId)
         await assertMember(tx, target.userId)
-        if (target.statusApproved !== 'approved') {
+        if (target.statusApproved !== 'approved' || target.tanggalPembiayaan === null) {
           throw new PembiayaanNotApprovedError()
         }
 
@@ -325,7 +310,6 @@ export const AngsuranService = {
         .update(angsuran)
         .set({
           jumlahMargin,
-          jurnalId: createdJournal.id,
           statusApproved: 'approved',
           alasanPenolakan: null,
           approvedBy: adminId,

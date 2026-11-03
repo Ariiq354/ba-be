@@ -22,7 +22,6 @@ const angsuranResponseSchema = t.Object({
   metodePembayaran: paymentMethodSchema,
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),
   alasanPenolakan: t.Nullable(t.String()),
-  jurnalId: t.Nullable(t.Integer()),
   keterangan: t.Nullable(t.String()),
   createdBy: t.Integer(),
   approvedBy: t.Nullable(t.Integer()),

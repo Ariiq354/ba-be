@@ -96,6 +96,10 @@ export const relations = defineRelations(
         from: r.user.id,
         to: r.pembiayaan.approvedBy,
       }),
+      pembiayaanTransferred: r.many.pembiayaan({
+        from: r.user.id,
+        to: r.pembiayaan.transferredBy,
+      }),
       angsuranCreated: r.many.angsuran({
         from: r.user.id,
         to: r.angsuran.createdBy,
@@ -172,22 +176,6 @@ export const relations = defineRelations(
       }),
     },
     jurnal: {
-      mutasiSimpanan: r.one.mutasiSimpanan({
-        from: r.jurnal.id,
-        to: r.mutasiSimpanan.jurnalId,
-      }),
-      pemindahbukuan: r.one.pemindahbukuan({
-        from: r.jurnal.id,
-        to: r.pemindahbukuan.jurnalId,
-      }),
-      pembiayaan: r.one.pembiayaan({
-        from: r.jurnal.id,
-        to: r.pembiayaan.jurnalId,
-      }),
-      angsuran: r.one.angsuran({
-        from: r.jurnal.id,
-        to: r.angsuran.jurnalId,
-      }),
       details: r.many.jurnalDetail({
         from: r.jurnal.id,
         to: r.jurnalDetail.jurnalId,
@@ -222,10 +210,6 @@ export const relations = defineRelations(
         from: r.mutasiSimpanan.akunId,
         to: r.akun.id,
       }),
-      jurnal: r.one.jurnal({
-        from: r.mutasiSimpanan.jurnalId,
-        to: r.jurnal.id,
-      }),
       creator: r.one.user({
         from: r.mutasiSimpanan.createdBy,
         to: r.user.id,
@@ -236,10 +220,6 @@ export const relations = defineRelations(
       }),
     },
     pemindahbukuan: {
-      jurnal: r.one.jurnal({
-        from: r.pemindahbukuan.jurnalId,
-        to: r.jurnal.id,
-      }),
       userSumber: r.one.user({
         from: r.pemindahbukuan.idUserSumber,
         to: r.user.id,
@@ -270,10 +250,6 @@ export const relations = defineRelations(
         from: r.pembiayaan.akunId,
         to: r.akun.id,
       }),
-      jurnal: r.one.jurnal({
-        from: r.pembiayaan.jurnalId,
-        to: r.jurnal.id,
-      }),
       user: r.one.user({
         from: r.pembiayaan.userId,
         to: r.user.id,
@@ -286,6 +262,10 @@ export const relations = defineRelations(
         from: r.pembiayaan.approvedBy,
         to: r.user.id,
       }),
+      transferrer: r.one.user({
+        from: r.pembiayaan.transferredBy,
+        to: r.user.id,
+      }),
       angsuran: r.many.angsuran({
         from: r.pembiayaan.id,
         to: r.angsuran.pembiayaanId,
@@ -295,10 +275,6 @@ export const relations = defineRelations(
       akun: r.one.akun({
         from: r.angsuran.akunId,
         to: r.akun.id,
-      }),
-      jurnal: r.one.jurnal({
-        from: r.angsuran.jurnalId,
-        to: r.jurnal.id,
       }),
       pembiayaan: r.one.pembiayaan({
         from: r.angsuran.pembiayaanId,

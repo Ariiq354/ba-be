@@ -36,7 +36,7 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
       body: SimpananModel.MutasiSetoranTabunganPost.Body,
       response: SimpananModel.MutasiSetoranTabunganPost.Response,
       detail: {
-        description: 'Mengajukan setoran tabungan. Transfer menggunakan BSM; Tunai menggunakan Kas.',
+        description: 'Mengajukan setoran tabungan. Transfer menggunakan BSI; Tunai menggunakan Kas.',
       },
     },
     async ({ user, body }) => {
@@ -52,7 +52,7 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
       response: SimpananModel.MutasiSetoranSahamPost.Response,
       detail: {
         description:
-          'Mengajukan setoran saham. Transfer menggunakan BSM; Tunai menggunakan Kas. Metode Tabungan membuat pemindahbukuan tabungan_ke_saham milik anggota yang sama, bukan mutasi simpanan. Daftar, approval, penolakan, dan pembatalannya menggunakan endpoint pemindahbukuan.',
+          'Mengajukan setoran saham. Transfer menggunakan BSI; Tunai menggunakan Kas. Metode Tabungan membuat pemindahbukuan tabungan_ke_saham milik anggota yang sama, bukan mutasi simpanan. Daftar, approval, penolakan, dan pembatalannya menggunakan endpoint pemindahbukuan.',
       },
     },
     async ({ user, body }) => {
@@ -67,7 +67,7 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
       body: SimpananModel.MutasiPenarikanPost.Body,
       response: SimpananModel.MutasiPenarikanPost.Response,
       detail: {
-        description: 'Mengajukan penarikan tabungan. Transfer menggunakan BSM; Tunai menggunakan Kas.',
+        description: 'Mengajukan penarikan tabungan. Transfer menggunakan BSI; Tunai menggunakan Kas.',
       },
     },
     async ({ user, body }) => {

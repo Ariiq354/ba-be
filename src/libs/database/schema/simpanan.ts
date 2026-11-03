@@ -3,7 +3,6 @@ import { date, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzl
 import { akun } from './akun'
 import { user } from './auth'
 import { createdUpdated } from './common'
-import { jurnal } from './jurnal'
 
 export const jenisTransaksiEnum = pgEnum('jenis_transaksi', ['setoran', 'penarikan'])
 export const approvedStatusEnum = pgEnum('approved_status', ['pending', 'approved', 'rejected'])
@@ -45,9 +44,6 @@ export const mutasiSimpanan = snakeCase.table(
     agioSaham: integer().notNull().default(0),
     saldoSetelahTransaksi: integer(),
     jumlahSahamSetelahTransaksi: integer(),
-    jurnalId: integer()
-      .references(() => jurnal.id)
-      .unique(),
     tanggalTransaksi: date().notNull(),
     statusApproved: approvedStatusEnum().notNull().default('pending'),
     alasanPenolakan: text(),
@@ -88,9 +84,6 @@ export const pemindahbukuan = snakeCase.table(
     hargaPerSaham: integer().notNull().default(0),
     hargaNominalPerSaham: integer().notNull().default(0),
     agioSaham: integer().notNull().default(0),
-    jurnalId: integer()
-      .references(() => jurnal.id)
-      .unique(),
     tipePemindahbukuan: jenisPemindahbukuanEnum().notNull(),
     tanggalTransaksi: date().notNull(),
     statusApproved: approvedStatusEnum().notNull().default('pending'),

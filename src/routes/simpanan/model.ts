@@ -38,7 +38,6 @@ const mutasiResponseSchema = t.Object({
   agioSaham: t.Integer(),
   saldoSetelahTransaksi: t.Nullable(t.Integer()),
   jumlahSahamSetelahTransaksi: t.Nullable(t.Integer()),
-  jurnalId: t.Nullable(t.Integer()),
   tanggalTransaksi: t.String({ format: 'date' }),
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),
   alasanPenolakan: t.Nullable(t.String()),

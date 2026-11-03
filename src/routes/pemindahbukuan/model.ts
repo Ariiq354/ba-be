@@ -34,7 +34,6 @@ const pemindahbukuanResponseSchema = t.Object({
   hargaPerSaham: t.Integer(),
   hargaNominalPerSaham: t.Integer(),
   agioSaham: t.Integer(),
-  jurnalId: t.Nullable(t.Integer()),
   tipePemindahbukuan: t.UnionEnum(['saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham']),
   tanggalTransaksi: t.String({ format: 'date' }),
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),

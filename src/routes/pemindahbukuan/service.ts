@@ -80,7 +80,6 @@ export const PemindahbukuanService = {
         hargaPerSaham: pemindahbukuan.hargaPerSaham,
         hargaNominalPerSaham: pemindahbukuan.hargaNominalPerSaham,
         agioSaham: pemindahbukuan.agioSaham,
-        jurnalId: pemindahbukuan.jurnalId,
         tipePemindahbukuan: pemindahbukuan.tipePemindahbukuan,
         tanggalTransaksi: pemindahbukuan.tanggalTransaksi,
         statusApproved: pemindahbukuan.statusApproved,
@@ -323,7 +322,6 @@ export const PemindahbukuanService = {
       await tx
         .update(pemindahbukuan)
         .set({
-          jurnalId: createdJournal.id,
           statusApproved: 'approved',
           alasanPenolakan: null,
           approvedBy: adminId,

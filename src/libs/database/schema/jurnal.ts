@@ -7,12 +7,15 @@ export const jurnal = snakeCase.table(
   'jurnal',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
-    kodeTransaksi: text().notNull().unique(),
+    kodeTransaksi: text().notNull(),
     tanggalTransaksi: date().notNull(),
     keterangan: text(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('jurnal_tanggal_transaksi_idx').on(table.tanggalTransaksi)],
+  (table) => [
+    index('jurnal_tanggal_transaksi_idx').on(table.tanggalTransaksi),
+    index('jurnal_kode_transaksi_idx').on(table.kodeTransaksi),
+  ],
 )
 
 export const jurnalDetail = snakeCase.table(

@@ -41,7 +41,7 @@ export const AngsuranRoutes = new Elysia({ prefix: 'angsuran', tags: ['Angsuran'
       response: AngsuranModel.Post.Response,
       detail: {
         description:
-          'Mengajukan angsuran pending untuk pembiayaan approved. Nominal bebas dan tidak boleh melebihi sisa tagihan approved. Pending tidak mencadangkan tagihan. Tanggal otomatis Jakarta; Transfer menggunakan BSM, Tunai menggunakan Kas. Belum ada jurnal sampai approval.',
+          'Mengajukan angsuran pending untuk pembiayaan approved. Nominal bebas dan tidak boleh melebihi sisa tagihan approved. Pending tidak mencadangkan tagihan. Tanggal otomatis Jakarta; Transfer menggunakan BSI, Tunai menggunakan Kas. Belum ada jurnal sampai approval.',
       },
     },
     async ({ user, body }) => {

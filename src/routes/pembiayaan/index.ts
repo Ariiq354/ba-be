@@ -15,7 +15,7 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
       response: PembiayaanModel.Get.Response,
       detail: {
         description:
-          'Admin melihat semua pembiayaan; PJ melihat dirinya dan anggota kelompoknya; anggota hanya miliknya. userId memfilter anggota dalam cakupan akses tersebut.',
+          'Admin melihat semua pembiayaan; PJ melihat dirinya dan anggota kelompoknya; anggota hanya miliknya. userId memfilter anggota dalam cakupan akses tersebut. statusTransfer memfilter belum_transfer atau sudah_transfer berdasarkan waktu pencatatan transfer. Tanggal pembiayaan baru terisi saat akad disetujui.',
       },
     },
     ({ user, query }) => PembiayaanService.getPembiayaan(user.id, query),
@@ -41,7 +41,7 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
       response: PembiayaanModel.Post.Response,
       detail: {
         description:
-          'Mengajukan pembiayaan pending. Master margin dan biaya akad otomatis berdasarkan jumlah pokok; persenMarginTahun opsional khusus admin dan harus bilangan bulat. Margin flat tahunan dikalikan tenor bulan/12, dibulatkan ke rupiah terdekat, lalu dikunci bersama biaya akad. Transfer menggunakan BSM; Tunai menggunakan Kas. Belum ada jurnal sampai approval.',
+          'Mengajukan pembiayaan pending. Input admin dianggap sudah transfer dan langsung membuat jurnal wakalah (debit Uang Muka Pembelian, kredit Kas/BSI). Input anggota/PJ menunggu aksi transfer admin tanpa jurnal. Master margin dan biaya akad otomatis berdasarkan jumlah pokok; persenMarginTahun opsional khusus admin dan harus bilangan bulat. Margin flat tahunan dikalikan tenor bulan/12, dibulatkan ke rupiah terdekat, lalu dikunci bersama biaya akad. Tanggal pengajuan dan transfer otomatis Jakarta; tanggal akad pembiayaan belum diisi sampai approval.',
       },
     },
     async ({ user, body }) => {
@@ -57,11 +57,27 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
       response: PembiayaanModel.Delete.Response,
       detail: {
         description:
-          'Membatalkan pending milik sendiri atau yang dibuat sendiri untuk anggota yang masih dapat diakses. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
+          'Membatalkan pending yang belum transfer, milik sendiri atau yang dibuat sendiri untuk anggota yang masih dapat diakses. Pengajuan yang sudah ditransfer tidak dapat dihapus. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
       },
     },
     async ({ user, body }) => {
       await PembiayaanService.deletePembiayaan(user.id, body.ids)
+      return status(200, { message: 'Success' })
+    },
+  )
+  .patch(
+    '/:id/transfer',
+    {
+      admin: true,
+      params: PembiayaanModel.ByIdTransferPatch.Params,
+      response: PembiayaanModel.ByIdTransferPatch.Response,
+      detail: {
+        description:
+          'Mencatat transfer dana wakalah untuk pengajuan pending yang belum transfer. Khusus admin, tanpa body. Membuat satu header jurnal debit Uang Muka Pembelian dan kredit Kas/BSI sebesar pokok, menggunakan kode transaksi pembiayaan. Tanggal transfer otomatis Jakarta saat aksi dilakukan. Jurnal dan status transfer disimpan atomik; transfer tidak dapat diulang. Belum mengaktifkan pembiayaan atau angsuran.',
+      },
+    },
+    async ({ user, params }) => {
+      await PembiayaanService.transferPembiayaan(params.id, user.id)
       return status(200, { message: 'Success' })
     },
   )
@@ -73,7 +89,7 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
       response: PembiayaanModel.ByIdApprovePatch.Response,
       detail: {
         description:
-          'Approval sekaligus mencatat pencairan, piutang pokok + margin, dan margin ditangguhkan. Biaya akad dicatat sebagai penerimaan Kas/Bank dan pendapatan administrasi akad, tanpa mengurangi pokok atau menambah tagihan. Semua jurnal dan status disimpan atomik; transaksi yang sudah diproses tidak dapat diproses ulang.',
+          'Menyetujui akad pembiayaan setelah pembelian barang. Wajib sudah transfer: mencatat piutang pokok + margin, kredit Uang Muka Pembelian sebesar pokok, serta margin ditangguhkan, tanpa mencairkan dana lagi. Tanggal akad otomatis Jakarta saat approval dan menjadi awal perhitungan angsuran. Pembiayaan dan biaya akad digabung dalam satu header jurnal dengan kode transaksi yang sama dengan jurnal wakalah, sehingga total dua header jurnal. Biaya akad dicatat sebagai penerimaan Kas/Bank dan pendapatan administrasi akad, tanpa mengurangi pokok atau menambah tagihan. Semua jurnal dan status disimpan atomik; transaksi yang sudah diproses tidak dapat diproses ulang.',
       },
     },
     async ({ user, params }) => {
@@ -88,6 +104,10 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
       params: PembiayaanModel.ByIdRejectPatch.Params,
       body: PembiayaanModel.ByIdRejectPatch.Body,
       response: PembiayaanModel.ByIdRejectPatch.Response,
+      detail: {
+        description:
+          'Menolak pengajuan pending yang belum transfer, dengan alasan wajib diisi. Pengajuan yang sudah ditransfer tidak dapat ditolak melalui aksi ini karena dana sudah keluar.',
+      },
     },
     async ({ user, params, body }) => {
       await PembiayaanService.rejectPembiayaan(params.id, user.id, body.alasanPenolakan)

@@ -123,7 +123,6 @@ export const SimpananService = {
         agioSaham: mutasiSimpanan.agioSaham,
         saldoSetelahTransaksi: mutasiSimpanan.saldoSetelahTransaksi,
         jumlahSahamSetelahTransaksi: mutasiSimpanan.jumlahSahamSetelahTransaksi,
-        jurnalId: mutasiSimpanan.jurnalId,
         tanggalTransaksi: mutasiSimpanan.tanggalTransaksi,
         statusApproved: mutasiSimpanan.statusApproved,
         alasanPenolakan: mutasiSimpanan.alasanPenolakan,
@@ -484,7 +483,6 @@ export const SimpananService = {
       await tx
         .update(mutasiSimpanan)
         .set({
-          jurnalId: createdJournal.id,
           statusApproved: 'approved',
           alasanPenolakan: null,
           approvedBy: adminId,
