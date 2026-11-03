@@ -384,7 +384,6 @@ export const SimpananService = {
       }
 
       const tanggalJurnal = target.tanggalTransaksi
-      const kodeJurnal = await allocateTransactionCode(tx, 'jurnal', tanggalJurnal)
 
       const requiredAccountIds =
         target.jenisSimpanan === 'tabungan'
@@ -412,7 +411,7 @@ export const SimpananService = {
       const [createdJournal] = await tx
         .insert(jurnal)
         .values({
-          kodeTransaksi: kodeJurnal,
+          kodeTransaksi: target.kodeTransaksi,
           tanggalTransaksi: tanggalJurnal,
           keterangan: target.keterangan,
         })

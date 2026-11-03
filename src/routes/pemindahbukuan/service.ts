@@ -275,11 +275,10 @@ export const PemindahbukuanService = {
           .where(eq(saldoSimpanan.userId, target.idUserTujuan))
       }
 
-      const kodeJurnal = await allocateTransactionCode(tx, 'jurnal', target.tanggalTransaksi)
       const [createdJournal] = await tx
         .insert(jurnal)
         .values({
-          kodeTransaksi: kodeJurnal,
+          kodeTransaksi: target.kodeTransaksi,
           tanggalTransaksi: target.tanggalTransaksi,
           keterangan: target.keterangan,
         })

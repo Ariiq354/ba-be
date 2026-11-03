@@ -225,11 +225,10 @@ export const PembiayaanService = {
         }
       }
 
-      const kodeJurnal = await allocateTransactionCode(tx, 'jurnal', target.tanggalPembiayaan)
       const [createdJournal] = await tx
         .insert(jurnal)
         .values({
-          kodeTransaksi: kodeJurnal,
+          kodeTransaksi: target.kodeTransaksi,
           tanggalTransaksi: target.tanggalPembiayaan,
           keterangan: `Pembiayaan ${target.kodeTransaksi}: ${target.tujuan}`,
         })
