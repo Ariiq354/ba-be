@@ -4,6 +4,7 @@ import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
+import { pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
@@ -15,7 +16,6 @@ import {
   InactiveAkunError,
   InvalidJurnalError,
   InvalidJurnalIdsError,
-  JurnalNotFoundError,
   JurnalsNotFoundError,
   UnbalancedJurnalError,
 } from './errors'
@@ -110,47 +110,13 @@ export const JurnalService = {
       }
     }
 
-    const data = headers.flatMap((header) =>
-      (detailsByJurnal.get(header.id) ?? []).map((detail) => ({
-        id: detail.id,
-        jurnalId: header.id,
-        kodeTransaksi: header.kodeTransaksi,
-        tanggalTransaksi: header.tanggalTransaksi,
-        keterangan: header.keterangan,
-        userId: detail.userId,
-        userName: detail.userName,
-        akunId: detail.akunId,
-        kodeAkun: detail.kodeAkun,
-        namaAkun: detail.namaAkun,
-        debit: detail.debit,
-        kredit: detail.kredit,
-        createdAt: header.createdAt.toISOString(),
-      })),
-    )
-
-    return { total, data } satisfies JurnalModel.Get['Response'][200]
-  },
-
-  async getJurnalById(id: JurnalModel.ByIdGet['Params']['id']) {
-    const [header] = await db.select(jurnalHeaderSelection).from(jurnal).where(eq(jurnal.id, id))
-
-    if (!header) {
-      return new JurnalNotFoundError({ id })
-    }
-
-    const details = await db
-      .select(jurnalDetailSelection)
-      .from(jurnalDetail)
-      .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
-      .innerJoin(user, eq(user.id, jurnalDetail.userId))
-      .where(eq(jurnalDetail.jurnalId, id))
-      .orderBy(asc(jurnalDetail.id))
-
-    return {
+    const data = headers.map((header) => ({
       ...header,
       createdAt: header.createdAt.toISOString(),
-      details,
-    } satisfies JurnalModel.ByIdGet['Response'][200]
+      details: detailsByJurnal.get(header.id) ?? [],
+    }))
+
+    return { total, data } satisfies JurnalModel.Get['Response'][200]
   },
 
   async createJurnal(userId: number, data: JurnalModel.Post['Body']) {
@@ -278,7 +244,14 @@ export const JurnalService = {
         .from(pemindahbukuan)
         .where(inArray(pemindahbukuan.jurnalId, uniqueIds))
 
-      const referencedIds = new Set([...references, ...transferReferences].map((reference) => reference.jurnalId))
+      const financingReferences = await tx
+        .select({ jurnalId: pembiayaan.jurnalId })
+        .from(pembiayaan)
+        .where(inArray(pembiayaan.jurnalId, uniqueIds))
+
+      const referencedIds = new Set(
+        [...references, ...transferReferences, ...financingReferences].map((reference) => reference.jurnalId),
+      )
       const protectedIds = uniqueIds.filter((id) => referencedIds.has(id))
       if (protectedIds.length > 0) {
         throw new AutoJurnalsImmutableError({ ids: protectedIds })

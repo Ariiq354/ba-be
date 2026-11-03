@@ -44,9 +44,9 @@ const jurnalHeaderResponseSchema = t.Object({
   createdAt: t.String({ format: 'date-time' }),
 })
 
-const flatJurnalResponseSchema = t.Object({
+const jurnalResponseSchema = t.Object({
   ...jurnalHeaderResponseSchema.properties,
-  ...jurnalDetailResponseSchema.properties,
+  details: t.Array(jurnalDetailResponseSchema),
 })
 
 export const Get = {
@@ -59,7 +59,7 @@ export const Get = {
   Response: {
     200: t.Object({
       total: t.Integer({ minimum: 0 }),
-      data: t.Array(flatJurnalResponseSchema),
+      data: t.Array(jurnalResponseSchema),
     }),
     401: UnauthorizedSchema,
     403: ForbiddenSchema,
@@ -119,23 +119,6 @@ export const LabaRugiGet = {
 } as const
 
 export type LabaRugiGet = UnwrapModels<typeof LabaRugiGet>
-
-export const ByIdGet = {
-  Params: t.Object({
-    id: t.Integer(),
-  }),
-  Response: {
-    200: t.Object({
-      ...jurnalHeaderResponseSchema.properties,
-      details: t.Array(jurnalDetailResponseSchema),
-    }),
-    401: UnauthorizedSchema,
-    403: ForbiddenSchema,
-    404: ErrorSchema,
-  },
-} as const
-
-export type ByIdGet = UnwrapModels<typeof ByIdGet>
 
 export const Post = {
   Body: t.Object({

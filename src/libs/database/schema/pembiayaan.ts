@@ -1,4 +1,4 @@
-import { date, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
+import { date, index, integer, numeric, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
 import { akun } from './akun'
 import { user } from './auth'
@@ -15,7 +15,15 @@ export const pembiayaan = snakeCase.table(
       .notNull()
       .references(() => user.id),
     jumlahPokok: integer().notNull(),
+    persenMarginTahun: numeric({ precision: 7, scale: 2, mode: 'number' }).notNull(),
     jumlahMargin: integer().notNull().default(0),
+    biayaAkad: integer().notNull(),
+    akunId: integer()
+      .notNull()
+      .references(() => akun.id),
+    jurnalId: integer()
+      .references(() => jurnal.id)
+      .unique(),
     jangkaWaktuBulan: integer().notNull(),
     tujuan: text().notNull(),
     tanggalPembiayaan: date().notNull(),
@@ -30,6 +38,7 @@ export const pembiayaan = snakeCase.table(
   },
   (table) => [
     index('pembiayaan_user_id_idx').on(table.userId),
+    index('pembiayaan_akun_id_idx').on(table.akunId),
     index('pembiayaan_tanggal_pembiayaan_idx').on(table.tanggalPembiayaan),
   ],
 )

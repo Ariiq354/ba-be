@@ -46,15 +46,6 @@ export class InactiveAkunError extends HTTPError.id('INACTIVE_ACCOUNT_ERROR', 40
   }
 }
 
-export class JurnalNotFoundError extends HTTPError.id('JURNAL_NOT_FOUND_ERROR', 404) {
-  readonly id: number
-
-  constructor({ id }: { id: number }) {
-    super(`Jurnal dengan ID '${id}' tidak ditemukan`)
-    this.id = id
-  }
-}
-
 export class JurnalsNotFoundError extends HTTPError.id('JURNAL_NOT_FOUND_ERROR', 404) {
   readonly ids: number[]
 

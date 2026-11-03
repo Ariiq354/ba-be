@@ -34,15 +34,6 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
     },
     ({ query }) => JurnalService.getLabaRugi(query),
   )
-  .get(
-    '/:id',
-    {
-      admin: true,
-      params: JurnalModel.ByIdGet.Params,
-      response: JurnalModel.ByIdGet.Response,
-    },
-    ({ params }) => JurnalService.getJurnalById(params.id),
-  )
   .post(
     '/',
     {
