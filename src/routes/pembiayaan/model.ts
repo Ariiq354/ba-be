@@ -67,6 +67,28 @@ export const Get = {
 
 export type Get = UnwrapModels<typeof Get>
 
+export const OptionsGet = {
+  Query: t.Object({ userId: databaseIdSchema }),
+  Response: {
+    200: t.Object({
+      data: t.Array(
+        t.Object({
+          id: t.Integer(),
+          kodeTransaksi: t.String(),
+          tujuan: t.String(),
+          totalTagihan: t.Integer(),
+          sisaTagihan: t.Integer(),
+          angsuranBulanan: t.Integer(),
+          sisaPembayaranBulanIni: t.Integer(),
+        }),
+      ),
+    }),
+    ...errorResponses,
+  },
+} as const
+
+export type OptionsGet = UnwrapModels<typeof OptionsGet>
+
 export const SimulasiMarginPost = {
   Body: t.Object({
     jumlahPokok: t.Integer({ minimum: 1 }),

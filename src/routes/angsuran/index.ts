@@ -20,19 +20,6 @@ export const AngsuranRoutes = new Elysia({ prefix: 'angsuran', tags: ['Angsuran'
     },
     ({ user, query }) => AngsuranService.getAngsuran(user.id, query),
   )
-  .get(
-    '/ringkasan',
-    {
-      auth: true,
-      query: AngsuranModel.RingkasanGet.Query,
-      response: AngsuranModel.RingkasanGet.Response,
-      detail: {
-        description:
-          'Ringkasan total tagihan dan pembayaran approved. Sugesti bulanan dihitung kumulatif mulai satu bulan setelah tanggal pembiayaan, pada tanggal yang sama (atau akhir bulan jika lebih pendek), menggunakan tanggal Jakarta. Semua pembayaran approved mengurangi target tanpa memandang bulan pembayarannya. Target berhenti bertambah setelah tenor berakhir. Pembagian pokok/margin tidak ditampilkan.',
-      },
-    },
-    ({ user, query }) => AngsuranService.getRingkasan(user.id, query.pembiayaanId),
-  )
   .post(
     '/',
     {

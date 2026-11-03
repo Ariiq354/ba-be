@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import { AkunId } from '#/libs/config'
@@ -6,7 +6,7 @@ import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { margin } from '#/libs/database/schema/master'
-import { pembiayaan } from '#/libs/database/schema/pembiayaan'
+import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { getJakartaDate } from '#/libs/date'
 import { ItemNotFoundError } from '#/libs/errors'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
@@ -14,6 +14,7 @@ import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transact
 
 import type * as PembiayaanModel from './model'
 
+import { roundProportion } from '../angsuran/utils'
 import { PAYMENT_ACCOUNTS } from '../simpanan/constants'
 import { InvalidRejectionReasonError } from '../simpanan/errors'
 import { assertMember, assertPaymentAccount } from '../simpanan/utils'
@@ -35,6 +36,79 @@ const creator = alias(user, 'creator')
 const approver = alias(user, 'approver')
 
 export const PembiayaanService = {
+  async getPembiayaanOptions(actorId: number, query: PembiayaanModel.OptionsGet['Query']) {
+    return db.transaction(
+      async (tx) => {
+        await assertPenggunaAccess(tx, actorId, query.userId)
+        await assertMember(tx, query.userId)
+
+        const rows = await tx
+          .select({
+            id: pembiayaan.id,
+            kodeTransaksi: pembiayaan.kodeTransaksi,
+            tujuan: pembiayaan.tujuan,
+            jumlahPokok: pembiayaan.jumlahPokok,
+            jumlahMargin: pembiayaan.jumlahMargin,
+            tanggalPembiayaan: pembiayaan.tanggalPembiayaan,
+            jangkaWaktuBulan: pembiayaan.jangkaWaktuBulan,
+            totalPembayaran: sql<number>`coalesce(sum(${angsuran.jumlahPembayaran}), 0)`.mapWith(Number),
+          })
+          .from(pembiayaan)
+          .leftJoin(angsuran, and(eq(angsuran.pembiayaanId, pembiayaan.id), eq(angsuran.statusApproved, 'approved')))
+          .where(
+            and(
+              eq(pembiayaan.userId, query.userId),
+              eq(pembiayaan.statusApproved, 'approved'),
+              isNotNull(pembiayaan.tanggalPembiayaan),
+            ),
+          )
+          .groupBy(pembiayaan.id)
+          .orderBy(desc(pembiayaan.tanggalPembiayaan), desc(pembiayaan.id))
+
+        const tanggalSekarang = getJakartaDate()
+        const [currentYear, currentMonth] = tanggalSekarang.split('-').map(Number) as [number, number]
+        const data: PembiayaanModel.OptionsGet['Response'][200]['data'] = []
+        for (const row of rows) {
+          const totalTagihan = row.jumlahPokok + row.jumlahMargin
+          const sisaTagihan = Math.max(0, totalTagihan - row.totalPembayaran)
+          if (sisaTagihan === 0 || row.tanggalPembiayaan === null) {
+            continue
+          }
+
+          const [startYear, startMonth, startDay] = row.tanggalPembiayaan.split('-').map(Number) as [
+            number,
+            number,
+            number,
+          ]
+          let monthsDue = Math.max(0, (currentYear - startYear) * 12 + currentMonth - startMonth)
+          if (monthsDue > 0) {
+            const targetDate = new Date(0)
+            targetDate.setUTCFullYear(startYear, startMonth - 1 + monthsDue + 1, 0)
+            targetDate.setUTCDate(Math.min(startDay, targetDate.getUTCDate()))
+            if (tanggalSekarang < targetDate.toISOString().slice(0, 10)) {
+              monthsDue--
+            }
+          }
+          monthsDue = Math.min(monthsDue, row.jangkaWaktuBulan)
+
+          const targetPembayaranKumulatif = roundProportion(totalTagihan, monthsDue, row.jangkaWaktuBulan)
+          data.push({
+            id: row.id,
+            kodeTransaksi: row.kodeTransaksi,
+            tujuan: row.tujuan,
+            totalTagihan,
+            sisaTagihan,
+            angsuranBulanan: roundProportion(totalTagihan, 1, row.jangkaWaktuBulan),
+            sisaPembayaranBulanIni: Math.max(0, targetPembayaranKumulatif - row.totalPembayaran),
+          })
+        }
+
+        return { data } satisfies PembiayaanModel.OptionsGet['Response'][200]
+      },
+      { isolationLevel: 'repeatable read' },
+    )
+  },
+
   async getPembiayaan(actorId: number, query: PembiayaanModel.Get['Query']) {
     const accessCondition = await getPenggunaAccessCondition(db, actorId)
     if (accessCondition !== undefined) {

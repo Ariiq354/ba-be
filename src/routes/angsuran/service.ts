@@ -94,56 +94,6 @@ export const AngsuranService = {
     return { total, data } satisfies AngsuranModel.Get['Response'][200]
   },
 
-  async getRingkasan(actorId: number, pembiayaanId: number) {
-    return db.transaction(
-      async (tx) => {
-        const [target] = await tx.select().from(pembiayaan).where(eq(pembiayaan.id, pembiayaanId))
-        if (!target) {
-          throw new PembiayaanNotFoundError({ id: pembiayaanId })
-        }
-        await assertPenggunaAccess(tx, actorId, target.userId)
-        await assertMember(tx, target.userId)
-        if (target.statusApproved !== 'approved' || target.tanggalPembiayaan === null) {
-          throw new PembiayaanNotApprovedError()
-        }
-
-        const { totalPembayaran } = await getApprovedTotals(tx, target.id)
-        const totalTagihan = target.jumlahPokok + target.jumlahMargin
-        const tanggalSekarang = getJakartaDate()
-        const [startYear, startMonth, startDay] = target.tanggalPembiayaan.split('-').map(Number) as [
-          number,
-          number,
-          number,
-        ]
-        const [currentYear, currentMonth] = tanggalSekarang.split('-').map(Number) as [number, number]
-        let monthsDue = Math.max(0, (currentYear - startYear) * 12 + currentMonth - startMonth)
-        if (monthsDue > 0) {
-          const targetDate = new Date(0)
-          targetDate.setUTCFullYear(startYear, startMonth - 1 + monthsDue + 1, 0)
-          targetDate.setUTCDate(Math.min(startDay, targetDate.getUTCDate()))
-          if (tanggalSekarang < targetDate.toISOString().slice(0, 10)) {
-            monthsDue--
-          }
-        }
-        monthsDue = Math.min(monthsDue, target.jangkaWaktuBulan)
-
-        const targetPembayaranKumulatif = roundProportion(totalTagihan, monthsDue, target.jangkaWaktuBulan)
-        const sisaTagihan = Math.max(0, totalTagihan - totalPembayaran)
-        return {
-          pembiayaanId: target.id,
-          totalTagihan,
-          totalPembayaran,
-          sisaTagihan,
-          angsuranBulanan: roundProportion(totalTagihan, 1, target.jangkaWaktuBulan),
-          targetPembayaranKumulatif,
-          sisaPembayaranBulanIni: Math.max(0, targetPembayaranKumulatif - totalPembayaran),
-          statusPelunasan: sisaTagihan === 0 ? 'lunas' : 'belum_lunas',
-        } satisfies AngsuranModel.RingkasanGet['Response'][200]
-      },
-      { isolationLevel: 'repeatable read' },
-    )
-  },
-
   async createAngsuran(actorId: number, data: AngsuranModel.Post['Body']) {
     await db.transaction(async (tx) => {
       const [target] = await tx.select().from(pembiayaan).where(eq(pembiayaan.id, data.pembiayaanId)).for('update')

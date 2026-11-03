@@ -8,6 +8,19 @@ import { PembiayaanService } from './service'
 export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembiayaan'] })
   .use(AuthMacro)
   .get(
+    '/options',
+    {
+      auth: true,
+      query: PembiayaanModel.OptionsGet.Query,
+      response: PembiayaanModel.OptionsGet.Response,
+      detail: {
+        description:
+          'Pilihan pembiayaan approved yang belum lunas untuk userId wajib, tanpa pagination. Admin dapat memilih semua anggota; PJ dirinya dan anggota kelompoknya; anggota hanya dirinya. Menyertakan total tagihan, sisa tagihan, angsuran bulanan, dan sisa pembayaran bulan ini berdasarkan pembayaran approved. Target bulanan kumulatif dimulai satu bulan setelah tanggal akad, pada tanggal yang sama atau akhir bulan jika lebih pendek, menggunakan tanggal Jakarta dan berhenti bertambah setelah tenor berakhir. Pembayaran pending tidak mengurangi tagihan.',
+      },
+    },
+    ({ user, query }) => PembiayaanService.getPembiayaanOptions(user.id, query),
+  )
+  .get(
     '/',
     {
       auth: true,

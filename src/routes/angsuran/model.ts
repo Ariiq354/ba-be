@@ -59,25 +59,6 @@ export const Get = {
 
 export type Get = UnwrapModels<typeof Get>
 
-export const RingkasanGet = {
-  Query: t.Object({ pembiayaanId: databaseIdSchema }),
-  Response: {
-    200: t.Object({
-      pembiayaanId: t.Integer(),
-      totalTagihan: t.Integer(),
-      totalPembayaran: t.Integer(),
-      sisaTagihan: t.Integer(),
-      angsuranBulanan: t.Integer(),
-      targetPembayaranKumulatif: t.Integer(),
-      sisaPembayaranBulanIni: t.Integer(),
-      statusPelunasan: t.UnionEnum(['belum_lunas', 'lunas']),
-    }),
-    ...errorResponses,
-  },
-} as const
-
-export type RingkasanGet = UnwrapModels<typeof RingkasanGet>
-
 export const Post = {
   Body: t.Object({
     pembiayaanId: databaseIdSchema,
