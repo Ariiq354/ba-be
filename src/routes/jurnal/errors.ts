@@ -46,6 +46,15 @@ export class InactiveAkunError extends HTTPError.id('INACTIVE_ACCOUNT_ERROR', 40
   }
 }
 
+export class InactiveTemplateError extends HTTPError.id('INACTIVE_TEMPLATE_ERROR', 400) {
+  readonly id: number
+
+  constructor({ id }: { id: number }) {
+    super(`Template transaksi dengan ID '${id}' tidak aktif`)
+    this.id = id
+  }
+}
+
 export class JurnalsNotFoundError extends HTTPError.id('JURNAL_NOT_FOUND_ERROR', 404) {
   readonly ids: number[]
 

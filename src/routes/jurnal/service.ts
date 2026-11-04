@@ -1,10 +1,14 @@
 import { asc, desc, eq, ilike, inArray } from 'drizzle-orm'
 
+import type { Transaction } from '#/libs/database'
+
 import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
+import { masterInputTransaksi } from '#/libs/database/schema/master'
+import { ItemNotFoundError } from '#/libs/errors'
 import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
 
 import type * as JurnalModel from './model'
@@ -13,6 +17,7 @@ import {
   AkunNotFoundError,
   AutoJurnalsImmutableError,
   InactiveAkunError,
+  InactiveTemplateError,
   InvalidJurnalError,
   InvalidJurnalIdsError,
   JurnalsNotFoundError,
@@ -116,7 +121,41 @@ export const JurnalService = {
     return { total, data } satisfies JurnalModel.Get['Response'][200]
   },
 
-  async createJurnal(userId: number, data: JurnalModel.Post['Body']) {
+  async createJurnalFromTemplate(userId: number, data: JurnalModel.TemplatePost['Body']) {
+    await db.transaction(async (tx) => {
+      const [template] = await tx
+        .select()
+        .from(masterInputTransaksi)
+        .where(eq(masterInputTransaksi.id, data.masterInputTransaksiId))
+        .for('share')
+
+      if (!template) {
+        throw new ItemNotFoundError({
+          id: data.masterInputTransaksiId,
+          message: `Template transaksi dengan ID '${data.masterInputTransaksiId}' tidak ditemukan`,
+        })
+      }
+
+      if (!template.isActive) {
+        throw new InactiveTemplateError({ id: template.id })
+      }
+
+      await JurnalService.createJurnal(
+        userId,
+        {
+          tanggalTransaksi: data.tanggalTransaksi,
+          keterangan: data.keterangan,
+          details: [
+            { akunId: template.akunDebitId, debit: data.nominal, kredit: 0 },
+            { akunId: template.akunKreditId, debit: 0, kredit: data.nominal },
+          ],
+        },
+        tx,
+      )
+    })
+  },
+
+  async createJurnal(userId: number, data: JurnalModel.Post['Body'], transaction?: Transaction) {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data.tanggalTransaksi)
     if (!match) {
       throw new InvalidJurnalError({ reason: 'invalid_date' })
@@ -159,7 +198,7 @@ export const JurnalService = {
       throw new UnbalancedJurnalError({ totalDebit, totalKredit })
     }
 
-    await db.transaction(async (tx) => {
+    await (transaction ?? db).transaction(async (tx) => {
       const akunIds = [...new Set(data.details.map((detail) => detail.akunId))]
       const akunRows = await tx
         .select({

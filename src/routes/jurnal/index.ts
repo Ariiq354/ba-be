@@ -46,6 +46,18 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
       return status(201, { message: 'Success' })
     },
   )
+  .post(
+    '/template',
+    {
+      admin: true,
+      body: JurnalModel.TemplatePost.Body,
+      response: JurnalModel.TemplatePost.Response,
+    },
+    async ({ body, user }) => {
+      await JurnalService.createJurnalFromTemplate(user.id, body)
+      return status(201, { message: 'Success' })
+    },
+  )
   .delete(
     '/',
     {

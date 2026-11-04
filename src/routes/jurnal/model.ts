@@ -138,6 +138,18 @@ export const Post = {
 
 export type Post = UnwrapModels<typeof Post>
 
+export const TemplatePost = {
+  Body: t.Object({
+    masterInputTransaksiId: t.Integer({ minimum: 1 }),
+    tanggalTransaksi: t.String({ format: 'date' }),
+    nominal: t.Integer({ minimum: 1 }),
+    keterangan: t.Optional(t.Nullable(t.String())),
+  }),
+  Response: Post.Response,
+} as const
+
+export type TemplatePost = UnwrapModels<typeof TemplatePost>
+
 export const Delete = {
   Body: t.Object({
     ids: t.Array(t.Integer(), { minItems: 1 }),
