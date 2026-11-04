@@ -35,6 +35,11 @@ import {
 } from './utils'
 
 export const PemindahbukuanService = {
+  async getPendingCount() {
+    const total = await db.$count(pemindahbukuan, eq(pemindahbukuan.statusApproved, 'pending'))
+    return { total } satisfies PemindahbukuanModel.PendingCountGet['Response'][200]
+  },
+
   async getPemindahbukuan(actorId: number, query: PemindahbukuanModel.Get['Query']) {
     const accessCondition = await getPenggunaAccessCondition(db, actorId)
     if (accessCondition !== undefined) {
@@ -72,9 +77,7 @@ export const PemindahbukuanService = {
         id: pemindahbukuan.id,
         kodeTransaksi: pemindahbukuan.kodeTransaksi,
         idUserSumber: pemindahbukuan.idUserSumber,
-        akunIdSumber: pemindahbukuan.akunIdSumber,
         idUserTujuan: pemindahbukuan.idUserTujuan,
-        akunIdTujuan: pemindahbukuan.akunIdTujuan,
         nominal: pemindahbukuan.nominal,
         jumlahSaham: pemindahbukuan.jumlahSaham,
         hargaPerSaham: pemindahbukuan.hargaPerSaham,
@@ -86,10 +89,8 @@ export const PemindahbukuanService = {
         alasanPenolakan: pemindahbukuan.alasanPenolakan,
         keterangan: pemindahbukuan.keterangan,
         createdBy: pemindahbukuan.createdBy,
-        approvedBy: pemindahbukuan.approvedBy,
         approvedAt: pemindahbukuan.approvedAt,
         createdAt: pemindahbukuan.createdAt,
-        updatedAt: pemindahbukuan.updatedAt,
         sourceMemberName: sourceMember.name,
         destinationMemberName: destinationMember.name,
         sourceAccountName: sourceAccount.namaAkun,
@@ -107,13 +108,12 @@ export const PemindahbukuanService = {
       .where(and(...conditions))
       .orderBy(desc(pemindahbukuan.createdAt), desc(pemindahbukuan.id))
 
-    const total = await db.$count(qb)
+    const total = await db.$count(pemindahbukuan, and(...conditions))
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
     const data = rows.map((row) => ({
       ...row,
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
     }))
 
     return { total, data } satisfies PemindahbukuanModel.Get['Response'][200]

@@ -26,9 +26,7 @@ const pemindahbukuanResponseSchema = t.Object({
   id: t.Integer(),
   kodeTransaksi: t.String(),
   idUserSumber: t.Integer(),
-  akunIdSumber: t.Integer(),
   idUserTujuan: t.Integer(),
-  akunIdTujuan: t.Integer(),
   nominal: t.Integer(),
   jumlahSaham: t.Integer(),
   hargaPerSaham: t.Integer(),
@@ -40,10 +38,8 @@ const pemindahbukuanResponseSchema = t.Object({
   alasanPenolakan: t.Nullable(t.String()),
   keterangan: t.Nullable(t.String()),
   createdBy: t.Integer(),
-  approvedBy: t.Nullable(t.Integer()),
   approvedAt: t.Nullable(t.String({ format: 'date-time' })),
   createdAt: t.String({ format: 'date-time' }),
-  updatedAt: t.String({ format: 'date-time' }),
   sourceMemberName: t.String(),
   destinationMemberName: t.String(),
   sourceAccountName: t.String(),
@@ -78,6 +74,16 @@ export const Get = {
 } as const
 
 export type Get = UnwrapModels<typeof Get>
+
+export const PendingCountGet = {
+  Response: {
+    200: t.Object({ total: t.Integer({ minimum: 0 }) }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type PendingCountGet = UnwrapModels<typeof PendingCountGet>
 
 export const Post = {
   Body: t.Union([

@@ -22,8 +22,6 @@ export const Get = {
           persenMarginTahun: t.Integer(),
           jaminan: t.UnionEnum(['TIDAK_ADA', 'ADA']),
           biayaAkad: t.Integer(),
-          createdAt: t.String({ format: 'date-time' }),
-          updatedAt: t.String({ format: 'date-time' }),
         }),
       ),
     }),

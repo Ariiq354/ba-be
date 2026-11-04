@@ -33,6 +33,14 @@ export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembi
     },
     ({ user, query }) => PembiayaanService.getPembiayaan(user.id, query),
   )
+  .get(
+    '/pending-count',
+    {
+      admin: true,
+      response: PembiayaanModel.PendingCountGet.Response,
+    },
+    () => PembiayaanService.getPendingCount(),
+  )
   .post(
     '/simulasi-margin',
     {

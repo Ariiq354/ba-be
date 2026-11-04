@@ -19,30 +19,19 @@ export const MasterSahamService = {
   },
 
   async getLatestHargaSaham() {
-    const row = await db.query.saham.findFirst({
-      orderBy: {
-        createdAt: 'desc',
-        id: 'desc',
-      },
-      with: {
-        updater: {
-          columns: {
-            name: true,
-          },
-        },
-      },
-    })
+    const [row] = await db
+      .select({ hargaJual: hargaSaham.hargaJual })
+      .from(hargaSaham)
+      .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id))
+      .limit(1)
 
     if (!row) {
       return new HargaSahamNotFoundError()
     }
 
     return {
-      id: row.id,
       hargaNominal: HARGA_NOMINAL_SAHAM,
       hargaJual: row.hargaJual,
-      updatedByName: row.updater?.name ?? '',
-      createdAt: row.createdAt.toISOString(),
     } satisfies MasterSahamModel.LatestGet['Response'][200]
   },
 
@@ -50,7 +39,6 @@ export const MasterSahamService = {
     const hargaSahamQuery = db
       .select({
         id: hargaSaham.id,
-        hargaNominal: hargaSaham.hargaNominal,
         hargaJual: hargaSaham.hargaJual,
         updatedByName: user.name,
         createdAt: hargaSaham.createdAt,
@@ -60,7 +48,7 @@ export const MasterSahamService = {
       .orderBy(desc(hargaSaham.createdAt), desc(hargaSaham.id))
 
     const offset = (query.page - 1) * query.limit
-    const total = await db.$count(hargaSahamQuery)
+    const total = await db.$count(hargaSaham)
     const rows = await hargaSahamQuery.limit(query.limit).offset(offset)
     const data = rows.map((row) => ({
       ...row,

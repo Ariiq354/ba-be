@@ -29,6 +29,14 @@ export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'
     },
     ({ user, query }) => SimpananService.getMutasi(user.id, query),
   )
+  .get(
+    '/mutasi/pending-count',
+    {
+      admin: true,
+      response: SimpananModel.PendingCountGet.Response,
+    },
+    () => SimpananService.getPendingCount(),
+  )
   .post(
     '/mutasi/setoran/tabungan',
     {

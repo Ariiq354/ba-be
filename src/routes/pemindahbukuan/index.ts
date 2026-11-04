@@ -23,6 +23,14 @@ export const PemindahbukuanRoutes = new Elysia({
     },
     ({ user, query }) => PemindahbukuanService.getPemindahbukuan(user.id, query),
   )
+  .get(
+    '/pending-count',
+    {
+      admin: true,
+      response: PemindahbukuanModel.PendingCountGet.Response,
+    },
+    () => PemindahbukuanService.getPendingCount(),
+  )
   .post(
     '/',
     {

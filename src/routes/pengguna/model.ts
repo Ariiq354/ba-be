@@ -21,7 +21,6 @@ export const OptionsGet = {
           id: t.Integer(),
           name: t.String(),
           noAnggota: t.Nullable(t.String()),
-          idKelompok: t.Integer(),
           namaKelompok: t.String(),
         }),
       ),
@@ -38,11 +37,8 @@ export type OptionsGet = UnwrapModels<typeof OptionsGet>
 export const ProfileGet = {
   Response: {
     200: t.Object({
-      id: t.Integer(),
       name: t.String(),
-      email: t.String(),
       image: t.String(),
-      noAnggota: t.Nullable(t.String()),
       noHp: t.String(),
       nik: t.Nullable(t.String()),
       namaBank: t.Nullable(t.String()),
@@ -121,12 +117,10 @@ export const Get = {
           name: t.String(),
           image: t.String(),
           username: t.Nullable(t.String()),
-          email: t.String(),
           noHp: t.String(),
           role: t.Nullable(t.String()),
           banned: t.Nullable(t.Boolean()),
           banReason: t.Nullable(t.String()),
-          idKelompok: t.Integer(),
           namaKelompok: t.String(),
           kodeKelompok: t.String(),
           noAnggota: t.Nullable(t.String()),

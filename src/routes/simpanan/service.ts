@@ -61,15 +61,17 @@ export const SimpananService = {
         return {
           saldoTabungan,
           jumlahSaham,
-          totalPenarikanPending,
-          totalPemindahbukuanPending,
-          totalSahamPending,
           saldoEfektif: Math.max(0, saldoTabungan - totalPenarikanPending - totalPemindahbukuanPending),
           jumlahSahamEfektif: Math.max(0, jumlahSaham - totalSahamPending),
         } satisfies SimpananModel.SaldoGet['Response'][200]
       },
       { isolationLevel: 'repeatable read' },
     )
+  },
+
+  async getPendingCount() {
+    const total = await db.$count(mutasiSimpanan, eq(mutasiSimpanan.statusApproved, 'pending'))
+    return { total } satisfies SimpananModel.PendingCountGet['Response'][200]
   },
 
   async getMutasi(actorId: number, query: SimpananModel.MutasiGet['Query']) {
@@ -128,10 +130,8 @@ export const SimpananService = {
         alasanPenolakan: mutasiSimpanan.alasanPenolakan,
         keterangan: mutasiSimpanan.keterangan,
         createdBy: mutasiSimpanan.createdBy,
-        approvedBy: mutasiSimpanan.approvedBy,
         approvedAt: mutasiSimpanan.approvedAt,
         createdAt: mutasiSimpanan.createdAt,
-        updatedAt: mutasiSimpanan.updatedAt,
         memberName: member.name,
         creatorName: creator.name,
         approverName: approver.name,
@@ -147,14 +147,13 @@ export const SimpananService = {
         desc(mutasiSimpanan.id),
       )
 
-    const total = await db.$count(qb)
+    const total = await db.$count(mutasiSimpanan, and(...conditions))
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
     const data: SimpananModel.MutasiGet['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
       ...row,
       metodePembayaran: akunId === AkunId.KAS ? 'Tunai' : 'Transfer',
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
     }))
 
     return { total, data } satisfies SimpananModel.MutasiGet['Response'][200]

@@ -10,13 +10,10 @@ export const jurnalHeaderSelection = {
   kodeTransaksi: jurnal.kodeTransaksi,
   tanggalTransaksi: jurnal.tanggalTransaksi,
   keterangan: jurnal.keterangan,
-  createdAt: jurnal.createdAt,
 }
 
 export const jurnalDetailSelection = {
-  id: jurnalDetail.id,
   jurnalId: jurnalDetail.jurnalId,
-  akunId: jurnalDetail.akunId,
   kodeAkun: akun.kodeAkun,
   namaAkun: akun.namaAkun,
   userId: jurnalDetail.userId,
@@ -46,7 +43,6 @@ export async function getMutasiBulanan(tahun: number, kategori: Array<typeof aku
   return db
     .select({
       id: akun.id,
-      kodeAkun: akun.kodeAkun,
       namaAkun: akun.namaAkun,
       kategori: akun.kategori,
       bulan: mutasiBulanan.bulan,
@@ -62,7 +58,6 @@ type KategoriAkun = 'aktiva' | 'pasiva' | 'pendapatan' | 'biaya'
 
 export interface MutasiBulananRow {
   id: number
-  kodeAkun: string
   namaAkun: string
   kategori: KategoriAkun
   bulan: number | null
@@ -71,7 +66,6 @@ export interface MutasiBulananRow {
 
 interface LaporanAkun<Kategori extends KategoriAkun> {
   id: number
-  kodeAkun: string
   namaAkun: string
   kategori: Kategori
   jumlahBulanan: number[]
@@ -92,7 +86,6 @@ export function buildLaporanAkun<Kategori extends KategoriAkun>(
     if (!account) {
       account = {
         id: row.id,
-        kodeAkun: row.kodeAkun,
         namaAkun: row.namaAkun,
         kategori: kategoriAkun,
         jumlahBulanan: Array.from({ length: 12 }, () => 0),

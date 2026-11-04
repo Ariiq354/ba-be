@@ -158,10 +158,8 @@ export const PembiayaanService = {
         statusApproved: pembiayaan.statusApproved,
         alasanPenolakan: pembiayaan.alasanPenolakan,
         createdBy: pembiayaan.createdBy,
-        approvedBy: pembiayaan.approvedBy,
         approvedAt: pembiayaan.approvedAt,
         createdAt: pembiayaan.createdAt,
-        updatedAt: pembiayaan.updatedAt,
         memberName: member.name,
         creatorName: creator.name,
         approverName: approver.name,
@@ -173,7 +171,7 @@ export const PembiayaanService = {
       .where(and(...conditions))
       .orderBy(desc(eq(pembiayaan.statusApproved, 'pending')), desc(pembiayaan.createdAt), desc(pembiayaan.id))
 
-    const total = await db.$count(qb)
+    const total = await db.$count(pembiayaan, and(...conditions))
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
     const data: PembiayaanModel.Get['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
       ...row,
@@ -183,7 +181,6 @@ export const PembiayaanService = {
       transferredAt: row.transferredAt?.toISOString() ?? null,
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
     }))
 
     return { total, data } satisfies PembiayaanModel.Get['Response'][200]

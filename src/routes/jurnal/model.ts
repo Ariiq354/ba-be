@@ -18,16 +18,12 @@ const jumlahBulananSchema = t.Array(t.Integer(), {
 
 const laporanAkunProperties = {
   id: t.Integer(),
-  kodeAkun: t.String(),
   namaAkun: t.String(),
   jumlahBulanan: jumlahBulananSchema,
   jumlah: t.Integer(),
 }
 
 const jurnalDetailResponseSchema = t.Object({
-  id: t.Integer(),
-  jurnalId: t.Integer(),
-  akunId: t.Integer(),
   kodeAkun: t.String(),
   namaAkun: t.String(),
   userId: t.Integer(),
@@ -41,7 +37,6 @@ const jurnalHeaderResponseSchema = t.Object({
   kodeTransaksi: t.String(),
   tanggalTransaksi: t.String({ format: 'date' }),
   keterangan: t.Nullable(t.String()),
-  createdAt: t.String({ format: 'date-time' }),
 })
 
 const jurnalResponseSchema = t.Object({
@@ -72,7 +67,6 @@ export const NeracaGet = {
   Query: laporanQuerySchema,
   Response: {
     200: t.Object({
-      total: t.Integer({ minimum: 0 }),
       data: t.Array(
         t.Object({
           ...laporanAkunProperties,
@@ -97,7 +91,6 @@ export const LabaRugiGet = {
   Query: laporanQuerySchema,
   Response: {
     200: t.Object({
-      total: t.Integer({ minimum: 0 }),
       data: t.Array(
         t.Object({
           ...laporanAkunProperties,

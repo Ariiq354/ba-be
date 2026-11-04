@@ -22,7 +22,6 @@ export const WilayahService = {
     const data = await db
       .select({
         id: kabupatenKota.id,
-        idProvinsi: kabupatenKota.idProvinsi,
         kabupatenKota: kabupatenKota.kota,
       })
       .from(kabupatenKota)
@@ -36,7 +35,6 @@ export const WilayahService = {
     const data = await db
       .select({
         id: kecamatan.id,
-        idKabupatenKota: kecamatan.idKota,
         kecamatan: kecamatan.kecamatan,
       })
       .from(kecamatan)
@@ -50,7 +48,6 @@ export const WilayahService = {
     const data = await db
       .select({
         id: desaKelurahan.id,
-        idKecamatan: desaKelurahan.idKecamatan,
         desaKelurahan: desaKelurahan.kelurahan,
       })
       .from(desaKelurahan)

@@ -28,7 +28,6 @@ export const KabupatenKotaGet = {
       data: t.Array(
         t.Object({
           id: t.String(),
-          idProvinsi: t.String(),
           kabupatenKota: t.String(),
         }),
       ),
@@ -47,7 +46,6 @@ export const KecamatanGet = {
       data: t.Array(
         t.Object({
           id: t.String(),
-          idKabupatenKota: t.String(),
           kecamatan: t.String(),
         }),
       ),
@@ -66,7 +64,6 @@ export const DesaKelurahanGet = {
       data: t.Array(
         t.Object({
           id: t.String(),
-          idKecamatan: t.String(),
           desaKelurahan: t.String(),
         }),
       ),

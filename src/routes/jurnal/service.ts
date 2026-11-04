@@ -46,7 +46,6 @@ export const JurnalService = {
     const pasivaBulanan = sumKategori(data, 'pasiva')
 
     return {
-      total: data.length,
       data,
       ringkasan: {
         aktivaBulanan,
@@ -62,7 +61,6 @@ export const JurnalService = {
     const data = buildLaporanAkun(rows, ['pendapatan', 'biaya'])
 
     return {
-      total: data.length,
       data,
       ringkasan: buildRingkasanLabaRugi(data),
     } satisfies JurnalModel.LabaRugiGet['Response'][200]
@@ -100,19 +98,18 @@ export const JurnalService = {
       )
       .orderBy(asc(jurnalDetail.id))
 
-    const detailsByJurnal = new Map<number, typeof details>()
-    for (const detail of details) {
-      const headerDetails = detailsByJurnal.get(detail.jurnalId)
+    const detailsByJurnal = new Map<number, JurnalModel.Get['Response'][200]['data'][number]['details']>()
+    for (const { jurnalId, ...detail } of details) {
+      const headerDetails = detailsByJurnal.get(jurnalId)
       if (headerDetails) {
         headerDetails.push(detail)
       } else {
-        detailsByJurnal.set(detail.jurnalId, [detail])
+        detailsByJurnal.set(jurnalId, [detail])
       }
     }
 
     const data = headers.map((header) => ({
       ...header,
-      createdAt: header.createdAt.toISOString(),
       details: detailsByJurnal.get(header.id) ?? [],
     }))
 

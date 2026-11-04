@@ -30,7 +30,6 @@ export const PenggunaService = {
         id: user.id,
         name: user.name,
         noAnggota: userProfile.noAnggota,
-        idKelompok: user.idKelompok,
         namaKelompok: kelompok.namaKelompok,
       })
       .from(user)
@@ -45,11 +44,8 @@ export const PenggunaService = {
   async getProfile(penggunaId: number) {
     const [profile] = await db
       .select({
-        id: user.id,
         name: user.name,
-        email: user.email,
         image: user.image,
-        noAnggota: userProfile.noAnggota,
         noHp: user.noHp,
         nik: userProfile.nik,
         namaBank: userProfile.namaBank,
@@ -300,12 +296,10 @@ export const PenggunaService = {
         name: user.name,
         image: user.image,
         username: user.username,
-        email: user.email,
         noHp: user.noHp,
         role: user.role,
         banned: user.banned,
         banReason: user.banReason,
-        idKelompok: user.idKelompok,
         namaKelompok: kelompok.namaKelompok,
         kodeKelompok: kelompok.kodeKelompok,
         noAnggota: userProfile.noAnggota,

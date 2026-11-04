@@ -20,20 +20,13 @@ export const MasterMarginService = {
         persenMarginTahun: margin.persenMarginTahun,
         jaminan: margin.jaminan,
         biayaAkad: margin.biayaAkad,
-        createdAt: margin.createdAt,
-        updatedAt: margin.updatedAt,
       })
       .from(margin)
       .orderBy(desc(margin.createdAt), desc(margin.id))
 
     const offset = (query.page - 1) * query.limit
-    const total = await db.$count(marginQuery)
-    const rows = await marginQuery.limit(query.limit).offset(offset)
-    const data = rows.map((row) => ({
-      ...row,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    }))
+    const total = await db.$count(margin)
+    const data = await marginQuery.limit(query.limit).offset(offset)
 
     return { total, data } satisfies MasterMarginModel.Get['Response'][200]
   },

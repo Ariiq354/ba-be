@@ -31,7 +31,10 @@ export type Get = UnwrapModels<typeof Get>
 
 export const LatestGet = {
   Response: {
-    200: hargaSahamResponseSchema,
+    200: t.Object({
+      hargaNominal: t.Integer(),
+      hargaJual: t.Integer(),
+    }),
     401: UnauthorizedSchema,
     404: ErrorSchema,
   },

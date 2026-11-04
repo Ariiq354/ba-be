@@ -43,10 +43,8 @@ const mutasiResponseSchema = t.Object({
   alasanPenolakan: t.Nullable(t.String()),
   keterangan: t.Nullable(t.String()),
   createdBy: t.Integer(),
-  approvedBy: t.Nullable(t.Integer()),
   approvedAt: t.Nullable(t.String({ format: 'date-time' })),
   createdAt: t.String({ format: 'date-time' }),
-  updatedAt: t.String({ format: 'date-time' }),
   memberName: t.String(),
   creatorName: t.String(),
   approverName: t.Nullable(t.String()),
@@ -67,9 +65,6 @@ export const SaldoGet = {
     200: t.Object({
       saldoTabungan: t.Integer(),
       jumlahSaham: t.Integer(),
-      totalPenarikanPending: t.Integer(),
-      totalPemindahbukuanPending: t.Integer(),
-      totalSahamPending: t.Integer(),
       saldoEfektif: t.Integer(),
       jumlahSahamEfektif: t.Integer(),
     }),
@@ -108,6 +103,16 @@ export const MutasiGet = {
 } as const
 
 export type MutasiGet = UnwrapModels<typeof MutasiGet>
+
+export const PendingCountGet = {
+  Response: {
+    200: t.Object({ total: t.Integer({ minimum: 0 }) }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type PendingCountGet = UnwrapModels<typeof PendingCountGet>
 
 export const MutasiSetoranTabunganPost = {
   Body: t.Object({
