@@ -20,6 +20,14 @@ export const AngsuranRoutes = new Elysia({ prefix: 'angsuran', tags: ['Angsuran'
     },
     ({ user, query }) => AngsuranService.getAngsuran(user.id, query),
   )
+  .get(
+    '/pending-count',
+    {
+      admin: true,
+      response: AngsuranModel.PendingCountGet.Response,
+    },
+    () => AngsuranService.getPendingCount(),
+  )
   .post(
     '/',
     {

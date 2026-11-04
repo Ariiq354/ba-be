@@ -36,6 +36,11 @@ const creator = alias(user, 'creator')
 const approver = alias(user, 'approver')
 
 export const PembiayaanService = {
+  async getPendingCount() {
+    const total = await db.$count(pembiayaan, eq(pembiayaan.statusApproved, 'pending'))
+    return { total } satisfies PembiayaanModel.PendingCountGet['Response'][200]
+  },
+
   async getPembiayaanOptions(actorId: number, query: PembiayaanModel.OptionsGet['Query']) {
     return db.transaction(
       async (tx) => {
@@ -45,7 +50,6 @@ export const PembiayaanService = {
         const rows = await tx
           .select({
             id: pembiayaan.id,
-            kodeTransaksi: pembiayaan.kodeTransaksi,
             tujuan: pembiayaan.tujuan,
             jumlahPokok: pembiayaan.jumlahPokok,
             jumlahMargin: pembiayaan.jumlahMargin,
@@ -94,7 +98,6 @@ export const PembiayaanService = {
           const targetPembayaranKumulatif = roundProportion(totalTagihan, monthsDue, row.jangkaWaktuBulan)
           data.push({
             id: row.id,
-            kodeTransaksi: row.kodeTransaksi,
             tujuan: row.tujuan,
             totalTagihan,
             sisaTagihan,
@@ -153,7 +156,6 @@ export const PembiayaanService = {
         tanggalPengajuan: pembiayaan.tanggalPengajuan,
         tanggalTransfer: pembiayaan.tanggalTransfer,
         tanggalPembiayaan: pembiayaan.tanggalPembiayaan,
-        transferredBy: pembiayaan.transferredBy,
         transferredAt: pembiayaan.transferredAt,
         statusApproved: pembiayaan.statusApproved,
         alasanPenolakan: pembiayaan.alasanPenolakan,

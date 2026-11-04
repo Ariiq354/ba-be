@@ -26,6 +26,11 @@ import {
 import { getApprovedTotals, roundProportion } from './utils'
 
 export const AngsuranService = {
+  async getPendingCount() {
+    const total = await db.$count(angsuran, eq(angsuran.statusApproved, 'pending'))
+    return { total } satisfies AngsuranModel.PendingCountGet['Response'][200]
+  },
+
   async getAngsuran(actorId: number, query: AngsuranModel.Get['Query']) {
     const accessCondition = await getPenggunaAccessCondition(db, actorId)
     if (accessCondition !== undefined) {
@@ -54,7 +59,6 @@ export const AngsuranService = {
     const qb = db
       .select({
         id: angsuran.id,
-        pembiayaanId: angsuran.pembiayaanId,
         kodePembiayaan: pembiayaan.kodeTransaksi,
         userId: pembiayaan.userId,
         kodeTransaksi: angsuran.kodeTransaksi,
@@ -65,10 +69,8 @@ export const AngsuranService = {
         alasanPenolakan: angsuran.alasanPenolakan,
         keterangan: angsuran.keterangan,
         createdBy: angsuran.createdBy,
-        approvedBy: angsuran.approvedBy,
         approvedAt: angsuran.approvedAt,
         createdAt: angsuran.createdAt,
-        updatedAt: angsuran.updatedAt,
         memberName: member.name,
         creatorName: creator.name,
         approverName: approver.name,
@@ -81,14 +83,19 @@ export const AngsuranService = {
       .where(and(...conditions))
       .orderBy(desc(eq(angsuran.statusApproved, 'pending')), desc(angsuran.createdAt), desc(angsuran.id))
 
-    const total = await db.$count(qb)
+    const total = await db.$count(
+      db
+        .select({ id: angsuran.id })
+        .from(angsuran)
+        .innerJoin(pembiayaan, eq(pembiayaan.id, angsuran.pembiayaanId))
+        .where(and(...conditions)),
+    )
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
     const data: AngsuranModel.Get['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
       ...row,
       metodePembayaran: akunId === AkunId.KAS ? 'Tunai' : 'Transfer',
       approvedAt: row.approvedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
     }))
 
     return { total, data } satisfies AngsuranModel.Get['Response'][200]

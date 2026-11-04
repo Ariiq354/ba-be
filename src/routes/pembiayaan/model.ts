@@ -28,7 +28,6 @@ const pembiayaanResponseSchema = t.Object({
   tanggalTransfer: t.Nullable(t.String({ format: 'date' })),
   tanggalPembiayaan: t.Nullable(t.String({ format: 'date' })),
   statusTransfer: t.UnionEnum(['belum_transfer', 'sudah_transfer']),
-  transferredBy: t.Nullable(t.Integer()),
   transferredAt: t.Nullable(t.String({ format: 'date-time' })),
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),
   alasanPenolakan: t.Nullable(t.String()),
@@ -65,6 +64,16 @@ export const Get = {
 
 export type Get = UnwrapModels<typeof Get>
 
+export const PendingCountGet = {
+  Response: {
+    200: t.Object({ total: t.Integer({ minimum: 0 }) }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type PendingCountGet = UnwrapModels<typeof PendingCountGet>
+
 export const OptionsGet = {
   Query: t.Object({ userId: databaseIdSchema }),
   Response: {
@@ -72,7 +81,6 @@ export const OptionsGet = {
       data: t.Array(
         t.Object({
           id: t.Integer(),
-          kodeTransaksi: t.String(),
           tujuan: t.String(),
           totalTagihan: t.Integer(),
           sisaTagihan: t.Integer(),
