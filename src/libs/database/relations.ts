@@ -7,6 +7,7 @@ import * as jurnalSchema from './schema/jurnal'
 import * as kelompokSchema from './schema/kelompok'
 import * as masterSchema from './schema/master'
 import * as pembiayaanSchema from './schema/pembiayaan'
+import * as shuSchema from './schema/shu'
 import * as simpananSchema from './schema/simpanan'
 import * as transactionSchema from './schema/transaction'
 import * as usersSchema from './schema/users'
@@ -21,6 +22,7 @@ export const relations = defineRelations(
     ...kelompokSchema,
     ...masterSchema,
     ...pembiayaanSchema,
+    ...shuSchema,
     ...simpananSchema,
     ...transactionSchema,
     ...usersSchema,
@@ -51,6 +53,10 @@ export const relations = defineRelations(
       saldoSimpanan: r.one.saldoSimpanan({
         from: r.user.id,
         to: r.saldoSimpanan.userId,
+      }),
+      shu: r.many.shu({
+        from: r.user.id,
+        to: r.shu.idUser,
       }),
       mutasiSimpanan: r.many.mutasiSimpanan({
         from: r.user.id,
@@ -211,6 +217,12 @@ export const relations = defineRelations(
       akun: r.one.akun({
         from: r.jurnalDetail.akunId,
         to: r.akun.id,
+      }),
+    },
+    shu: {
+      user: r.one.user({
+        from: r.shu.idUser,
+        to: r.user.id,
       }),
     },
     saldoSimpanan: {
