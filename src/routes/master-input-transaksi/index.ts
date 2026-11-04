@@ -11,6 +11,14 @@ export const MasterInputTransaksiRoutes = new Elysia({
 })
   .use(AuthMacro)
   .get(
+    '/options',
+    {
+      admin: true,
+      response: MasterInputTransaksiModel.OptionsGet.Response,
+    },
+    () => MasterInputTransaksiService.getTemplateOptions(),
+  )
+  .get(
     '/',
     {
       admin: true,

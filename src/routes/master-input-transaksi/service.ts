@@ -12,6 +12,19 @@ import { InvalidNamaTemplateError } from './errors'
 import { validateTemplateAkun } from './utils'
 
 export const MasterInputTransaksiService = {
+  async getTemplateOptions() {
+    const data = await db
+      .select({
+        id: masterInputTransaksi.id,
+        nama: masterInputTransaksi.nama,
+      })
+      .from(masterInputTransaksi)
+      .where(eq(masterInputTransaksi.isActive, true))
+      .orderBy(asc(masterInputTransaksi.nama), asc(masterInputTransaksi.id))
+
+    return { data } satisfies MasterInputTransaksiModel.OptionsGet['Response'][200]
+  },
+
   async getPaginatedTemplate(query: MasterInputTransaksiModel.Get['Query']) {
     const conditions = []
     if (query.search) {

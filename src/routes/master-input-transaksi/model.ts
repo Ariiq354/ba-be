@@ -5,6 +5,23 @@ import { t } from 'elysia'
 import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema } from '#/libs/errors'
 import { deleteBulkSchema, idParamsSchema, paginationSchema, searchSchema } from '#/libs/schema'
 
+export const OptionsGet = {
+  Response: {
+    200: t.Object({
+      data: t.Array(
+        t.Object({
+          id: t.Integer(),
+          nama: t.String(),
+        }),
+      ),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type OptionsGet = UnwrapModels<typeof OptionsGet>
+
 export const Get = {
   Query: t.Object({
     ...paginationSchema.properties,
