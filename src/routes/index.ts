@@ -5,6 +5,7 @@ import { FilesRoutes } from './files'
 import { JurnalRoutes } from './jurnal'
 import { KelompokRoutes } from './kelompok'
 import { MasterAkunRoutes } from './master-akun'
+import { MasterInputTransaksiRoutes } from './master-input-transaksi'
 import { MasterMarginRoutes } from './master-margin'
 import { MasterSahamRoutes } from './master-saham'
 import { PembiayaanRoutes } from './pembiayaan'
@@ -18,6 +19,7 @@ export const Routes = new Elysia({ prefix: 'api/v1' })
   .use(FilesRoutes)
   .use(JurnalRoutes)
   .use(MasterAkunRoutes)
+  .use(MasterInputTransaksiRoutes)
   .use(MasterMarginRoutes)
   .use(MasterSahamRoutes)
   .use(KelompokRoutes)

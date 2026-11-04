@@ -2,12 +2,13 @@ import { and, asc, eq, ilike, inArray, or } from 'drizzle-orm'
 
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
+import { masterInputTransaksi } from '#/libs/database/schema/master'
 import { ItemNotFoundError, ItemsNotFoundError } from '#/libs/errors'
 import { isUniqueViolation } from '#/libs/pgcode'
 
 import type * as MasterAkunModel from './model'
 
-import { DuplicateKodeAkunError } from './errors'
+import { AkunUsedByTemplateError, DuplicateKodeAkunError } from './errors'
 
 export const MasterAkunService = {
   async createAkun(data: MasterAkunModel.Post['Body']) {
@@ -72,13 +73,26 @@ export const MasterAkunService = {
   },
 
   async deleteAkun(ids: MasterAkunModel.Delete['Body']['ids']) {
-    const deletedRows = await db.delete(akun).where(inArray(akun.id, ids)).returning()
+    return db.transaction(async (tx) => {
+      await tx.select({ id: akun.id }).from(akun).where(inArray(akun.id, ids)).orderBy(asc(akun.id)).for('update')
 
-    if (deletedRows.length === 0) {
-      return new ItemsNotFoundError({
-        ids,
-        message: `Akun dengan ID '${ids.join(', ')}' tidak ditemukan`,
-      })
-    }
+      const templates = await tx
+        .select({ akunDebitId: masterInputTransaksi.akunDebitId, akunKreditId: masterInputTransaksi.akunKreditId })
+        .from(masterInputTransaksi)
+        .where(or(inArray(masterInputTransaksi.akunDebitId, ids), inArray(masterInputTransaksi.akunKreditId, ids)))
+
+      if (templates.length > 0) {
+        const referencedIds = new Set(templates.flatMap((template) => [template.akunDebitId, template.akunKreditId]))
+        throw new AkunUsedByTemplateError({ ids: [...new Set(ids)].filter((id) => referencedIds.has(id)) })
+      }
+
+      const deletedRows = await tx.delete(akun).where(inArray(akun.id, ids)).returning()
+      if (deletedRows.length === 0) {
+        return new ItemsNotFoundError({
+          ids,
+          message: `Akun dengan ID '${ids.join(', ')}' tidak ditemukan`,
+        })
+      }
+    })
   },
 }

@@ -74,6 +74,7 @@ export const Delete = {
     401: UnauthorizedSchema,
     403: ForbiddenSchema,
     404: ErrorSchema,
+    409: ErrorSchema,
   },
 } as const
 

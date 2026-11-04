@@ -1,5 +1,6 @@
-import { integer, pgEnum, snakeCase, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
+import { akun } from './akun'
 import { user } from './auth'
 import { createdUpdated } from './common'
 
@@ -24,3 +25,23 @@ export const margin = snakeCase.table('margin', {
   biayaAkad: integer().notNull(),
   ...createdUpdated,
 })
+
+export const masterInputTransaksi = snakeCase.table(
+  'master_input_transaksi',
+  {
+    id: integer().primaryKey().generatedByDefaultAsIdentity(),
+    nama: text().notNull(),
+    akunDebitId: integer()
+      .notNull()
+      .references(() => akun.id, { onDelete: 'restrict' }),
+    akunKreditId: integer()
+      .notNull()
+      .references(() => akun.id, { onDelete: 'restrict' }),
+    isActive: boolean().notNull().default(true),
+    ...createdUpdated,
+  },
+  (table) => [
+    index('master_input_transaksi_akun_debit_id_idx').on(table.akunDebitId),
+    index('master_input_transaksi_akun_kredit_id_idx').on(table.akunKreditId),
+  ],
+)

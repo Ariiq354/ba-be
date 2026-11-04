@@ -150,6 +150,14 @@ export const relations = defineRelations(
       }),
     },
     akun: {
+      templateDebit: r.many.masterInputTransaksi({
+        from: r.akun.id,
+        to: r.masterInputTransaksi.akunDebitId,
+      }),
+      templateKredit: r.many.masterInputTransaksi({
+        from: r.akun.id,
+        to: r.masterInputTransaksi.akunKreditId,
+      }),
       jurnalDetails: r.many.jurnalDetail({
         from: r.akun.id,
         to: r.jurnalDetail.akunId,
@@ -173,6 +181,16 @@ export const relations = defineRelations(
       angsuran: r.many.angsuran({
         from: r.akun.id,
         to: r.angsuran.akunId,
+      }),
+    },
+    masterInputTransaksi: {
+      akunDebit: r.one.akun({
+        from: r.masterInputTransaksi.akunDebitId,
+        to: r.akun.id,
+      }),
+      akunKredit: r.one.akun({
+        from: r.masterInputTransaksi.akunKreditId,
+        to: r.akun.id,
       }),
     },
     jurnal: {
