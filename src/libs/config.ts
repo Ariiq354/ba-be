@@ -18,6 +18,7 @@ export enum AkunId {
   SAHAM50 = 19,
   LABARUGITAHUNBERJALAN = 20,
   AGIOSAHAM = 50,
+  LABADITAHAN = 67,
 }
 
 export const HARGA_NOMINAL_SAHAM = 50_000

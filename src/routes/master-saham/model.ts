@@ -42,6 +42,17 @@ export const LatestGet = {
 
 export type LatestGet = UnwrapModels<typeof LatestGet>
 
+export const RealtimeGet = {
+  Response: {
+    200: t.Object({
+      hargaRealtime: t.Nullable(t.Number()),
+    }),
+    401: UnauthorizedSchema,
+  },
+} as const
+
+export type RealtimeGet = UnwrapModels<typeof RealtimeGet>
+
 export const Post = {
   Body: t.Object({
     hargaJual: t.Integer({ minimum: 1 }),

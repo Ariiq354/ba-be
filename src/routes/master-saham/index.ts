@@ -27,6 +27,18 @@ export const MasterSahamRoutes = new Elysia({
     },
     async () => MasterSahamService.getLatestHargaSaham(),
   )
+  .get(
+    '/realtime',
+    {
+      auth: true,
+      response: MasterSahamModel.RealtimeGet.Response,
+      detail: {
+        description:
+          'Estimasi harga saham dari modal nominal, agio bersih, laba ditahan, dan 10% laba tahun berjalan sampai hari ini. Tidak digunakan sebagai harga transaksi. Bernilai null jika belum ada saham beredar.',
+      },
+    },
+    async () => MasterSahamService.getRealtimeHargaSaham(),
+  )
   .post(
     '/',
     {
