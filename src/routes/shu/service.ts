@@ -65,7 +65,7 @@ export const ShuService = {
     } satisfies ShuModel.ReferensiGet['Response'][200]
   },
 
-  async createShu(adminId: number, input: ShuModel.Post['Body']) {
+  async createShu(input: ShuModel.Post['Body']) {
     await db.transaction(
       async (tx) => {
         // Lock before taking the repeatable-read snapshot, so concurrent saves see
@@ -79,8 +79,6 @@ export const ShuService = {
         if (totalShu > laba) {
           throw new InvalidShuError('Total SHU tidak boleh melebihi laba tahun yang dipilih')
         }
-        await assertAccounts(tx, [AkunId.LABARUGITAHUNBERJALAN, AkunId.PEMBAGIANSHU])
-
         const lastDate = `${String(tahun).padStart(4, '0')}-12-31`
         const end = sql`((${lastDate}::date + 1)::timestamp at time zone 'Asia/Jakarta')`
         // Include earlier approvals for the opening lots, but exclude next-year approvals.
@@ -152,31 +150,6 @@ export const ShuService = {
         for (let offset = 0; offset < rows.length; offset += 1000) {
           await tx.insert(shu).values(rows.slice(offset, offset + 1000))
         }
-
-        const tanggalTransaksi = getJakartaDate()
-        const kodeTransaksi = await allocateTransactionCode(tx, 'shu', tanggalTransaksi)
-        const [createdJournal] = await tx
-          .insert(jurnal)
-          .values({ kodeTransaksi, tanggalTransaksi, keterangan: `Pembentukan SHU ${tahun}` })
-          .returning({ id: jurnal.id })
-        if (!createdJournal) throw new Error('Jurnal pembentukan SHU gagal dibuat')
-
-        await tx.insert(jurnalDetail).values([
-          {
-            jurnalId: createdJournal.id,
-            akunId: AkunId.PEMBAGIANSHU,
-            userId: adminId,
-            debit: totalShu,
-            kredit: 0,
-          },
-          {
-            jurnalId: createdJournal.id,
-            akunId: AkunId.LABARUGITAHUNBERJALAN,
-            userId: adminId,
-            debit: 0,
-            kredit: totalShu,
-          },
-        ])
       },
       { isolationLevel: 'repeatable read' },
     )
@@ -198,13 +171,34 @@ export const ShuService = {
       if (new Set(entries.map((entry) => entry.idUser)).size !== entries.length) {
         throw new InvalidShuError('Data SHU berisi duplikasi anggota untuk tahun yang dipilih')
       }
-      await assertAccounts(tx, [AkunId.PEMBAGIANSHU, AkunId.SIMPANANBERJANGKA])
+      const totalShu = entries.reduce((total, entry) => total + entry.jumlahShuSaham + entry.jumlahShuTabungan, 0)
+      if (totalShu <= 0) {
+        throw new InvalidShuError('Total SHU harus lebih besar dari nol')
+      }
+      await assertAccounts(tx, [AkunId.LABARUGITAHUNBERJALAN, AkunId.SIMPANANBERJANGKA])
       const balances = await lockBalances(
         tx,
         entries.map((entry) => entry.idUser),
       )
       const approvedAt = new Date()
       const tanggalTransaksi = getJakartaDate(approvedAt)
+      const kodeTransaksi = await allocateTransactionCode(tx, 'shu', tanggalTransaksi)
+      const keterangan = `Pengalihan SHU ${input.tahun}`
+      const [createdJournal] = await tx
+        .insert(jurnal)
+        .values({ kodeTransaksi, tanggalTransaksi, keterangan })
+        .returning({ id: jurnal.id })
+      if (!createdJournal) throw new Error('Jurnal pengalihan SHU gagal dibuat')
+
+      const details: Array<typeof jurnalDetail.$inferInsert> = [
+        {
+          jurnalId: createdJournal.id,
+          akunId: AkunId.LABARUGITAHUNBERJALAN,
+          userId: adminId,
+          debit: totalShu,
+          kredit: 0,
+        },
+      ]
 
       // Every row is processed in this one transaction; a failure rolls back the entire year.
       for (const entry of entries) {
@@ -216,12 +210,11 @@ export const ShuService = {
 
         const balance = balances.get(entry.idUser)!
         const saldoSetelahTransaksi = balance.saldoTabungan + nominal
-        const kodeTransaksi = await allocateTransactionCode(tx, 'shu', tanggalTransaksi)
-        const keterangan = `Pengalihan SHU ${input.tahun}`
+        const kodeMutasi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
         await tx.insert(mutasiSimpanan).values({
-          kodeTransaksi,
+          kodeTransaksi: kodeMutasi,
           userId: entry.idUser,
-          akunId: AkunId.PEMBAGIANSHU,
+          akunId: AkunId.LABARUGITAHUNBERJALAN,
           jenisTransaksi: 'setoran',
           jenisSimpanan: 'tabungan',
           nilaiTransaksi: nominal,
@@ -239,29 +232,18 @@ export const ShuService = {
           .set({ saldoTabungan: saldoSetelahTransaksi })
           .where(eq(saldoSimpanan.userId, entry.idUser))
 
-        const [createdJournal] = await tx
-          .insert(jurnal)
-          .values({ kodeTransaksi, tanggalTransaksi, keterangan })
-          .returning({ id: jurnal.id })
-        if (!createdJournal) throw new Error('Jurnal pengalihan SHU gagal dibuat')
-
-        await tx.insert(jurnalDetail).values([
-          {
-            jurnalId: createdJournal.id,
-            akunId: AkunId.SIMPANANBERJANGKA,
-            userId: entry.idUser,
-            debit: nominal,
-            kredit: 0,
-          },
-          {
-            jurnalId: createdJournal.id,
-            akunId: AkunId.PEMBAGIANSHU,
-            userId: entry.idUser,
-            debit: 0,
-            kredit: nominal,
-          },
-        ])
+        details.push({
+          jurnalId: createdJournal.id,
+          akunId: AkunId.SIMPANANBERJANGKA,
+          userId: entry.idUser,
+          debit: 0,
+          kredit: nominal,
+        })
         await tx.update(shu).set({ dialihkanAt: approvedAt }).where(eq(shu.id, entry.id))
+      }
+
+      for (let offset = 0; offset < details.length; offset += 1000) {
+        await tx.insert(jurnalDetail).values(details.slice(offset, offset + 1000))
       }
     })
   },

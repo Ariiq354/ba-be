@@ -43,8 +43,10 @@ export const JurnalService = {
     )
 
     if (labaRugiTahunBerjalan) {
-      labaRugiTahunBerjalan.jumlahBulanan = labaRugi.labaRugiBulanan
-      labaRugiTahunBerjalan.jumlah = labaRugi.totalLabaRugi
+      labaRugiTahunBerjalan.jumlahBulanan = labaRugiTahunBerjalan.jumlahBulanan.map(
+        (jumlah, index) => jumlah + (labaRugi.labaRugiBulanan[index] ?? 0),
+      )
+      labaRugiTahunBerjalan.jumlah += labaRugi.totalLabaRugi
     }
 
     const aktivaBulanan = sumKategori(data, 'aktiva')
