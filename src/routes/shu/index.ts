@@ -44,8 +44,8 @@ export const ShuRoutes = new Elysia({ prefix: 'shu', tags: ['SHU'] })
       body: ShuModel.Post.Body,
       response: ShuModel.Post.Response,
     },
-    async ({ body }) => {
-      await ShuService.createShu(body)
+    async ({ body, user }) => {
+      await ShuService.createShu(user.id, body)
       return status(201, { message: 'Success' })
     },
   )

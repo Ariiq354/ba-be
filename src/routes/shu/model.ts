@@ -59,7 +59,7 @@ export type ReferensiGet = UnwrapModels<typeof ReferensiGet>
 export const Post = {
   Body: t.Object({
     tahun: tahunSchema,
-    totalShu: t.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
+    totalShu: t.Integer({ minimum: 1 }),
   }),
   Response: {
     201: SuccessSchema,

@@ -65,7 +65,7 @@ export const ShuService = {
     } satisfies ShuModel.ReferensiGet['Response'][200]
   },
 
-  async createShu(input: ShuModel.Post['Body']) {
+  async createShu(adminId: number, input: ShuModel.Post['Body']) {
     await db.transaction(
       async (tx) => {
         // Lock before taking the repeatable-read snapshot, so concurrent saves see
@@ -75,9 +75,6 @@ export const ShuService = {
         if (existing > 0) throw new ShuAlreadyExistsError()
 
         const { tahun, totalShu } = input
-        if (!Number.isSafeInteger(totalShu) || totalShu < 1) {
-          throw new InvalidShuError('Total SHU harus berupa rupiah bulat positif dalam rentang angka aman')
-        }
         const laba = await getLabaShu(tx, tahun)
         if (totalShu > laba) {
           throw new InvalidShuError('Total SHU tidak boleh melebihi laba tahun yang dipilih')
@@ -143,9 +140,6 @@ export const ShuService = {
         const alokasiTabungan = totalShu - alokasiSaham
         const shuSaham = allocateShu(alokasiSaham, bobotSaham)
         const shuTabungan = allocateShu(alokasiTabungan, bobotTabungan)
-        if ([...shuSaham.values(), ...shuTabungan.values()].some((amount) => amount > 2147483647)) {
-          throw new InvalidShuError('Bagian SHU per anggota melebihi batas nominal kolom database (2147483647)')
-        }
         const ids = [...new Set([...bobotSaham.keys(), ...bobotTabungan.keys()])].filter(
           (id) => (bobotSaham.get(id) ?? 0n) > 0n || (bobotTabungan.get(id) ?? 0n) > 0n,
         )
@@ -155,9 +149,6 @@ export const ShuService = {
           jumlahShuSaham: shuSaham.get(idUser) ?? 0,
           jumlahShuTabungan: shuTabungan.get(idUser) ?? 0,
         }))
-        if (rows.some((row) => row.jumlahShuSaham + row.jumlahShuTabungan > 2147483647)) {
-          throw new InvalidShuError('Total SHU per anggota melebihi batas nominal mutasi simpanan (2147483647)')
-        }
         for (let offset = 0; offset < rows.length; offset += 1000) {
           await tx.insert(shu).values(rows.slice(offset, offset + 1000))
         }
@@ -170,30 +161,22 @@ export const ShuService = {
           .returning({ id: jurnal.id })
         if (!createdJournal) throw new Error('Jurnal pembentukan SHU gagal dibuat')
 
-        // Attribute each portion to its member so annual totals can exceed a single integer column.
-        const details = rows.flatMap((row) => {
-          const nominal = row.jumlahShuSaham + row.jumlahShuTabungan
-          if (nominal === 0) return []
-          return [
-            {
-              jurnalId: createdJournal.id,
-              akunId: AkunId.PEMBAGIANSHU,
-              userId: row.idUser,
-              debit: nominal,
-              kredit: 0,
-            },
-            {
-              jurnalId: createdJournal.id,
-              akunId: AkunId.LABARUGITAHUNBERJALAN,
-              userId: row.idUser,
-              debit: 0,
-              kredit: nominal,
-            },
-          ]
-        })
-        for (let offset = 0; offset < details.length; offset += 1000) {
-          await tx.insert(jurnalDetail).values(details.slice(offset, offset + 1000))
-        }
+        await tx.insert(jurnalDetail).values([
+          {
+            jurnalId: createdJournal.id,
+            akunId: AkunId.PEMBAGIANSHU,
+            userId: adminId,
+            debit: totalShu,
+            kredit: 0,
+          },
+          {
+            jurnalId: createdJournal.id,
+            akunId: AkunId.LABARUGITAHUNBERJALAN,
+            userId: adminId,
+            debit: 0,
+            kredit: totalShu,
+          },
+        ])
       },
       { isolationLevel: 'repeatable read' },
     )
@@ -215,19 +198,6 @@ export const ShuService = {
       if (new Set(entries.map((entry) => entry.idUser)).size !== entries.length) {
         throw new InvalidShuError('Data SHU berisi duplikasi anggota untuk tahun yang dipilih')
       }
-      if (
-        entries.some(
-          (entry) =>
-            !Number.isInteger(entry.jumlahShuSaham) ||
-            !Number.isInteger(entry.jumlahShuTabungan) ||
-            entry.jumlahShuSaham < 0 ||
-            entry.jumlahShuTabungan < 0 ||
-            entry.jumlahShuSaham + entry.jumlahShuTabungan > 2147483647,
-        )
-      ) {
-        throw new InvalidShuError('Nominal SHU anggota tidak valid untuk pengalihan')
-      }
-
       await assertAccounts(tx, [AkunId.PEMBAGIANSHU, AkunId.SIMPANANBERJANGKA])
       const balances = await lockBalances(
         tx,
@@ -246,9 +216,6 @@ export const ShuService = {
 
         const balance = balances.get(entry.idUser)!
         const saldoSetelahTransaksi = balance.saldoTabungan + nominal
-        if (saldoSetelahTransaksi > 2147483647) {
-          throw new InvalidShuError(`Saldo tabungan anggota ${entry.idUser} melebihi batas nominal database`)
-        }
         const kodeTransaksi = await allocateTransactionCode(tx, 'shu', tanggalTransaksi)
         const keterangan = `Pengalihan SHU ${input.tahun}`
         await tx.insert(mutasiSimpanan).values({
