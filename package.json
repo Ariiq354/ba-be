@@ -11,10 +11,10 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@elysia/cors": "^2.0.0-rc.0",
+    "@elysia/cors": "^2.0.0-rc.1",
     "@elysia/cron": "^2.0.0-rc.0",
     "@elysia/openapi": "^2.0.0-rc.1",
-    "better-auth": "^1.7.16",
+    "better-auth": "^1.7.17",
     "drizzle-orm": "^1.0.0-rc.5-ab785fc",
     "elysia": "^2.0.0-rc.1",
     "exact-mirror": "^1.2.7",
