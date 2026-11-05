@@ -20,7 +20,6 @@ import { allocateShu, calculateBobot, getLabaShu } from './utils'
 export const ShuService = {
   async getShu(query: ShuModel.Get['Query']) {
     const condition = eq(shu.tahun, query.tahun)
-    const total = await db.$count(shu, condition)
     const rows = await db
       .select({
         id: shu.id,
@@ -37,11 +36,8 @@ export const ShuService = {
       .leftJoin(userProfile, eq(userProfile.idUser, user.id))
       .where(condition)
       .orderBy(shu.idUser, shu.id)
-      .limit(query.limit)
-      .offset((query.page - 1) * query.limit)
 
     return {
-      total,
       data: rows.map((row) => ({
         ...row,
         dialihkanAt: row.dialihkanAt?.toISOString() ?? null,
@@ -247,7 +243,7 @@ export const ShuService = {
         if (saldoSetelahTransaksi > 2147483647) {
           throw new InvalidShuError(`Saldo tabungan anggota ${entry.idUser} melebihi batas nominal database`)
         }
-        const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
+        const kodeTransaksi = await allocateTransactionCode(tx, 'shu', tanggalTransaksi)
         const keterangan = `Pengalihan SHU ${input.tahun}`
         await tx.insert(mutasiSimpanan).values({
           kodeTransaksi,

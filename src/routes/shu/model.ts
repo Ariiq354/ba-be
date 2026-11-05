@@ -3,18 +3,15 @@ import type { UnwrapModels } from 'elysia'
 import { t } from 'elysia'
 
 import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema } from '#/libs/errors'
-import { paginationSchema } from '#/libs/schema'
 
 const tahunSchema = t.Integer({ minimum: 1, maximum: 9999 })
 
 export const Get = {
   Query: t.Object({
     tahun: tahunSchema,
-    ...paginationSchema.properties,
   }),
   Response: {
     200: t.Object({
-      total: t.Integer(),
       data: t.Array(
         t.Object({
           id: t.Integer(),
