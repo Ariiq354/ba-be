@@ -8,6 +8,7 @@ import { shu } from '#/libs/database/schema/shu'
 import { mutasiSimpanan, pemindahbukuan, saldoSimpanan } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
 import { getJakartaDate } from '#/libs/date'
+import { ForbiddenError } from '#/libs/errors'
 import { allocateTransactionCode } from '#/libs/transaction'
 
 import type * as ShuModel from './model'
@@ -18,8 +19,13 @@ import { InvalidShuError, ShuAlreadyExistsError, ShuAlreadyTransferredError, Shu
 import { allocateShu, calculateBobot, getLabaShu } from './utils'
 
 export const ShuService = {
-  async getShu(query: ShuModel.Get['Query']) {
-    const condition = eq(shu.tahun, query.tahun)
+  async getShu(actor: { id: number; role?: string | null }, query: ShuModel.Get['Query']) {
+    const userId = query.userId ?? actor.id
+    if (userId !== actor.id && actor.role !== 'admin') {
+      throw new ForbiddenError()
+    }
+
+    const condition = and(eq(shu.tahun, query.tahun), eq(shu.idUser, userId))
     const rows = await db
       .select({
         id: shu.id,

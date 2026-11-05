@@ -10,11 +10,11 @@ export const ShuRoutes = new Elysia({ prefix: 'shu', tags: ['SHU'] })
   .get(
     '/',
     {
-      admin: true,
+      auth: true,
       query: ShuModel.Get.Query,
       response: ShuModel.Get.Response,
     },
-    ({ query }) => ShuService.getShu(query),
+    ({ query, user }) => ShuService.getShu(user, query),
   )
   .get(
     '/referensi',

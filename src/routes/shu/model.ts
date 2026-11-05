@@ -9,6 +9,12 @@ const tahunSchema = t.Integer({ minimum: 1, maximum: 9999 })
 export const Get = {
   Query: t.Object({
     tahun: tahunSchema,
+    userId: t.Optional(
+      t.Integer({
+        minimum: 1,
+        description: 'Default pengguna login. Hanya admin yang dapat memilih pengguna lain.',
+      }),
+    ),
   }),
   Response: {
     200: t.Object({
