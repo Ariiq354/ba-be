@@ -43,50 +43,45 @@ export const MasterSahamService = {
     const tanggal = getJakartaDate()
     const awalTahun = `${tanggal.slice(0, 4)}-01-01`
 
-    return db.transaction(
-      async (tx) => {
-        const [saldo] = await tx
-          .select({ jumlahSaham: sql`coalesce(sum(${saldoSimpanan.jumlahSaham}), 0)`.mapWith(Number) })
-          .from(saldoSimpanan)
+    const [saldo] = await db
+      .select({ jumlahSaham: sql`coalesce(sum(${saldoSimpanan.jumlahSaham}), 0)`.mapWith(Number) })
+      .from(saldoSimpanan)
 
-        const jumlahSaham = saldo?.jumlahSaham ?? 0
-        if (jumlahSaham === 0) {
-          return { hargaRealtime: null } satisfies MasterSahamModel.RealtimeGet['Response'][200]
-        }
+    const jumlahSaham = saldo?.jumlahSaham ?? 0
+    if (jumlahSaham === 0) {
+      return { hargaRealtime: null } satisfies MasterSahamModel.RealtimeGet['Response'][200]
+    }
 
-        const [ringkasan] = await tx
-          .select({
-            agioSaham:
-              sql`coalesce(sum(case when ${jurnalDetail.akunId} = ${AkunId.AGIOSAHAM} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
-                Number,
-              ),
-            labaDitahan:
-              sql`coalesce(sum(case when ${jurnalDetail.akunId} = ${AkunId.LABADITAHAN} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
-                Number,
-              ),
-            labaBerjalan:
-              sql`coalesce(sum(case when ${akun.kategori} in ('pendapatan', 'biaya') and ${jurnal.tanggalTransaksi} >= ${awalTahun} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
-                Number,
-              ),
-          })
-          .from(jurnalDetail)
-          .innerJoin(jurnal, eq(jurnal.id, jurnalDetail.jurnalId))
-          .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
-          .where(lte(jurnal.tanggalTransaksi, tanggal))
+    const [ringkasan] = await db
+      .select({
+        agioSaham:
+          sql`coalesce(sum(case when ${jurnalDetail.akunId} = ${AkunId.AGIOSAHAM} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
+            Number,
+          ),
+        labaDitahan:
+          sql`coalesce(sum(case when ${jurnalDetail.akunId} = ${AkunId.LABADITAHAN} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
+            Number,
+          ),
+        labaBerjalan:
+          sql`coalesce(sum(case when ${akun.kategori} in ('pendapatan', 'biaya') and ${jurnal.tanggalTransaksi} >= ${awalTahun} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
+            Number,
+          ),
+      })
+      .from(jurnalDetail)
+      .innerJoin(jurnal, eq(jurnal.id, jurnalDetail.jurnalId))
+      .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
+      .where(lte(jurnal.tanggalTransaksi, tanggal))
 
-        const modalNominal = jumlahSaham * HARGA_NOMINAL_SAHAM
-        // Keep the legacy formula's 10% share of current-year profit for this estimate only.
-        const hargaRealtime =
-          (modalNominal +
-            (ringkasan?.agioSaham ?? 0) +
-            (ringkasan?.labaDitahan ?? 0) +
-            (ringkasan?.labaBerjalan ?? 0) / 10) /
-          jumlahSaham
+    const modalNominal = jumlahSaham * HARGA_NOMINAL_SAHAM
+    // Keep the legacy formula's 10% share of current-year profit for this estimate only.
+    const hargaRealtime =
+      (modalNominal +
+        (ringkasan?.agioSaham ?? 0) +
+        (ringkasan?.labaDitahan ?? 0) +
+        (ringkasan?.labaBerjalan ?? 0) / 10) /
+      jumlahSaham
 
-        return { hargaRealtime } satisfies MasterSahamModel.RealtimeGet['Response'][200]
-      },
-      { isolationLevel: 'repeatable read' },
-    )
+    return { hargaRealtime } satisfies MasterSahamModel.RealtimeGet['Response'][200]
   },
 
   async getPaginatedHargaSaham(query: MasterSahamModel.Get['Query']) {

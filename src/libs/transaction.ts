@@ -7,7 +7,7 @@ import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
 import { transactionCodeCounter } from '#/libs/database/schema/transaction'
 
-type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan' | 'pembiayaan' | 'angsuran'
+type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan' | 'pembiayaan' | 'angsuran' | 'shu'
 
 const transactionSources = {
   simpanan: { prefix: 'STR', table: mutasiSimpanan },
@@ -15,6 +15,7 @@ const transactionSources = {
   pemindahbukuan: { prefix: 'PBK', table: pemindahbukuan },
   pembiayaan: { prefix: 'PEMB', table: pembiayaan },
   angsuran: { prefix: 'AGS', table: angsuran },
+  shu: { prefix: 'SHU', table: jurnal },
 } as const
 
 function getMaxTransactionSequence(prefix: string, existingCodes: string[]) {

@@ -32,41 +32,35 @@ import { approver, assertMember, assertPaymentAccount, creator, member } from '.
 
 export const SimpananService = {
   async getSaldo(actorId: number, userId: SimpananModel.SaldoGet['Query']['userId'] = actorId) {
-    // Read balances and reservations from the same snapshot during approvals.
-    return db.transaction(
-      async (tx) => {
-        await assertPenggunaAccess(tx, actorId, userId)
+    await assertPenggunaAccess(db, actorId, userId)
 
-        const [result] = await tx
-          .select({
-            noAnggota: userProfile.noAnggota,
-            saldoTabungan: saldoSimpanan.saldoTabungan,
-            jumlahSaham: saldoSimpanan.jumlahSaham,
-          })
-          .from(userProfile)
-          .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, userProfile.idUser))
-          .where(eq(userProfile.idUser, userId))
+    const [result] = await db
+      .select({
+        noAnggota: userProfile.noAnggota,
+        saldoTabungan: saldoSimpanan.saldoTabungan,
+        jumlahSaham: saldoSimpanan.jumlahSaham,
+      })
+      .from(userProfile)
+      .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, userProfile.idUser))
+      .where(eq(userProfile.idUser, userId))
 
-        if (!result?.noAnggota?.trim()) {
-          throw new NotMemberError({ userId })
-        }
+    if (!result?.noAnggota?.trim()) {
+      throw new NotMemberError({ userId })
+    }
 
-        const saldoTabungan = result.saldoTabungan ?? 0
-        const jumlahSaham = result.jumlahSaham ?? 0
-        const pending = await getPendingSimpanan(tx, userId)
-        const totalPenarikanPending = pending.penarikan
-        const totalPemindahbukuanPending = pending.pemindahbukuanTabungan
-        const totalSahamPending = pending.pemindahbukuanSaham
+    const saldoTabungan = result.saldoTabungan ?? 0
+    const jumlahSaham = result.jumlahSaham ?? 0
+    const pending = await getPendingSimpanan(db, userId)
+    const totalPenarikanPending = pending.penarikan
+    const totalPemindahbukuanPending = pending.pemindahbukuanTabungan
+    const totalSahamPending = pending.pemindahbukuanSaham
 
-        return {
-          saldoTabungan,
-          jumlahSaham,
-          saldoEfektif: Math.max(0, saldoTabungan - totalPenarikanPending - totalPemindahbukuanPending),
-          jumlahSahamEfektif: Math.max(0, jumlahSaham - totalSahamPending),
-        } satisfies SimpananModel.SaldoGet['Response'][200]
-      },
-      { isolationLevel: 'repeatable read' },
-    )
+    return {
+      saldoTabungan,
+      jumlahSaham,
+      saldoEfektif: Math.max(0, saldoTabungan - totalPenarikanPending - totalPemindahbukuanPending),
+      jumlahSahamEfektif: Math.max(0, jumlahSaham - totalSahamPending),
+    } satisfies SimpananModel.SaldoGet['Response'][200]
   },
 
   async getPendingCount() {

@@ -1,5 +1,7 @@
 import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 
+import type { Transaction } from '#/libs/database'
+
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
@@ -22,10 +24,14 @@ export const jurnalDetailSelection = {
   kredit: jurnalDetail.kredit,
 }
 
-export async function getMutasiBulanan(tahun: number, kategori: Array<typeof akun.$inferSelect.kategori>) {
+export async function getMutasiBulanan(
+  tahun: number,
+  kategori: Array<typeof akun.$inferSelect.kategori>,
+  connection: typeof db | Transaction = db,
+) {
   const year = String(tahun).padStart(4, '0')
   const bulan = sql<number>`extract(month from ${jurnal.tanggalTransaksi})`
-  const mutasiBulanan = db
+  const mutasiBulanan = connection
     .select({
       akunId: jurnalDetail.akunId,
       bulan: bulan.mapWith(Number).as('bulan'),
@@ -40,7 +46,7 @@ export async function getMutasiBulanan(tahun: number, kategori: Array<typeof aku
     .as('mutasi_bulanan')
 
   // Keep active accounts even when they have no transactions in the selected year.
-  return db
+  return connection
     .select({
       id: akun.id,
       namaAkun: akun.namaAkun,

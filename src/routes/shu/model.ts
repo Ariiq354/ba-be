@@ -1,0 +1,84 @@
+import type { UnwrapModels } from 'elysia'
+
+import { t } from 'elysia'
+
+import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema } from '#/libs/errors'
+import { paginationSchema } from '#/libs/schema'
+
+const tahunSchema = t.Integer({ minimum: 1, maximum: 9999 })
+
+export const Get = {
+  Query: t.Object({
+    tahun: tahunSchema,
+    ...paginationSchema.properties,
+  }),
+  Response: {
+    200: t.Object({
+      total: t.Integer(),
+      data: t.Array(
+        t.Object({
+          id: t.Integer(),
+          tahun: tahunSchema,
+          idUser: t.Integer(),
+          nama: t.String(),
+          noAnggota: t.Nullable(t.String()),
+          jumlahShuSaham: t.Integer(),
+          jumlahShuTabungan: t.Integer(),
+          totalShu: t.Integer(),
+          dialihkanAt: t.Nullable(t.String({ format: 'date-time' })),
+        }),
+      ),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type Get = UnwrapModels<typeof Get>
+
+export const ReferensiGet = {
+  Query: t.Object({ tahun: tahunSchema }),
+  Response: {
+    200: t.Object({
+      tahun: tahunSchema,
+      laba: t.Integer(),
+      batasShu: t.Integer(),
+      sudahDibagikan: t.Boolean(),
+      sudahDialihkan: t.Boolean(),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type ReferensiGet = UnwrapModels<typeof ReferensiGet>
+
+export const Post = {
+  Body: t.Object({
+    tahun: tahunSchema,
+    totalShu: t.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }),
+  }),
+  Response: {
+    201: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    409: ErrorSchema,
+  },
+} as const
+
+export type Post = UnwrapModels<typeof Post>
+
+export const PengalihanPost = {
+  Body: t.Object({ tahun: tahunSchema }),
+  Response: {
+    200: SuccessSchema,
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    409: ErrorSchema,
+  },
+} as const
+
+export type PengalihanPost = UnwrapModels<typeof PengalihanPost>
