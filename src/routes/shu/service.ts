@@ -4,7 +4,6 @@ import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
-import { kelompok } from '#/libs/database/schema/kelompok'
 import { shu } from '#/libs/database/schema/shu'
 import { mutasiSimpanan, pemindahbukuan, saldoSimpanan } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
@@ -23,18 +22,12 @@ export const ShuService = {
   async getMonitoring(query: ShuModel.MonitoringGet['Query']) {
     const rows = await db
       .select({
-        id: shu.id,
-        idUser: user.id,
         nama: user.name,
         noAnggota: userProfile.noAnggota,
-        idKelompok: user.idKelompok,
-        namaKelompok: kelompok.namaKelompok,
         jumlahShuSaham: shu.jumlahShuSaham,
         jumlahShuTabungan: shu.jumlahShuTabungan,
-        dialihkanAt: shu.dialihkanAt,
       })
       .from(user)
-      .innerJoin(kelompok, eq(kelompok.id, user.idKelompok))
       .leftJoin(userProfile, eq(userProfile.idUser, user.id))
       .leftJoin(shu, and(eq(shu.idUser, user.id), eq(shu.tahun, query.tahun)))
       .where(query.idKelompok === undefined ? undefined : eq(user.idKelompok, query.idKelompok))
@@ -43,11 +36,9 @@ export const ShuService = {
     return {
       data: rows.map((row) => ({
         ...row,
-        tahun: query.tahun,
         jumlahShuSaham: row.jumlahShuSaham ?? 0,
         jumlahShuTabungan: row.jumlahShuTabungan ?? 0,
         totalShu: (row.jumlahShuSaham ?? 0) + (row.jumlahShuTabungan ?? 0),
-        dialihkanAt: row.dialihkanAt?.toISOString() ?? null,
       })),
     } satisfies ShuModel.MonitoringGet['Response'][200]
   },
@@ -61,25 +52,17 @@ export const ShuService = {
     const condition = and(eq(shu.tahun, query.tahun), eq(shu.idUser, userId))
     const rows = await db
       .select({
-        id: shu.id,
         tahun: shu.tahun,
-        idUser: shu.idUser,
-        nama: user.name,
-        noAnggota: userProfile.noAnggota,
         jumlahShuSaham: shu.jumlahShuSaham,
         jumlahShuTabungan: shu.jumlahShuTabungan,
-        dialihkanAt: shu.dialihkanAt,
       })
       .from(shu)
-      .innerJoin(user, eq(user.id, shu.idUser))
-      .leftJoin(userProfile, eq(userProfile.idUser, user.id))
       .where(condition)
       .orderBy(shu.idUser, shu.id)
 
     return {
       data: rows.map((row) => ({
         ...row,
-        dialihkanAt: row.dialihkanAt?.toISOString() ?? null,
         totalShu: row.jumlahShuSaham + row.jumlahShuTabungan,
       })),
     } satisfies ShuModel.Get['Response'][200]

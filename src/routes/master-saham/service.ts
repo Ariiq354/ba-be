@@ -87,7 +87,6 @@ export const MasterSahamService = {
   async getPaginatedHargaSaham(query: MasterSahamModel.Get['Query']) {
     const hargaSahamQuery = db
       .select({
-        id: hargaSaham.id,
         hargaJual: hargaSaham.hargaJual,
         updatedByName: user.name,
         createdAt: hargaSaham.createdAt,

@@ -35,10 +35,8 @@ export const SimpananService = {
   async getMonitoring(query: SimpananModel.MonitoringGet['Query']) {
     const rows = await db
       .select({
-        userId: user.id,
         nama: user.name,
         noAnggota: userProfile.noAnggota,
-        idKelompok: user.idKelompok,
         namaKelompok: kelompok.namaKelompok,
         saldoTabungan: sql`coalesce(${saldoSimpanan.saldoTabungan}, 0)`.mapWith(Number),
         jumlahSaham: sql`coalesce(${saldoSimpanan.jumlahSaham}, 0)`.mapWith(Number),

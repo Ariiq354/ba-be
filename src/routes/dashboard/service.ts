@@ -1,6 +1,5 @@
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 
-import { HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
@@ -20,7 +19,7 @@ export const DashboardService = {
     const awalGrafik = `${tahunAwalGrafik}-01-01`
 
     const hargaTerakhir = await db
-      .select({ hargaJual: saham.hargaJual, createdAt: saham.createdAt })
+      .select({ hargaJual: saham.hargaJual })
       .from(saham)
       .where(lte(saham.createdAt, sekarang))
       .orderBy(desc(saham.createdAt), desc(saham.id))
@@ -85,8 +84,6 @@ export const DashboardService = {
       const biaya = row?.biaya ?? 0
       return {
         tahun: tahunGrafik,
-        pendapatan,
-        biaya,
         laba: pendapatan - biaya,
       }
     })
@@ -96,10 +93,7 @@ export const DashboardService = {
 
     return {
       hargaSaham: {
-        hargaNominal: HARGA_NOMINAL_SAHAM,
         hargaJual: hargaTerkini?.hargaJual ?? null,
-        diperbaruiPada: hargaTerkini?.createdAt.toISOString() ?? null,
-        hargaSebelumnya: hargaSebelumnya?.hargaJual ?? null,
         perubahanNominal,
         perubahanPersen:
           perubahanNominal !== null && hargaSebelumnya && hargaSebelumnya.hargaJual !== 0
@@ -113,12 +107,10 @@ export const DashboardService = {
       },
       pembiayaanBerjalan: {
         periodeMulai: awalTahun,
-        periodeSelesai: tanggal,
         total: pembiayaanPerTahun.get(tahun) ?? 0,
       },
       labaBerjalan: {
         periodeMulai: awalTahun,
-        periodeSelesai: tanggal,
         total: grafikLabaTahunan.find((row) => row.tahun === tahun)?.laba ?? 0,
       },
       grafikLabaTahunan,

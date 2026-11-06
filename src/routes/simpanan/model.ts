@@ -84,10 +84,8 @@ export const MonitoringGet = {
     200: t.Object({
       data: t.Array(
         t.Object({
-          userId: t.Integer(),
           nama: t.String(),
           noAnggota: t.Nullable(t.String()),
-          idKelompok: t.Integer(),
           namaKelompok: t.String(),
           saldoTabungan: t.Integer(),
           jumlahSaham: t.Integer(),

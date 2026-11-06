@@ -13,10 +13,7 @@ export const Get = {
   Response: {
     200: t.Object({
       hargaSaham: t.Object({
-        hargaNominal: t.Integer(),
         hargaJual: t.Nullable(t.Integer()),
-        diperbaruiPada: t.Nullable(t.String({ format: 'date-time' })),
-        hargaSebelumnya: t.Nullable(t.Integer()),
         perubahanNominal: t.Nullable(t.Integer()),
         perubahanPersen: t.Nullable(t.Number()),
       }),
@@ -30,18 +27,16 @@ export const Get = {
         ),
       }),
       pembiayaanBerjalan: t.Object({
-        ...periodeSchema,
+        periodeMulai: t.String({ format: 'date' }),
         total: t.Number(),
       }),
       labaBerjalan: t.Object({
-        ...periodeSchema,
+        periodeMulai: t.String({ format: 'date' }),
         total: t.Number(),
       }),
       grafikLabaTahunan: t.Array(
         t.Object({
           tahun: t.Integer(),
-          pendapatan: t.Number(),
-          biaya: t.Number(),
           laba: t.Number(),
         }),
       ),

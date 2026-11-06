@@ -20,15 +20,10 @@ export const Get = {
     200: t.Object({
       data: t.Array(
         t.Object({
-          id: t.Integer(),
           tahun: tahunSchema,
-          idUser: t.Integer(),
-          nama: t.String(),
-          noAnggota: t.Nullable(t.String()),
           jumlahShuSaham: t.Integer(),
           jumlahShuTabungan: t.Integer(),
           totalShu: t.Integer(),
-          dialihkanAt: t.Nullable(t.String({ format: 'date-time' })),
         }),
       ),
     }),
@@ -48,17 +43,11 @@ export const MonitoringGet = {
     200: t.Object({
       data: t.Array(
         t.Object({
-          id: t.Nullable(t.Integer()),
-          tahun: tahunSchema,
-          idUser: t.Integer(),
           nama: t.String(),
           noAnggota: t.Nullable(t.String()),
-          idKelompok: t.Integer(),
-          namaKelompok: t.String(),
           jumlahShuSaham: t.Integer(),
           jumlahShuTabungan: t.Integer(),
           totalShu: t.Integer(),
-          dialihkanAt: t.Nullable(t.String({ format: 'date-time' })),
         }),
       ),
     }),

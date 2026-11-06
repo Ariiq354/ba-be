@@ -6,7 +6,6 @@ import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema } from 
 import { paginationSchema } from '#/libs/schema'
 
 const hargaSahamResponseSchema = t.Object({
-  id: t.Integer(),
   hargaNominal: t.Integer(),
   hargaJual: t.Integer(),
   updatedByName: t.String(),

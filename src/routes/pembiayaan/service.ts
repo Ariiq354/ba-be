@@ -5,10 +5,8 @@ import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
-import { kelompok } from '#/libs/database/schema/kelompok'
 import { margin } from '#/libs/database/schema/master'
 import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
-import { userProfile } from '#/libs/database/schema/users'
 import { getJakartaDate } from '#/libs/date'
 import { ItemNotFoundError } from '#/libs/errors'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
@@ -51,20 +49,13 @@ export const PembiayaanService = {
 
     const rows = await db
       .select({
-        id: pembiayaan.id,
         kodeTransaksi: pembiayaan.kodeTransaksi,
-        userId: pembiayaan.userId,
         memberName: user.name,
-        noAnggota: userProfile.noAnggota,
-        idKelompok: user.idKelompok,
-        namaKelompok: kelompok.namaKelompok,
         jumlahPokok: pembiayaan.jumlahPokok,
-        persenMarginTahun: pembiayaan.persenMarginTahun,
         jumlahMargin: pembiayaan.jumlahMargin,
         biayaAkad: pembiayaan.biayaAkad,
         tujuan: pembiayaan.tujuan,
         jangkaWaktuBulan: pembiayaan.jangkaWaktuBulan,
-        tanggalPembiayaan: pembiayaan.tanggalPembiayaan,
         totalPembayaran: sql`coalesce(${pembayaran.total}, 0)`.mapWith(Number),
         tanggalAkhirAngsuran: sql<
           string | null
@@ -72,18 +63,15 @@ export const PembiayaanService = {
       })
       .from(pembiayaan)
       .innerJoin(user, eq(user.id, pembiayaan.userId))
-      .innerJoin(kelompok, eq(kelompok.id, user.idKelompok))
-      .leftJoin(userProfile, eq(userProfile.idUser, user.id))
       .leftJoin(pembayaran, eq(pembayaran.pembiayaanId, pembiayaan.id))
       .where(eq(pembiayaan.statusApproved, 'approved'))
       .orderBy(desc(pembiayaan.tanggalPembiayaan), desc(pembiayaan.id))
 
     return {
-      data: rows.map((row) => ({
+      data: rows.map(({ totalPembayaran, ...row }) => ({
         ...row,
-        statusApproved: 'approved' as const,
         totalPembiayaan: row.jumlahPokok + row.jumlahMargin,
-        sisaPembiayaan: Math.max(0, row.jumlahPokok + row.jumlahMargin - row.totalPembayaran),
+        sisaPembiayaan: Math.max(0, row.jumlahPokok + row.jumlahMargin - totalPembayaran),
       })),
     } satisfies PembiayaanModel.MonitoringGet['Response'][200]
   },
