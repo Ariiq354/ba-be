@@ -12,7 +12,7 @@ import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { calculateSahamAmounts } from '#/libs/saham'
 import { getPendingSimpanan } from '#/libs/simpananBalance'
-import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
+import { allocateTransactionCode } from '#/libs/transaction'
 
 import type * as SimpananModel from './model'
 
@@ -331,8 +331,6 @@ export const SimpananService = {
         )
         .returning({
           id: mutasiSimpanan.id,
-          kodeTransaksi: mutasiSimpanan.kodeTransaksi,
-          tanggalTransaksi: mutasiSimpanan.tanggalTransaksi,
         })
 
       const deletedIds = new Set(deleted.map((item) => item.id))
@@ -341,8 +339,6 @@ export const SimpananService = {
       if (deleted.length === 0 || invalidIds.length > 0) {
         throw new MutasiSimpananNotDeletedError({ ids: invalidIds })
       }
-
-      await retainTransactionCodes(tx, 'simpanan', deleted)
     })
   },
 

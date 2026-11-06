@@ -9,7 +9,7 @@ import { pemindahbukuan, saldoSimpanan } from '#/libs/database/schema/simpanan'
 import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { calculateSahamAmounts } from '#/libs/saham'
-import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
+import { allocateTransactionCode } from '#/libs/transaction'
 
 import type * as PemindahbukuanModel from './model'
 
@@ -206,8 +206,6 @@ export const PemindahbukuanService = {
         )
         .returning({
           id: pemindahbukuan.id,
-          kodeTransaksi: pemindahbukuan.kodeTransaksi,
-          tanggalTransaksi: pemindahbukuan.tanggalTransaksi,
         })
 
       const deletedIds = new Set(deleted.map((item) => item.id))
@@ -215,8 +213,6 @@ export const PemindahbukuanService = {
       if (deleted.length === 0 || invalidIds.length > 0) {
         throw new PemindahbukuanNotDeletedError({ ids: invalidIds })
       }
-
-      await retainTransactionCodes(tx, 'pemindahbukuan', deleted)
     })
   },
 

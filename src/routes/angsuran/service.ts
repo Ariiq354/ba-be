@@ -7,7 +7,7 @@ import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
-import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
+import { allocateTransactionCode } from '#/libs/transaction'
 
 import type * as AngsuranModel from './model'
 
@@ -156,8 +156,6 @@ export const AngsuranService = {
         )
         .returning({
           id: angsuran.id,
-          kodeTransaksi: angsuran.kodeTransaksi,
-          tanggalTransaksi: angsuran.tanggalTransaksi,
         })
 
       const deletedIds = new Set(deleted.map((item) => item.id))
@@ -165,7 +163,6 @@ export const AngsuranService = {
       if (deleted.length === 0 || invalidIds.length > 0) {
         throw new AngsuranNotDeletedError({ ids: invalidIds })
       }
-      await retainTransactionCodes(tx, 'angsuran', deleted)
     })
   },
 

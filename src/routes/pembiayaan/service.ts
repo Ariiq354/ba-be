@@ -10,7 +10,7 @@ import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { getJakartaDate } from '#/libs/date'
 import { ItemNotFoundError } from '#/libs/errors'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
-import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
+import { allocateTransactionCode } from '#/libs/transaction'
 
 import type * as PembiayaanModel from './model'
 
@@ -335,8 +335,6 @@ export const PembiayaanService = {
         )
         .returning({
           id: pembiayaan.id,
-          kodeTransaksi: pembiayaan.kodeTransaksi,
-          tanggalTransaksi: pembiayaan.tanggalPengajuan,
         })
 
       const deletedIds = new Set(deleted.map((item) => item.id))
@@ -344,8 +342,6 @@ export const PembiayaanService = {
       if (deleted.length === 0 || invalidIds.length > 0) {
         throw new PembiayaanNotDeletedError({ ids: invalidIds })
       }
-
-      await retainTransactionCodes(tx, 'pembiayaan', deleted)
     })
   },
 

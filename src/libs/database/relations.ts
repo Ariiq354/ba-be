@@ -9,7 +9,6 @@ import * as masterSchema from './schema/master'
 import * as pembiayaanSchema from './schema/pembiayaan'
 import * as shuSchema from './schema/shu'
 import * as simpananSchema from './schema/simpanan'
-import * as transactionSchema from './schema/transaction'
 import * as usersSchema from './schema/users'
 import * as wilayahSchema from './schema/wilayah'
 
@@ -24,7 +23,6 @@ export const relations = defineRelations(
     ...pembiayaanSchema,
     ...shuSchema,
     ...simpananSchema,
-    ...transactionSchema,
     ...usersSchema,
     ...wilayahSchema,
   },

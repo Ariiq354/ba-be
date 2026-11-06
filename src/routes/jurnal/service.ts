@@ -7,7 +7,6 @@ import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { masterInputTransaksi } from '#/libs/database/schema/master'
 import { ItemNotFoundError } from '#/libs/errors'
-import { retainTransactionCodes } from '#/libs/transaction'
 
 import type * as JurnalModel from './model'
 
@@ -171,7 +170,6 @@ export const JurnalService = {
         .select({
           id: jurnal.id,
           kodeTransaksi: jurnal.kodeTransaksi,
-          tanggalTransaksi: jurnal.tanggalTransaksi,
         })
         .from(jurnal)
         .where(inArray(jurnal.id, uniqueIds))
@@ -190,7 +188,6 @@ export const JurnalService = {
         throw new AutoJurnalsImmutableError({ ids: protectedIds })
       }
 
-      await retainTransactionCodes(tx, 'jurnal', existing)
       await tx.delete(jurnal).where(inArray(jurnal.id, uniqueIds))
     })
   },
