@@ -14,6 +14,7 @@ import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transact
 import type * as PemindahbukuanModel from './model'
 
 import { HargaSahamNotFoundError, InvalidRejectionReasonError } from '../simpanan/errors'
+import { assertActiveAccounts, assertMember } from '../simpanan/utils'
 import {
   PemindahbukuanAlreadyProcessedError,
   PemindahbukuanNotDeletedError,
@@ -21,9 +22,7 @@ import {
 } from './errors'
 import {
   approver,
-  assertAccounts,
   assertAvailableBalance,
-  assertMember,
   assertTransferDestination,
   creator,
   destinationAccount,
@@ -175,7 +174,7 @@ export const PemindahbukuanService = {
         agioSaham,
       }
 
-      await assertAccounts(tx, getRequiredAccountIds(target))
+      await assertActiveAccounts(tx, getRequiredAccountIds(target))
       await assertAvailableBalance(tx, target, balance)
 
       const tanggalTransaksi = getJakartaDate()
@@ -240,7 +239,7 @@ export const PemindahbukuanService = {
       const destination = balances.get(target.idUserTujuan)!
 
       await assertAvailableBalance(tx, target, source, target.id)
-      await assertAccounts(tx, getRequiredAccountIds(target))
+      await assertActiveAccounts(tx, getRequiredAccountIds(target))
 
       if (target.tipePemindahbukuan === 'saham_ke_saham') {
         await tx

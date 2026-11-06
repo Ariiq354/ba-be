@@ -2,7 +2,6 @@ import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 
 import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
@@ -14,8 +13,8 @@ import type * as AngsuranModel from './model'
 
 import { PembiayaanNotFoundError } from '../pembiayaan/errors'
 import { PAYMENT_ACCOUNTS } from '../simpanan/constants'
-import { InvalidAccountError, InvalidRejectionReasonError } from '../simpanan/errors'
-import { approver, assertMember, assertPaymentAccount, creator, member } from '../simpanan/utils'
+import { InvalidRejectionReasonError } from '../simpanan/errors'
+import { approver, assertActiveAccounts, assertMember, assertPaymentAccount, creator, member } from '../simpanan/utils'
 import {
   AngsuranAlreadyProcessedError,
   AngsuranExceedsRemainingError,
@@ -219,21 +218,7 @@ export const AngsuranService = {
         AkunId.PIUTANGMURABAHAH,
         ...(jumlahMargin > 0 ? [AkunId.PENDAPATANMURABAHAHDITANGGUHKAN, AkunId.PENDAPATANMURABAHAH] : []),
       ]
-      const accounts = await tx
-        .select({ id: akun.id, isActive: akun.isActive })
-        .from(akun)
-        .where(inArray(akun.id, requiredAccountIds))
-        .orderBy(akun.id)
-        .for('share')
-      const accountsById = new Map(accounts.map((account) => [account.id, account]))
-      for (const requiredAccountId of requiredAccountIds) {
-        if (!accountsById.get(requiredAccountId)?.isActive) {
-          throw new InvalidAccountError({
-            akunId: requiredAccountId,
-            message: 'Akun jurnal yang diperlukan tidak tersedia',
-          })
-        }
-      }
+      await assertActiveAccounts(tx, requiredAccountIds)
 
       const [createdJournal] = await tx
         .insert(jurnal)

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import type { db, Transaction } from '#/libs/database'
@@ -29,9 +29,24 @@ export async function assertPaymentAccount(tx: Transaction, akunId: number) {
     .select({ id: akun.id, isActive: akun.isActive })
     .from(akun)
     .where(eq(akun.id, akunId))
-    .for('share')
 
   if (!paymentAccount?.isActive) {
     throw new InvalidAccountError({ akunId })
+  }
+}
+
+export async function assertActiveAccounts(tx: Transaction, accountIds: number[]) {
+  const accounts = await tx
+    .select({ id: akun.id, isActive: akun.isActive })
+    .from(akun)
+    .where(inArray(akun.id, accountIds))
+  const activeIds = new Set(accounts.filter((account) => account.isActive).map((account) => account.id))
+  const invalidId = accountIds.find((id) => !activeIds.has(id))
+
+  if (invalidId !== undefined) {
+    throw new InvalidAccountError({
+      akunId: invalidId,
+      message: 'Akun jurnal yang diperlukan tidak tersedia',
+    })
   }
 }

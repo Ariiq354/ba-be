@@ -17,7 +17,7 @@ import type * as PembiayaanModel from './model'
 import { roundProportion } from '../angsuran/utils'
 import { PAYMENT_ACCOUNTS } from '../simpanan/constants'
 import { InvalidRejectionReasonError } from '../simpanan/errors'
-import { assertMember, assertPaymentAccount } from '../simpanan/utils'
+import { assertActiveAccounts, assertMember, assertPaymentAccount } from '../simpanan/utils'
 import {
   InvalidPembiayaanError,
   MarginOverrideForbiddenError,
@@ -29,7 +29,7 @@ import {
   PembiayaanNotTransferredError,
   PembiayaanTransferredCancellationError,
 } from './errors'
-import { assertJournalAccounts, recordWakalahTransfer } from './utils'
+import { recordWakalahTransfer } from './utils'
 
 const member = alias(user, 'member')
 const creator = alias(user, 'creator')
@@ -260,7 +260,7 @@ export const PembiayaanService = {
     }
 
     await db.transaction(async (tx) => {
-      const [actor] = await tx.select({ role: user.role }).from(user).where(eq(user.id, actorId)).for('share')
+      const [actor] = await tx.select({ role: user.role }).from(user).where(eq(user.id, actorId))
       if (!actor) {
         throw new ItemNotFoundError({ id: actorId, message: 'Pengguna tidak ditemukan' })
       }
@@ -283,7 +283,6 @@ export const PembiayaanService = {
         )
         .orderBy(desc(margin.minNominal), desc(margin.id))
         .limit(1)
-        .for('share')
       if (!selectedMargin) {
         throw new MarginPembiayaanNotFoundError()
       }
@@ -390,7 +389,7 @@ export const PembiayaanService = {
         ...(target.jumlahMargin > 0 ? [AkunId.PENDAPATANMURABAHAHDITANGGUHKAN] : []),
         ...(target.biayaAkad > 0 ? [target.akunId, AkunId.PENDAPATANADMINISTRASIAKAD] : []),
       ]
-      await assertJournalAccounts(tx, requiredAccountIds)
+      await assertActiveAccounts(tx, requiredAccountIds)
 
       const [createdJournal] = await tx
         .insert(jurnal)

@@ -1,17 +1,16 @@
-import { asc, eq, inArray } from 'drizzle-orm'
+import { asc, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
-import type { db, Transaction } from '#/libs/database'
+import type { Transaction } from '#/libs/database'
 import type { pemindahbukuan } from '#/libs/database/schema/simpanan'
 
 import { AkunId } from '#/libs/config'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { saldoSimpanan } from '#/libs/database/schema/simpanan'
-import { userProfile } from '#/libs/database/schema/users'
 import { getPendingSimpanan } from '#/libs/simpananBalance'
 
-import { InsufficientBalanceError, InvalidAccountError, NotMemberError } from '../simpanan/errors'
+import { InsufficientBalanceError } from '../simpanan/errors'
 import { InsufficientSharesError, InvalidConversionDestinationError, InvalidTransferDestinationError } from './errors'
 
 type Transfer = typeof pemindahbukuan.$inferSelect
@@ -33,37 +32,6 @@ export function assertTransferDestination(
     }
   } else if (sameMember) {
     throw new InvalidTransferDestinationError()
-  }
-}
-
-export async function assertMember(connection: typeof db | Transaction, userId: number) {
-  const [profile] = await connection
-    .select({ noAnggota: userProfile.noAnggota })
-    .from(userProfile)
-    .where(eq(userProfile.idUser, userId))
-    .for('share')
-
-  if (!profile?.noAnggota?.trim()) {
-    throw new NotMemberError({ userId })
-  }
-}
-
-export async function assertAccounts(tx: Transaction, accountIds: number[]) {
-  const ids = [...new Set(accountIds)].toSorted((a, b) => a - b)
-  const accounts = await tx
-    .select({ id: akun.id, isActive: akun.isActive })
-    .from(akun)
-    .where(inArray(akun.id, ids))
-    .orderBy(asc(akun.id))
-    .for('share')
-  const accountsById = new Map(accounts.map((account) => [account.id, account]))
-  const invalidId = ids.find((id) => !accountsById.get(id)?.isActive)
-
-  if (invalidId !== undefined) {
-    throw new InvalidAccountError({
-      akunId: invalidId,
-      message: 'Akun jurnal yang diperlukan tidak tersedia',
-    })
   }
 }
 

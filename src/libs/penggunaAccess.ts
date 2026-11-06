@@ -13,7 +13,6 @@ export async function getPenggunaAccessCondition(connection: Connection, actorId
     .select({ role: user.role, idKelompok: user.idKelompok })
     .from(user)
     .where(eq(user.id, actorId))
-    .for('share')
 
   if (!actor) {
     throw new ItemNotFoundError({ id: actorId, message: 'Pengguna tidak ditemukan' })
@@ -40,7 +39,6 @@ export async function assertPenggunaAccess(connection: Connection, actorId: numb
     .select({ id: user.id })
     .from(user)
     .where(and(eq(user.id, targetId), condition))
-    .for('share')
 
   if (!target) {
     throw new PenggunaAccessDeniedError()

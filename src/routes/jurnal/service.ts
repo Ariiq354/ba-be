@@ -1,7 +1,5 @@
 import { asc, desc, eq, ilike, inArray } from 'drizzle-orm'
 
-import type { Transaction } from '#/libs/database'
-
 import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
@@ -9,17 +7,14 @@ import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { masterInputTransaksi } from '#/libs/database/schema/master'
 import { ItemNotFoundError } from '#/libs/errors'
-import { allocateTransactionCode, retainTransactionCodes } from '#/libs/transaction'
+import { retainTransactionCodes } from '#/libs/transaction'
 
 import type * as JurnalModel from './model'
 
 import {
-  AkunNotFoundError,
   AutoJurnalsImmutableError,
-  InactiveAkunError,
   InactiveTemplateError,
   InvalidJurnalError,
-  InvalidJurnalIdsError,
   JurnalsNotFoundError,
   UnbalancedJurnalError,
 } from './errors'
@@ -27,6 +22,7 @@ import {
   buildLaporanAkun,
   buildRingkasanLabaRugi,
   getMutasiBulanan,
+  insertJurnal,
   jurnalDetailSelection,
   jurnalHeaderSelection,
   sum,
@@ -129,7 +125,6 @@ export const JurnalService = {
         .select()
         .from(masterInputTransaksi)
         .where(eq(masterInputTransaksi.id, data.masterInputTransaksiId))
-        .for('share')
 
       if (!template) {
         throw new ItemNotFoundError({
@@ -142,53 +137,18 @@ export const JurnalService = {
         throw new InactiveTemplateError({ id: template.id })
       }
 
-      await JurnalService.createJurnal(
-        userId,
-        {
-          tanggalTransaksi: data.tanggalTransaksi,
-          keterangan: data.keterangan,
-          details: [
-            { akunId: template.akunDebitId, debit: data.nominal, kredit: 0 },
-            { akunId: template.akunKreditId, debit: 0, kredit: data.nominal },
-          ],
-        },
-        tx,
-      )
+      await insertJurnal(tx, userId, {
+        tanggalTransaksi: data.tanggalTransaksi,
+        keterangan: data.keterangan,
+        details: [
+          { akunId: template.akunDebitId, debit: data.nominal, kredit: 0 },
+          { akunId: template.akunKreditId, debit: 0, kredit: data.nominal },
+        ],
+      })
     })
   },
 
-  async createJurnal(userId: number, data: JurnalModel.Post['Body'], transaction?: Transaction) {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data.tanggalTransaksi)
-    if (!match) {
-      throw new InvalidJurnalError({ reason: 'invalid_date' })
-    }
-
-    const year = Number(match[1])
-    const month = Number(match[2])
-    const day = Number(match[3])
-    const date = new Date(0)
-    date.setUTCHours(0, 0, 0, 0)
-    date.setUTCFullYear(year, month - 1, day)
-
-    if (year === 0 || date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-      throw new InvalidJurnalError({ reason: 'invalid_date' })
-    }
-
-    if (
-      data.details.length < 2 ||
-      data.details.some(
-        (detail) =>
-          !Number.isInteger(detail.akunId) ||
-          detail.akunId < 1 ||
-          !Number.isInteger(detail.debit) ||
-          detail.debit < 0 ||
-          !Number.isInteger(detail.kredit) ||
-          detail.kredit < 0,
-      )
-    ) {
-      throw new InvalidJurnalError({ reason: 'invalid_details' })
-    }
-
+  async createJurnal(userId: number, data: JurnalModel.Post['Body']) {
     const totalDebit = data.details.reduce((total, detail) => total + detail.debit, 0)
     const totalKredit = data.details.reduce((total, detail) => total + detail.kredit, 0)
 
@@ -200,60 +160,11 @@ export const JurnalService = {
       throw new UnbalancedJurnalError({ totalDebit, totalKredit })
     }
 
-    await (transaction ?? db).transaction(async (tx) => {
-      const akunIds = [...new Set(data.details.map((detail) => detail.akunId))]
-      const akunRows = await tx
-        .select({
-          id: akun.id,
-          isActive: akun.isActive,
-        })
-        .from(akun)
-        .where(inArray(akun.id, akunIds))
-        .for('share')
-
-      const akunById = new Map(akunRows.map((row) => [row.id, row]))
-      const missingAkunIds = akunIds.filter((id) => !akunById.has(id))
-      if (missingAkunIds.length > 0) {
-        throw new AkunNotFoundError({ ids: missingAkunIds })
-      }
-
-      const inactiveAkunIds = akunIds.filter((id) => !akunById.get(id)?.isActive)
-      if (inactiveAkunIds.length > 0) {
-        throw new InactiveAkunError({ ids: inactiveAkunIds })
-      }
-
-      const kodeTransaksi = await allocateTransactionCode(tx, 'jurnal', data.tanggalTransaksi)
-      const [header] = await tx
-        .insert(jurnal)
-        .values({
-          kodeTransaksi,
-          tanggalTransaksi: data.tanggalTransaksi,
-          keterangan: data.keterangan ?? null,
-        })
-        .returning({ id: jurnal.id })
-
-      if (!header) {
-        throw new Error('Jurnal header insert returned no row')
-      }
-
-      await tx.insert(jurnalDetail).values(
-        data.details.map((detail) => ({
-          jurnalId: header.id,
-          akunId: detail.akunId,
-          userId,
-          debit: detail.debit,
-          kredit: detail.kredit,
-        })),
-      )
-    })
+    await db.transaction((tx) => insertJurnal(tx, userId, data))
   },
 
   async deleteJurnal(ids: JurnalModel.Delete['Body']['ids']) {
     const uniqueIds = [...new Set(ids)]
-
-    if (uniqueIds.length === 0) {
-      return new InvalidJurnalIdsError()
-    }
 
     await db.transaction(async (tx) => {
       const existing = await tx

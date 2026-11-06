@@ -6,6 +6,11 @@ import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
+import { allocateTransactionCode } from '#/libs/transaction'
+
+import type * as JurnalModel from './model'
+
+import { AkunNotFoundError, InactiveAkunError } from './errors'
 
 export const jurnalHeaderSelection = {
   id: jurnal.id,
@@ -22,6 +27,45 @@ export const jurnalDetailSelection = {
   userName: user.name,
   debit: jurnalDetail.debit,
   kredit: jurnalDetail.kredit,
+}
+
+export async function insertJurnal(tx: Transaction, userId: number, data: JurnalModel.Post['Body']) {
+  const akunIds = [...new Set(data.details.map((detail) => detail.akunId))]
+  const accounts = await tx.select({ id: akun.id, isActive: akun.isActive }).from(akun).where(inArray(akun.id, akunIds))
+  const accountsById = new Map(accounts.map((account) => [account.id, account]))
+  const missingIds = akunIds.filter((id) => !accountsById.has(id))
+  if (missingIds.length > 0) {
+    throw new AkunNotFoundError({ ids: missingIds })
+  }
+
+  const inactiveIds = akunIds.filter((id) => !accountsById.get(id)?.isActive)
+  if (inactiveIds.length > 0) {
+    throw new InactiveAkunError({ ids: inactiveIds })
+  }
+
+  const kodeTransaksi = await allocateTransactionCode(tx, 'jurnal', data.tanggalTransaksi)
+  const [header] = await tx
+    .insert(jurnal)
+    .values({
+      kodeTransaksi,
+      tanggalTransaksi: data.tanggalTransaksi,
+      keterangan: data.keterangan ?? null,
+    })
+    .returning({ id: jurnal.id })
+
+  if (!header) {
+    throw new Error('Jurnal header insert returned no row')
+  }
+
+  await tx.insert(jurnalDetail).values(
+    data.details.map((detail) => ({
+      jurnalId: header.id,
+      akunId: detail.akunId,
+      userId,
+      debit: detail.debit,
+      kredit: detail.kredit,
+    })),
+  )
 }
 
 export async function getMutasiBulanan(

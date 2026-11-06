@@ -1,4 +1,4 @@
-import Elysia, { HTTPError, status } from 'elysia'
+import Elysia, { status } from 'elysia'
 
 import { AuthMacro } from '#/plugins/macro'
 
@@ -66,8 +66,7 @@ export const JurnalRoutes = new Elysia({ prefix: 'jurnal', tags: ['Jurnal'] })
       response: JurnalModel.Delete.Response,
     },
     async ({ body }) => {
-      const result = await JurnalService.deleteJurnal(body.ids)
-      if (result instanceof HTTPError) return result
+      await JurnalService.deleteJurnal(body.ids)
       return status(200, { message: 'Success' })
     },
   )

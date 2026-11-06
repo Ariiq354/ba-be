@@ -69,7 +69,7 @@ export type PendingCountGet = UnwrapModels<typeof PendingCountGet>
 export const Post = {
   Body: t.Object({
     pembiayaanId: databaseIdSchema,
-    jumlahPembayaran: t.Integer({ minimum: 1, maximum: 2_147_483_647 }),
+    jumlahPembayaran: t.Integer({ minimum: 1 }),
     metodePembayaran: paymentMethodSchema,
     keterangan: t.Optional(t.String()),
   }),

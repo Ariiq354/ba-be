@@ -1,38 +1,17 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 import type { Transaction } from '#/libs/database'
 
 import { AkunId } from '#/libs/config'
-import { akun } from '#/libs/database/schema/akun'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { pembiayaan } from '#/libs/database/schema/pembiayaan'
 import { getJakartaDate } from '#/libs/date'
 
-import { InvalidAccountError } from '../simpanan/errors'
-import { assertMember } from '../simpanan/utils'
-
-export async function assertJournalAccounts(tx: Transaction, requiredAccountIds: number[]) {
-  const accounts = await tx
-    .select({ id: akun.id, isActive: akun.isActive })
-    .from(akun)
-    .where(inArray(akun.id, requiredAccountIds))
-    .orderBy(akun.id)
-    .for('share')
-  const accountsById = new Map(accounts.map((account) => [account.id, account]))
-
-  for (const requiredAccountId of requiredAccountIds) {
-    if (!accountsById.get(requiredAccountId)?.isActive) {
-      throw new InvalidAccountError({
-        akunId: requiredAccountId,
-        message: 'Akun jurnal yang diperlukan tidak tersedia',
-      })
-    }
-  }
-}
+import { assertActiveAccounts, assertMember } from '../simpanan/utils'
 
 export async function recordWakalahTransfer(tx: Transaction, target: typeof pembiayaan.$inferSelect, adminId: number) {
   await assertMember(tx, target.userId)
-  await assertJournalAccounts(tx, [target.akunId, AkunId.UANGMUKAPEMBELIAN])
+  await assertActiveAccounts(tx, [target.akunId, AkunId.UANGMUKAPEMBELIAN])
 
   const transferredAt = new Date()
   const tanggalTransfer = getJakartaDate(transferredAt)

@@ -2,7 +2,6 @@ import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { kelompok } from '#/libs/database/schema/kelompok'
@@ -22,14 +21,13 @@ import { PAYMENT_ACCOUNTS } from './constants'
 import {
   HargaSahamNotFoundError,
   InsufficientBalanceError,
-  InvalidAccountError,
   InvalidRejectionReasonError,
   MutasiSimpananAlreadyProcessedError,
   MutasiSimpananNotDeletedError,
   MutasiSimpananNotFoundError,
   NotMemberError,
 } from './errors'
-import { approver, assertMember, assertPaymentAccount, creator, member } from './utils'
+import { approver, assertActiveAccounts, assertMember, assertPaymentAccount, creator, member } from './utils'
 
 export const SimpananService = {
   async getMonitoring(query: SimpananModel.MonitoringGet['Query']) {
@@ -411,20 +409,7 @@ export const SimpananService = {
               AkunId.SAHAM50,
               ...(target.hargaPerSaham === target.hargaNominalPerSaham ? [] : [AkunId.AGIOSAHAM]),
             ]
-      const availableAccounts = await tx
-        .select({ id: akun.id, isActive: akun.isActive })
-        .from(akun)
-        .where(inArray(akun.id, requiredAccountIds))
-        .for('share')
-      const availableAccountsById = new Map(availableAccounts.map((item) => [item.id, item]))
-      const invalidAccountId = requiredAccountIds.find((akunId) => !availableAccountsById.get(akunId)?.isActive)
-
-      if (invalidAccountId !== undefined) {
-        throw new InvalidAccountError({
-          akunId: invalidAccountId,
-          message: 'Akun jurnal yang diperlukan tidak tersedia',
-        })
-      }
+      await assertActiveAccounts(tx, requiredAccountIds)
 
       const [createdJournal] = await tx
         .insert(jurnal)

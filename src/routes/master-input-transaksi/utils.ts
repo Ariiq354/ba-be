@@ -14,7 +14,6 @@ export async function validateTemplateAkun(tx: Transaction, akunDebitId: number,
     .from(akun)
     .where(inArray(akun.id, ids))
     .orderBy(asc(akun.id))
-    .for('share')
 
   const existingIds = new Set(rows.map((row) => row.id))
   const missingIds = ids.filter((id) => !existingIds.has(id))

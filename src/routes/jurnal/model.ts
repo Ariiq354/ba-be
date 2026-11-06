@@ -119,7 +119,7 @@ export const Post = {
     keterangan: t.Optional(t.Nullable(t.String())),
     details: t.Array(
       t.Object({
-        akunId: t.Integer(),
+        akunId: t.Integer({ minimum: 1 }),
         debit: amountSchema,
         kredit: amountSchema,
       }),
@@ -152,7 +152,7 @@ export type TemplatePost = UnwrapModels<typeof TemplatePost>
 
 export const Delete = {
   Body: t.Object({
-    ids: t.Array(t.Integer(), { minItems: 1 }),
+    ids: t.Array(t.Integer({ minimum: 1 }), { minItems: 1 }),
   }),
   Response: {
     200: SuccessSchema,

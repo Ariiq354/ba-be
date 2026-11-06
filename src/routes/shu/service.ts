@@ -14,7 +14,8 @@ import { allocateTransactionCode } from '#/libs/transaction'
 import type * as ShuModel from './model'
 import type { ShuMutation } from './utils'
 
-import { assertAccounts, lockBalances } from '../pemindahbukuan/utils'
+import { lockBalances } from '../pemindahbukuan/utils'
+import { assertActiveAccounts } from '../simpanan/utils'
 import { InvalidShuError, ShuAlreadyExistsError, ShuAlreadyTransferredError, ShuNotFoundError } from './errors'
 import { allocateShu, calculateBobot, getLabaShu } from './utils'
 
@@ -191,7 +192,7 @@ export const ShuService = {
       if (totalShu <= 0) {
         throw new InvalidShuError('Total SHU harus lebih besar dari nol')
       }
-      await assertAccounts(tx, [AkunId.LABARUGITAHUNBERJALAN, AkunId.SIMPANANBERJANGKA])
+      await assertActiveAccounts(tx, [AkunId.LABARUGITAHUNBERJALAN, AkunId.SIMPANANBERJANGKA])
       const balances = await lockBalances(
         tx,
         entries.map((entry) => entry.idUser),
