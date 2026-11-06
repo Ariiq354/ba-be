@@ -14,11 +14,11 @@
     "@elysia/cors": "^2.0.0-rc.1",
     "@elysia/cron": "^2.0.0-rc.0",
     "@elysia/openapi": "^2.0.0-rc.1",
-    "better-auth": "^1.7.17",
+    "better-auth": "^1.7.18",
     "drizzle-orm": "^1.0.0-rc.5-ab785fc",
-    "elysia": "^2.0.0-rc.1",
+    "elysia": "^2.0.0-rc.3",
     "exact-mirror": "^1.2.7",
-    "postgres": "^4.0.0"
+    "postgres": "^4.1.0"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",
