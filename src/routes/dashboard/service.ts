@@ -26,15 +26,6 @@ export const DashboardService = {
       .orderBy(desc(saham.createdAt), desc(saham.id))
       .limit(2)
 
-    const [totalPembiayaan] = await db
-      .select({
-        total: sql`coalesce(sum(${pembiayaan.jumlahPokok}::bigint + ${pembiayaan.jumlahMargin}::bigint), 0)`.mapWith(
-          Number,
-        ),
-      })
-      .from(pembiayaan)
-      .where(eq(pembiayaan.statusApproved, 'approved'))
-
     const tahunPembiayaan = sql`extract(year from ${pembiayaan.tanggalPembiayaan})`
     const pembiayaanTahunan = await db
       .select({
@@ -121,7 +112,9 @@ export const DashboardService = {
         data: grafikPembiayaanTahunan,
       },
       pembiayaanBerjalan: {
-        total: totalPembiayaan?.total ?? 0,
+        periodeMulai: awalTahun,
+        periodeSelesai: tanggal,
+        total: pembiayaanPerTahun.get(tahun) ?? 0,
       },
       labaBerjalan: {
         periodeMulai: awalTahun,

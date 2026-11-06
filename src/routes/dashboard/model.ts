@@ -30,6 +30,7 @@ export const Get = {
         ),
       }),
       pembiayaanBerjalan: t.Object({
+        ...periodeSchema,
         total: t.Number(),
       }),
       labaBerjalan: t.Object({
