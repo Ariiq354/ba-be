@@ -9,8 +9,6 @@ const periodeSchema = {
   periodeSelesai: t.String({ format: 'date' }),
 }
 
-const bulanSchema = t.String({ pattern: '^\\d{4}-(0[1-9]|1[0-2])$' })
-
 export const Get = {
   Response: {
     200: t.Object({
@@ -22,22 +20,25 @@ export const Get = {
         perubahanNominal: t.Nullable(t.Integer()),
         perubahanPersen: t.Nullable(t.Number()),
       }),
-      grafikHargaSaham: t.Object({
+      grafikPembiayaanTahunan: t.Object({
         ...periodeSchema,
         data: t.Array(
           t.Object({
-            bulan: bulanSchema,
-            hargaJual: t.Nullable(t.Integer()),
+            tahun: t.Integer(),
+            total: t.Number(),
           }),
         ),
+      }),
+      pembiayaanBerjalan: t.Object({
+        total: t.Number(),
       }),
       labaBerjalan: t.Object({
         ...periodeSchema,
         total: t.Number(),
       }),
-      grafikLabaBulanan: t.Array(
+      grafikLabaTahunan: t.Array(
         t.Object({
-          bulan: bulanSchema,
+          tahun: t.Integer(),
           pendapatan: t.Number(),
           biaya: t.Number(),
           laba: t.Number(),

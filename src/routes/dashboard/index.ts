@@ -17,7 +17,7 @@ export const DashboardRoutes = new Elysia({
       response: DashboardModel.Get.Response,
       detail: {
         description:
-          'Ringkasan harga jual resmi saham, perubahan dari pencatatan sebelumnya, harga terakhir tiap bulan selama 12 bulan terakhir, serta laba koperasi sejak 1 Januari sampai hari ini (Asia/Jakarta). Harga grafik diteruskan dari bulan sebelumnya jika tidak berubah, dan null sebelum pencatatan pertama. Laba bulanan tidak bersifat kumulatif; bulan berjalan belum final.',
+          'Ringkasan harga jual resmi saham dan perubahan dari pencatatan sebelumnya, total seluruh pembiayaan approved (pokok + margin, tanpa dikurangi angsuran), serta laba koperasi sejak 1 Januari sampai hari ini (Asia/Jakarta). Grafik pembiayaan approved berdasarkan tanggal pembiayaan dan grafik laba disajikan per tahun sejak 2018 sampai hari ini; tahun tanpa data bernilai 0. Grafik tahunan tidak bersifat kumulatif; tahun berjalan belum final.',
       },
     },
     async () => DashboardService.getDashboard(),
