@@ -8,6 +8,19 @@ import { ShuService } from './service'
 export const ShuRoutes = new Elysia({ prefix: 'shu', tags: ['SHU'] })
   .use(AuthMacro)
   .get(
+    '/monitoring',
+    {
+      admin: true,
+      query: ShuModel.MonitoringGet.Query,
+      response: ShuModel.MonitoringGet.Response,
+      detail: {
+        description:
+          'Monitoring SHU seluruh pengguna tanpa pagination, khusus admin. tahun wajib dan idKelompok opsional. Pengguna tanpa catatan SHU pada tahun tersebut tetap ditampilkan dengan nominal nol serta id dan dialihkanAt null.',
+      },
+    },
+    ({ query }) => ShuService.getMonitoring(query),
+  )
+  .get(
     '/',
     {
       auth: true,

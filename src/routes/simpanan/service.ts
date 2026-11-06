@@ -1,10 +1,11 @@
-import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
 import { akun } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
+import { kelompok } from '#/libs/database/schema/kelompok'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
 import { mutasiSimpanan, saldoSimpanan } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
@@ -31,6 +32,33 @@ import {
 import { approver, assertMember, assertPaymentAccount, creator, member } from './utils'
 
 export const SimpananService = {
+  async getMonitoring(query: SimpananModel.MonitoringGet['Query']) {
+    const rows = await db
+      .select({
+        userId: user.id,
+        nama: user.name,
+        noAnggota: userProfile.noAnggota,
+        idKelompok: user.idKelompok,
+        namaKelompok: kelompok.namaKelompok,
+        saldoTabungan: sql`coalesce(${saldoSimpanan.saldoTabungan}, 0)`.mapWith(Number),
+        jumlahSaham: sql`coalesce(${saldoSimpanan.jumlahSaham}, 0)`.mapWith(Number),
+        totalSaham: sql`(select coalesce(sum(${saldoSimpanan.jumlahSaham}), 0) from ${saldoSimpanan})`.mapWith(Number),
+      })
+      .from(user)
+      .innerJoin(kelompok, eq(kelompok.id, user.idKelompok))
+      .leftJoin(userProfile, eq(userProfile.idUser, user.id))
+      .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, user.id))
+      .where(query.idKelompok === undefined ? undefined : eq(user.idKelompok, query.idKelompok))
+      .orderBy(asc(user.name), asc(user.id))
+
+    return {
+      data: rows.map(({ totalSaham, ...row }) => ({
+        ...row,
+        persentaseKepemilikanSaham: totalSaham > 0 ? (row.jumlahSaham / totalSaham) * 100 : 0,
+      })),
+    } satisfies SimpananModel.MonitoringGet['Response'][200]
+  },
+
   async getSaldo(actorId: number, userId: SimpananModel.SaldoGet['Query']['userId'] = actorId) {
     await assertPenggunaAccess(db, actorId, userId)
 

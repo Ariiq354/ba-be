@@ -8,6 +8,19 @@ import { SimpananService } from './service'
 export const SimpananRoutes = new Elysia({ prefix: 'simpanan', tags: ['Simpanan'] })
   .use(AuthMacro)
   .get(
+    '/monitoring',
+    {
+      admin: true,
+      query: SimpananModel.MonitoringGet.Query,
+      response: SimpananModel.MonitoringGet.Response,
+      detail: {
+        description:
+          'Monitoring seluruh pengguna tanpa pagination, khusus admin. idKelompok opsional. Pengguna tanpa saldo tetap ditampilkan dengan nilai nol. Persentase kepemilikan dihitung dari saldo saham approved terhadap total saham seluruh koperasi, tidak terpengaruh filter kelompok; nol jika belum ada saham.',
+      },
+    },
+    ({ query }) => SimpananService.getMonitoring(query),
+  )
+  .get(
     '/saldo',
     {
       auth: true,

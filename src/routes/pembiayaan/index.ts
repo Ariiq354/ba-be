@@ -8,6 +8,18 @@ import { PembiayaanService } from './service'
 export const PembiayaanRoutes = new Elysia({ prefix: 'pembiayaan', tags: ['Pembiayaan'] })
   .use(AuthMacro)
   .get(
+    '/monitoring',
+    {
+      admin: true,
+      response: PembiayaanModel.MonitoringGet.Response,
+      detail: {
+        description:
+          'Monitoring seluruh pembiayaan approved termasuk yang lunas, tanpa pagination, khusus admin. Sisa pembiayaan adalah pokok + margin dikurangi pembayaran angsuran approved, minimum nol; biaya akad tidak termasuk tagihan. Tanggal akhir angsuran adalah tanggal akad + tenor bulan, menyesuaikan akhir bulan jika tanggal tidak tersedia. Tanggal akhir null jika tanggal akad belum tersedia.',
+      },
+    },
+    () => PembiayaanService.getMonitoring(),
+  )
+  .get(
     '/options',
     {
       auth: true,

@@ -64,6 +64,40 @@ export const Get = {
 
 export type Get = UnwrapModels<typeof Get>
 
+export const MonitoringGet = {
+  Response: {
+    200: t.Object({
+      data: t.Array(
+        t.Object({
+          id: t.Integer(),
+          kodeTransaksi: t.String(),
+          userId: t.Integer(),
+          memberName: t.String(),
+          noAnggota: t.Nullable(t.String()),
+          idKelompok: t.Integer(),
+          namaKelompok: t.String(),
+          jumlahPokok: t.Integer(),
+          persenMarginTahun: t.Integer(),
+          jumlahMargin: t.Integer(),
+          biayaAkad: t.Integer(),
+          totalPembiayaan: t.Integer(),
+          tujuan: t.String(),
+          jangkaWaktuBulan: t.Integer(),
+          tanggalPembiayaan: t.Nullable(t.String({ format: 'date' })),
+          statusApproved: t.Literal('approved'),
+          totalPembayaran: t.Integer(),
+          sisaPembiayaan: t.Integer(),
+          tanggalAkhirAngsuran: t.Nullable(t.String({ format: 'date' })),
+        }),
+      ),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+  },
+} as const
+
+export type MonitoringGet = UnwrapModels<typeof MonitoringGet>
+
 export const PendingCountGet = {
   Response: {
     200: t.Object({ total: t.Integer({ minimum: 0 }) }),

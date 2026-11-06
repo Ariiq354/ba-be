@@ -78,6 +78,31 @@ export const SaldoGet = {
 
 export type SaldoGet = UnwrapModels<typeof SaldoGet>
 
+export const MonitoringGet = {
+  Query: t.Object({ idKelompok: t.Optional(databaseIdSchema) }),
+  Response: {
+    200: t.Object({
+      data: t.Array(
+        t.Object({
+          userId: t.Integer(),
+          nama: t.String(),
+          noAnggota: t.Nullable(t.String()),
+          idKelompok: t.Integer(),
+          namaKelompok: t.String(),
+          saldoTabungan: t.Integer(),
+          jumlahSaham: t.Integer(),
+          persentaseKepemilikanSaham: t.Number(),
+        }),
+      ),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    422: ValidationErrorSchema,
+  },
+} as const
+
+export type MonitoringGet = UnwrapModels<typeof MonitoringGet>
+
 export const MutasiGet = {
   Query: t.Object({
     page: t.Integer({ minimum: 1, default: 1 }),
