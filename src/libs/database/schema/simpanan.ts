@@ -1,4 +1,4 @@
-import { date, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
+import { date, index, integer, numeric, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
 import { akunKeuangan } from './akun'
 import { user } from './auth'
@@ -20,7 +20,7 @@ export const simpananSaldo = snakeCase.table('simpanan_saldo', {
     .references(() => user.id, { onDelete: 'cascade' })
     .unique(),
   saldoTabungan: integer().notNull().default(0),
-  jumlahSaham: integer().notNull().default(0),
+  jumlahSaham: numeric({ precision: 11, scale: 1, mode: 'number' }).notNull().default(0),
   ...createdUpdated,
 })
 
@@ -38,12 +38,12 @@ export const simpananRiwayat = snakeCase.table(
     jenisTransaksi: jenisTransaksiEnum().notNull(),
     jenisSimpanan: jenisSimpananEnum().notNull(),
     nilaiTransaksi: integer().notNull(),
-    jumlahSaham: integer().notNull().default(0),
+    jumlahSaham: numeric({ precision: 11, scale: 1, mode: 'number' }).notNull().default(0),
     hargaPerSaham: integer().notNull().default(0),
     hargaNominalPerSaham: integer().notNull().default(0),
     agioSaham: integer().notNull().default(0),
     saldoSetelahTransaksi: integer(),
-    jumlahSahamSetelahTransaksi: integer(),
+    jumlahSahamSetelahTransaksi: numeric({ precision: 11, scale: 1, mode: 'number' }),
     tanggalTransaksi: date().notNull(),
     statusApproved: approvedStatusEnum().notNull().default('pending'),
     alasanPenolakan: text(),
@@ -80,7 +80,7 @@ export const pemindahbukuan = snakeCase.table(
       .notNull()
       .references(() => akunKeuangan.id),
     nominal: integer().notNull(),
-    jumlahSaham: integer().notNull().default(0),
+    jumlahSaham: numeric({ precision: 11, scale: 1, mode: 'number' }).notNull().default(0),
     hargaPerSaham: integer().notNull().default(0),
     hargaNominalPerSaham: integer().notNull().default(0),
     agioSaham: integer().notNull().default(0),

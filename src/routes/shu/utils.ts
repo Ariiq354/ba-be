@@ -12,7 +12,7 @@ export interface ShuMutation {
   jumlah: number
 }
 
-export function calculateBobot(tahun: number, mutations: ShuMutation[]) {
+export function calculateBobot(tahun: number, mutations: ShuMutation[], unitMultiplier: 1 | 2 = 1) {
   const year = String(tahun).padStart(4, '0')
   const start = Date.parse(`${year}-01-01T00:00:00Z`) / 86400000
   const end = Date.parse(`${year}-12-31T00:00:00Z`) / 86400000 + 1
@@ -39,11 +39,11 @@ export function calculateBobot(tahun: number, mutations: ShuMutation[]) {
     }
 
     if (mutation.jumlah > 0) {
-      history.lots.push({ jumlah: BigInt(mutation.jumlah), mulai: Math.max(start, day) })
+      history.lots.push({ jumlah: BigInt(mutation.jumlah * unitMultiplier), mulai: Math.max(start, day) })
       continue
     }
 
-    let remaining = -BigInt(mutation.jumlah)
+    let remaining = -BigInt(mutation.jumlah * unitMultiplier)
     while (remaining > 0n) {
       const lot = history.lots.at(-1)
       if (!lot) {

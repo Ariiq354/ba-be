@@ -3,7 +3,7 @@ import type { UnwrapModels } from 'elysia'
 import { t } from 'elysia'
 
 import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
-import { searchSchema } from '#/libs/schema'
+import { jumlahSahamSchema, searchSchema } from '#/libs/schema'
 
 const databaseIdSchema = t.Integer({ minimum: 1 })
 const positiveIntegerSchema = t.Integer({ minimum: 1 })
@@ -28,7 +28,7 @@ const pemindahbukuanResponseSchema = t.Object({
   idUserSumber: t.Integer(),
   idUserTujuan: t.Integer(),
   nominal: t.Integer(),
-  jumlahSaham: t.Integer(),
+  jumlahSaham: jumlahSahamSchema,
   hargaPerSaham: t.Integer(),
   hargaNominalPerSaham: t.Integer(),
   agioSaham: t.Integer(),

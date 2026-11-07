@@ -3,7 +3,7 @@ import type { UnwrapModels } from 'elysia'
 import { t } from 'elysia'
 
 import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
-import { searchSchema } from '#/libs/schema'
+import { jumlahSahamSchema, searchSchema } from '#/libs/schema'
 
 import { PAYMENT_METHODS, SHARE_PAYMENT_METHODS } from './constants'
 
@@ -32,12 +32,12 @@ const mutasiResponseSchema = t.Object({
   jenisSimpanan: t.UnionEnum(['tabungan', 'saham']),
   jenisTransaksi: t.UnionEnum(['setoran', 'penarikan']),
   nilaiTransaksi: t.Integer(),
-  jumlahSaham: t.Integer(),
+  jumlahSaham: jumlahSahamSchema,
   hargaPerSaham: t.Integer(),
   hargaNominalPerSaham: t.Integer(),
   agioSaham: t.Integer(),
   saldoSetelahTransaksi: t.Nullable(t.Integer()),
-  jumlahSahamSetelahTransaksi: t.Nullable(t.Integer()),
+  jumlahSahamSetelahTransaksi: t.Nullable(jumlahSahamSchema),
   tanggalTransaksi: t.String({ format: 'date' }),
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),
   alasanPenolakan: t.Nullable(t.String()),
@@ -64,9 +64,9 @@ export const SaldoGet = {
   Response: {
     200: t.Object({
       saldoTabungan: t.Integer(),
-      jumlahSaham: t.Integer(),
+      jumlahSaham: jumlahSahamSchema,
       saldoEfektif: t.Integer(),
-      jumlahSahamEfektif: t.Integer(),
+      jumlahSahamEfektif: jumlahSahamSchema,
     }),
     400: ErrorSchema,
     401: UnauthorizedSchema,
@@ -88,7 +88,7 @@ export const MonitoringGet = {
           noAnggota: t.Nullable(t.String()),
           namaKelompok: t.String(),
           saldoTabungan: t.Integer(),
-          jumlahSaham: t.Integer(),
+          jumlahSaham: jumlahSahamSchema,
           persentaseKepemilikanSaham: t.Number(),
         }),
       ),

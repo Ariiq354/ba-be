@@ -149,7 +149,8 @@ export const ShuService = {
           })
         }
 
-        const bobotSaham = calculateBobot(tahun, saham)
+        // Use half-share units so legacy fractions remain exact in BigInt calculations.
+        const bobotSaham = calculateBobot(tahun, saham, 2)
         const bobotTabungan = calculateBobot(tahun, tabungan)
         const alokasiSaham = Number((BigInt(totalShu) * 60n) / 100n)
         const alokasiTabungan = totalShu - alokasiSaham

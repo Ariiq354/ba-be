@@ -1,5 +1,11 @@
 import { t } from 'elysia'
 
+export const jumlahSahamSchema = t.Number({
+  minimum: 0,
+  multipleOf: 0.5,
+  description: 'Jumlah saham dalam lembar. Pecahan 0,5 hanya untuk kepemilikan lama.',
+})
+
 export const paginationSchema = t.Object({
   page: t.Integer({ default: 1, minimum: 1 }),
   limit: t.Integer({ default: 10, minimum: 1 }),
