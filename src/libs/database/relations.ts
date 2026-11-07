@@ -7,6 +7,7 @@ import * as jurnalSchema from './schema/jurnal'
 import * as kelompokSchema from './schema/kelompok'
 import * as masterSchema from './schema/master'
 import * as pembiayaanSchema from './schema/pembiayaan'
+import * as pembiayaanEksternalSchema from './schema/pembiayaan-eksternal'
 import * as shuSchema from './schema/shu'
 import * as simpananSchema from './schema/simpanan'
 import * as usersSchema from './schema/users'
@@ -21,6 +22,7 @@ export const relations = defineRelations(
     ...kelompokSchema,
     ...masterSchema,
     ...pembiayaanSchema,
+    ...pembiayaanEksternalSchema,
     ...shuSchema,
     ...simpananSchema,
     ...usersSchema,
@@ -112,6 +114,14 @@ export const relations = defineRelations(
         from: r.user.id,
         to: r.angsuran.approvedBy,
       }),
+      pembiayaanEksternalCreated: r.many.pembiayaanEksternal({
+        from: r.user.id,
+        to: r.pembiayaanEksternal.createdBy,
+      }),
+      angsuranEksternalCreated: r.many.angsuranEksternal({
+        from: r.user.id,
+        to: r.angsuranEksternal.createdBy,
+      }),
     },
     session: {
       user: r.one.user({
@@ -185,6 +195,14 @@ export const relations = defineRelations(
       angsuran: r.many.angsuran({
         from: r.akunKeuangan.id,
         to: r.angsuran.akunId,
+      }),
+      pembiayaanEksternal: r.many.pembiayaanEksternal({
+        from: r.akunKeuangan.id,
+        to: r.pembiayaanEksternal.akunId,
+      }),
+      angsuranEksternal: r.many.angsuranEksternal({
+        from: r.akunKeuangan.id,
+        to: r.angsuranEksternal.akunId,
       }),
     },
     templateTransaksi: {
@@ -314,6 +332,34 @@ export const relations = defineRelations(
       }),
       approver: r.one.user({
         from: r.angsuran.approvedBy,
+        to: r.user.id,
+      }),
+    },
+    pembiayaanEksternal: {
+      akunKeuangan: r.one.akunKeuangan({
+        from: r.pembiayaanEksternal.akunId,
+        to: r.akunKeuangan.id,
+      }),
+      creator: r.one.user({
+        from: r.pembiayaanEksternal.createdBy,
+        to: r.user.id,
+      }),
+      angsuran: r.many.angsuranEksternal({
+        from: r.pembiayaanEksternal.id,
+        to: r.angsuranEksternal.pembiayaanEksternalId,
+      }),
+    },
+    angsuranEksternal: {
+      akunKeuangan: r.one.akunKeuangan({
+        from: r.angsuranEksternal.akunId,
+        to: r.akunKeuangan.id,
+      }),
+      pembiayaanEksternal: r.one.pembiayaanEksternal({
+        from: r.angsuranEksternal.pembiayaanEksternalId,
+        to: r.pembiayaanEksternal.id,
+      }),
+      creator: r.one.user({
+        from: r.angsuranEksternal.createdBy,
         to: r.user.id,
       }),
     },

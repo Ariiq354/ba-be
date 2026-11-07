@@ -1,6 +1,7 @@
 import Elysia from 'elysia'
 
 import { AngsuranRoutes } from './angsuran'
+import { AngsuranEksternalRoutes } from './angsuran-eksternal'
 import { DashboardRoutes } from './dashboard'
 import { FilesRoutes } from './files'
 import { JurnalRoutes } from './jurnal'
@@ -10,6 +11,7 @@ import { MasterInputTransaksiRoutes } from './master-input-transaksi'
 import { MasterMarginRoutes } from './master-margin'
 import { MasterSahamRoutes } from './master-saham'
 import { PembiayaanRoutes } from './pembiayaan'
+import { PembiayaanEksternalRoutes } from './pembiayaan-eksternal'
 import { PemindahbukuanRoutes } from './pemindahbukuan'
 import { PenggunaRoutes } from './pengguna'
 import { ShuRoutes } from './shu'
@@ -18,6 +20,7 @@ import { WilayahRoutes } from './wilayah'
 
 export const Routes = new Elysia({ prefix: 'api/v1' })
   .use(AngsuranRoutes)
+  .use(AngsuranEksternalRoutes)
   .use(DashboardRoutes)
   .use(FilesRoutes)
   .use(JurnalRoutes)
@@ -28,6 +31,7 @@ export const Routes = new Elysia({ prefix: 'api/v1' })
   .use(KelompokRoutes)
   .use(PenggunaRoutes)
   .use(PembiayaanRoutes)
+  .use(PembiayaanEksternalRoutes)
   .use(PemindahbukuanRoutes)
   .use(ShuRoutes)
   .use(SimpananRoutes)
