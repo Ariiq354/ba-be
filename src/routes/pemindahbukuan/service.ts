@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, ne, or } from 'drizzle-orm'
 
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
@@ -7,6 +7,7 @@ import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
 import { pemindahbukuan, simpananSaldo } from '#/libs/database/schema/simpanan'
 import { getJakartaDate } from '#/libs/date'
+import { ForbiddenError } from '#/libs/errors'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { calculateSahamAmounts } from '#/libs/saham'
 import { allocateTransactionCode } from '#/libs/transaction'
@@ -16,6 +17,7 @@ import type * as PemindahbukuanModel from './model'
 import { HargaSahamNotFoundError, InvalidRejectionReasonError } from '../simpanan/errors'
 import { assertActiveAccounts, assertMember } from '../simpanan/utils'
 import {
+  InvalidBuybackAmountError,
   PemindahbukuanAlreadyProcessedError,
   PemindahbukuanNotDeletedError,
   PemindahbukuanNotFoundError,
@@ -23,6 +25,7 @@ import {
 import {
   approver,
   assertAvailableBalance,
+  assertBuybackAdmin,
   assertTransferDestination,
   creator,
   destinationAccount,
@@ -42,11 +45,15 @@ export const PemindahbukuanService = {
   async getPemindahbukuan(actorId: number, query: PemindahbukuanModel.Get['Query']) {
     const accessCondition = await getPenggunaAccessCondition(db, actorId)
     if (accessCondition !== undefined) {
+      if (query.tipePemindahbukuan === 'pembelian_kembali_saham') {
+        throw new ForbiddenError()
+      }
       await assertMember(db, actorId)
     }
 
     const conditions = []
     if (accessCondition !== undefined) {
+      conditions.push(ne(pemindahbukuan.tipePemindahbukuan, 'pembelian_kembali_saham'))
       const accessibleUsers = db.select({ id: user.id }).from(user).where(accessCondition)
       conditions.push(
         or(
@@ -99,7 +106,7 @@ export const PemindahbukuanService = {
       })
       .from(pemindahbukuan)
       .innerJoin(sourceMember, eq(sourceMember.id, pemindahbukuan.idUserSumber))
-      .innerJoin(destinationMember, eq(destinationMember.id, pemindahbukuan.idUserTujuan))
+      .leftJoin(destinationMember, eq(destinationMember.id, pemindahbukuan.idUserTujuan))
       .innerJoin(sourceAccount, eq(sourceAccount.id, pemindahbukuan.akunIdSumber))
       .innerJoin(destinationAccount, eq(destinationAccount.id, pemindahbukuan.akunIdTujuan))
       .innerJoin(creator, eq(creator.id, pemindahbukuan.createdBy))
@@ -120,11 +127,17 @@ export const PemindahbukuanService = {
 
   async createPemindahbukuan(actorId: number, data: PemindahbukuanModel.Post['Body']) {
     const idUserSumber = data.idUserSumber ?? actorId
-    assertTransferDestination({ ...data, idUserSumber })
+    const isBuyback = data.tipePemindahbukuan === 'pembelian_kembali_saham'
+    const idUserTujuan = data.tipePemindahbukuan === 'pembelian_kembali_saham' ? null : data.idUserTujuan
+    assertTransferDestination({ ...data, idUserSumber, idUserTujuan })
 
     await db.transaction(async (tx) => {
+      if (isBuyback) {
+        await assertBuybackAdmin(tx, actorId)
+      }
       await assertPenggunaAccess(tx, actorId, idUserSumber)
-      for (const userId of [...new Set([idUserSumber, data.idUserTujuan])].toSorted((a, b) => a - b)) {
+      const userIds = idUserTujuan === null ? [idUserSumber] : [idUserSumber, idUserTujuan]
+      for (const userId of [...new Set(userIds)].toSorted((a, b) => a - b)) {
         await assertMember(tx, userId)
       }
 
@@ -143,7 +156,7 @@ export const PemindahbukuanService = {
         hargaNominalPerSaham = HARGA_NOMINAL_SAHAM
         hargaPerSaham = HARGA_NOMINAL_SAHAM
 
-        if (data.tipePemindahbukuan === 'tabungan_ke_saham') {
+        if (data.tipePemindahbukuan === 'tabungan_ke_saham' || isBuyback) {
           const [latestPrice] = await tx
             .select({ hargaJual: hargaSaham.hargaJual })
             .from(hargaSaham)
@@ -157,15 +170,26 @@ export const PemindahbukuanService = {
         }
 
         const amounts = calculateSahamAmounts(jumlahSaham, hargaPerSaham, hargaNominalPerSaham)
+        if (
+          isBuyback &&
+          Object.values(amounts).some((amount) => !Number.isSafeInteger(amount) || amount < 0 || amount > 2_147_483_647)
+        ) {
+          throw new InvalidBuybackAmountError()
+        }
         nominal = amounts.nilaiTransaksi
         agioSaham = amounts.agioSaham
       }
 
       const target = {
         idUserSumber,
-        idUserTujuan: data.idUserTujuan,
-        akunIdSumber: data.tipePemindahbukuan === 'saham_ke_saham' ? AkunId.SAHAM50 : AkunId.SIMPANANBERJANGKA,
-        akunIdTujuan: data.tipePemindahbukuan === 'tabungan_ke_tabungan' ? AkunId.SIMPANANBERJANGKA : AkunId.SAHAM50,
+        idUserTujuan,
+        akunIdSumber:
+          data.tipePemindahbukuan === 'saham_ke_saham' || isBuyback ? AkunId.SAHAM50 : AkunId.SIMPANANBERJANGKA,
+        akunIdTujuan: isBuyback
+          ? AkunId.BANKBSI
+          : data.tipePemindahbukuan === 'tabungan_ke_tabungan'
+            ? AkunId.SIMPANANBERJANGKA
+            : AkunId.SAHAM50,
         tipePemindahbukuan: data.tipePemindahbukuan,
         nominal,
         jumlahSaham,
@@ -199,7 +223,16 @@ export const PemindahbukuanService = {
         .where(
           and(
             inArray(pemindahbukuan.id, ids),
-            or(eq(pemindahbukuan.idUserSumber, actorId), eq(pemindahbukuan.createdBy, actorId)),
+            or(
+              eq(pemindahbukuan.idUserSumber, actorId),
+              eq(pemindahbukuan.createdBy, actorId),
+              accessCondition === undefined
+                ? eq(pemindahbukuan.tipePemindahbukuan, 'pembelian_kembali_saham')
+                : undefined,
+            ),
+            accessCondition === undefined
+              ? undefined
+              : ne(pemindahbukuan.tipePemindahbukuan, 'pembelian_kembali_saham'),
             inArray(pemindahbukuan.idUserSumber, accessibleUsers),
             eq(pemindahbukuan.statusApproved, 'pending'),
           ),
@@ -227,17 +260,21 @@ export const PemindahbukuanService = {
       }
 
       assertTransferDestination(target)
-      for (const userId of [...new Set([target.idUserSumber, target.idUserTujuan])].toSorted((a, b) => a - b)) {
+      const isBuyback = target.tipePemindahbukuan === 'pembelian_kembali_saham'
+      if (isBuyback) {
+        await assertBuybackAdmin(tx, adminId)
+      }
+      const userIds = target.idUserTujuan === null ? [target.idUserSumber] : [target.idUserSumber, target.idUserTujuan]
+      for (const userId of [...new Set(userIds)].toSorted((a, b) => a - b)) {
         await assertMember(tx, userId)
       }
-      const balances = await lockBalances(tx, [target.idUserSumber, target.idUserTujuan])
+      const balances = await lockBalances(tx, userIds)
       const source = balances.get(target.idUserSumber)!
-      const destination = balances.get(target.idUserTujuan)!
 
       await assertAvailableBalance(tx, target, source, target.id)
       await assertActiveAccounts(tx, getRequiredAccountIds(target))
 
-      if (target.tipePemindahbukuan === 'saham_ke_saham') {
+      if (target.tipePemindahbukuan === 'saham_ke_saham' || isBuyback) {
         await tx
           .update(simpananSaldo)
           .set({
@@ -253,20 +290,23 @@ export const PemindahbukuanService = {
           .where(eq(simpananSaldo.userId, target.idUserSumber))
       }
 
-      if (target.tipePemindahbukuan === 'tabungan_ke_tabungan') {
-        await tx
-          .update(simpananSaldo)
-          .set({
-            saldoTabungan: destination.saldoTabungan + target.nominal,
-          })
-          .where(eq(simpananSaldo.userId, target.idUserTujuan))
-      } else {
-        await tx
-          .update(simpananSaldo)
-          .set({
-            jumlahSaham: destination.jumlahSaham + target.jumlahSaham,
-          })
-          .where(eq(simpananSaldo.userId, target.idUserTujuan))
+      if (target.idUserTujuan !== null) {
+        const destination = balances.get(target.idUserTujuan)!
+        if (target.tipePemindahbukuan === 'tabungan_ke_tabungan') {
+          await tx
+            .update(simpananSaldo)
+            .set({
+              saldoTabungan: destination.saldoTabungan + target.nominal,
+            })
+            .where(eq(simpananSaldo.userId, target.idUserTujuan))
+        } else {
+          await tx
+            .update(simpananSaldo)
+            .set({
+              jumlahSaham: destination.jumlahSaham + target.jumlahSaham,
+            })
+            .where(eq(simpananSaldo.userId, target.idUserTujuan))
+        }
       }
 
       const [createdJournal] = await tx
@@ -291,26 +331,27 @@ export const PemindahbukuanService = {
           jurnalId: createdJournal.id,
           akunId: target.akunIdSumber,
           userId: target.idUserSumber,
-          debit: target.nominal,
+          debit: isBuyback ? target.jumlahSaham * target.hargaNominalPerSaham : target.nominal,
           kredit: 0,
         },
         {
           jurnalId: createdJournal.id,
           akunId: target.akunIdTujuan,
-          userId: target.idUserTujuan,
+          userId: target.idUserTujuan ?? target.idUserSumber,
           debit: 0,
           kredit: nominalTujuan,
         },
       ]
 
-      if (target.tipePemindahbukuan === 'tabungan_ke_saham' && target.agioSaham > 0) {
+      if ((target.tipePemindahbukuan === 'tabungan_ke_saham' || isBuyback) && target.agioSaham > 0) {
         const isPremium = target.hargaPerSaham > target.hargaNominalPerSaham
+        const isDebit = isBuyback ? isPremium : !isPremium
         details.push({
           jurnalId: createdJournal.id,
           akunId: AkunId.AGIOSAHAM,
-          userId: target.idUserTujuan,
-          debit: isPremium ? 0 : target.agioSaham,
-          kredit: isPremium ? target.agioSaham : 0,
+          userId: target.idUserTujuan ?? target.idUserSumber,
+          debit: isDebit ? target.agioSaham : 0,
+          kredit: isDebit ? 0 : target.agioSaham,
         })
       }
       await tx.insert(jurnalDetail).values(details)
@@ -338,7 +379,10 @@ export const PemindahbukuanService = {
 
     await db.transaction(async (tx) => {
       const [target] = await tx
-        .select({ statusApproved: pemindahbukuan.statusApproved })
+        .select({
+          statusApproved: pemindahbukuan.statusApproved,
+          tipePemindahbukuan: pemindahbukuan.tipePemindahbukuan,
+        })
         .from(pemindahbukuan)
         .where(eq(pemindahbukuan.id, id))
         .for('update')
@@ -347,6 +391,10 @@ export const PemindahbukuanService = {
       }
       if (target.statusApproved !== 'pending') {
         throw new PemindahbukuanAlreadyProcessedError({ id })
+      }
+
+      if (target.tipePemindahbukuan === 'pembelian_kembali_saham') {
+        await assertBuybackAdmin(tx, adminId)
       }
 
       await tx

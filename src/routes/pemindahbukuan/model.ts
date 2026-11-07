@@ -26,13 +26,18 @@ const pemindahbukuanResponseSchema = t.Object({
   id: t.Integer(),
   kodeTransaksi: t.String(),
   idUserSumber: t.Integer(),
-  idUserTujuan: t.Integer(),
+  idUserTujuan: t.Nullable(t.Integer()),
   nominal: t.Integer(),
   jumlahSaham: jumlahSahamSchema,
   hargaPerSaham: t.Integer(),
   hargaNominalPerSaham: t.Integer(),
   agioSaham: t.Integer(),
-  tipePemindahbukuan: t.UnionEnum(['saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham']),
+  tipePemindahbukuan: t.UnionEnum([
+    'saham_ke_saham',
+    'tabungan_ke_tabungan',
+    'tabungan_ke_saham',
+    'pembelian_kembali_saham',
+  ]),
   tanggalTransaksi: t.String({ format: 'date' }),
   statusApproved: t.UnionEnum(['pending', 'approved', 'rejected']),
   alasanPenolakan: t.Nullable(t.String()),
@@ -41,7 +46,7 @@ const pemindahbukuanResponseSchema = t.Object({
   approvedAt: t.Nullable(t.String({ format: 'date-time' })),
   createdAt: t.String({ format: 'date-time' }),
   sourceMemberName: t.String(),
-  destinationMemberName: t.String(),
+  destinationMemberName: t.Nullable(t.String()),
   sourceAccountName: t.String(),
   destinationAccountName: t.String(),
   creatorName: t.String(),
@@ -55,9 +60,10 @@ export const Get = {
     ...searchSchema.properties,
     userId: t.Optional(databaseIdSchema),
     status: t.UnionEnum(['all', 'pending', 'approved', 'rejected'], { default: 'all' }),
-    tipePemindahbukuan: t.UnionEnum(['all', 'saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham'], {
-      default: 'all',
-    }),
+    tipePemindahbukuan: t.UnionEnum(
+      ['all', 'saham_ke_saham', 'tabungan_ke_tabungan', 'tabungan_ke_saham', 'pembelian_kembali_saham'],
+      { default: 'all' },
+    ),
   }),
 
   Response: {
@@ -106,6 +112,16 @@ export const Post = {
       }),
       jumlahSaham: positiveIntegerSchema,
     }),
+    t.Object(
+      {
+        tipePemindahbukuan: t.Literal('pembelian_kembali_saham'),
+        idUserSumber: databaseIdSchema,
+        idUserTujuan: t.Optional(t.Null()),
+        jumlahSaham: t.Number({ minimum: 0.5, multipleOf: 0.5 }),
+        keterangan: transferProperties.keterangan,
+      },
+      { additionalProperties: false },
+    ),
   ]),
 
   Response: {

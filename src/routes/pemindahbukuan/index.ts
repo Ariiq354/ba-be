@@ -18,7 +18,7 @@ export const PemindahbukuanRoutes = new Elysia({
       response: PemindahbukuanModel.Get.Response,
       detail: {
         description:
-          'Admin melihat semua pemindahbukuan; PJ dan anggota melihat transaksi dengan sumber atau tujuan dalam cakupan aksesnya. userId memfilter sumber atau tujuan dalam cakupan tersebut.',
+          'Admin melihat semua pemindahbukuan; PJ dan anggota melihat transaksi selain pembelian kembali saham dengan sumber atau tujuan dalam cakupan aksesnya. Pembelian kembali saham hanya dapat diakses admin. userId memfilter sumber atau tujuan dalam cakupan tersebut.',
       },
     },
     ({ user, query }) => PemindahbukuanService.getPemindahbukuan(user.id, query),
@@ -39,7 +39,7 @@ export const PemindahbukuanRoutes = new Elysia({
       response: PemindahbukuanModel.Post.Response,
       detail: {
         description:
-          'Mengajukan pemindahbukuan pending dan mencadangkan saldo atau saham sumber. Akun ditentukan otomatis. Harga konversi tabungan ke saham dikunci saat pengajuan. Transfer sejenis harus antaranggota berbeda; konversi tabungan ke saham hanya untuk anggota yang sama.',
+          'Mengajukan pemindahbukuan pending dan mencadangkan saldo atau saham sumber. Akun ditentukan otomatis. Harga konversi tabungan ke saham dan pembelian kembali saham dikunci dari master saham saat pengajuan. Transfer sejenis harus antaranggota berbeda; konversi tabungan ke saham hanya untuk anggota yang sama. Pembelian kembali saham khusus admin, boleh kelipatan 0,5 lembar, tanpa anggota tujuan, dan pembayaran otomatis melalui Bank BSI.',
       },
     },
     async ({ user, body }) => {
@@ -55,7 +55,7 @@ export const PemindahbukuanRoutes = new Elysia({
       response: PemindahbukuanModel.Delete.Response,
       detail: {
         description:
-          'Membatalkan pending oleh pemilik sumber atau pembuat yang masih punya akses ke sumber. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
+          'Membatalkan pending oleh pemilik sumber atau pembuat yang masih punya akses ke sumber. Pembelian kembali saham hanya dapat dibatalkan admin. Jika satu ID tidak valid, seluruh penghapusan dibatalkan.',
       },
     },
     async ({ user, body }) => {

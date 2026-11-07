@@ -28,11 +28,11 @@ export async function getPendingSimpanan(
     connection
       .select({
         tabungan:
-          sql`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} <> 'saham_ke_saham' then ${pemindahbukuan.nominal} else 0 end), 0)`.mapWith(
+          sql`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} in ('tabungan_ke_tabungan', 'tabungan_ke_saham') then ${pemindahbukuan.nominal} else 0 end), 0)`.mapWith(
             Number,
           ),
         saham:
-          sql`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} = 'saham_ke_saham' then ${pemindahbukuan.jumlahSaham} else 0 end), 0)`.mapWith(
+          sql`coalesce(sum(case when ${pemindahbukuan.tipePemindahbukuan} in ('saham_ke_saham', 'pembelian_kembali_saham') then ${pemindahbukuan.jumlahSaham} else 0 end), 0)`.mapWith(
             Number,
           ),
       })

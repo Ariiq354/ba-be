@@ -1,4 +1,5 @@
-import { date, index, integer, numeric, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { check, date, index, integer, numeric, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
 import { akunKeuangan } from './akun'
 import { user } from './auth'
@@ -10,6 +11,7 @@ export const jenisPemindahbukuanEnum = pgEnum('jenis_pemindahbukuan', [
   'saham_ke_saham',
   'tabungan_ke_tabungan',
   'tabungan_ke_saham',
+  'pembelian_kembali_saham',
 ])
 export const jenisSimpananEnum = pgEnum('jenis_simpanan', ['tabungan', 'saham'])
 
@@ -73,9 +75,7 @@ export const pemindahbukuan = snakeCase.table(
     akunIdSumber: integer()
       .notNull()
       .references(() => akunKeuangan.id),
-    idUserTujuan: integer()
-      .notNull()
-      .references(() => user.id),
+    idUserTujuan: integer().references(() => user.id),
     akunIdTujuan: integer()
       .notNull()
       .references(() => akunKeuangan.id),
@@ -97,6 +97,10 @@ export const pemindahbukuan = snakeCase.table(
     ...createdUpdated,
   },
   (table) => [
+    check(
+      'pemindahbukuan_tujuan_check',
+      sql`(${table.tipePemindahbukuan} = 'pembelian_kembali_saham') = (${table.idUserTujuan} is null)`,
+    ),
     index('pemindahbukuan_user_sumber_idx').on(table.idUserSumber),
     index('pemindahbukuan_user_tujuan_idx').on(table.idUserTujuan),
     index('pemindahbukuan_tanggal_transaksi_idx').on(table.tanggalTransaksi),

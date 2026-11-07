@@ -133,6 +133,18 @@ export const ShuService = {
         }
 
         for (const transfer of transfers) {
+          if (transfer.tipePemindahbukuan === 'pembelian_kembali_saham') {
+            saham.push({
+              idUser: transfer.idUserSumber,
+              approvedAt: transfer.approvedAt,
+              kodeTransaksi: transfer.kodeTransaksi,
+              jumlah: -transfer.jumlahSaham,
+            })
+            continue
+          }
+          if (transfer.idUserTujuan === null) {
+            throw new InvalidShuError(`Anggota tujuan pemindahbukuan ${transfer.kodeTransaksi} tidak tersedia`)
+          }
           const source = transfer.tipePemindahbukuan === 'saham_ke_saham' ? saham : tabungan
           const destination = transfer.tipePemindahbukuan === 'tabungan_ke_tabungan' ? tabungan : saham
           source.push({

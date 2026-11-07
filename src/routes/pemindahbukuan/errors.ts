@@ -1,5 +1,20 @@
 import { HTTPError } from 'elysia'
 
+export class InvalidPemindahbukuanDestinationError extends HTTPError.id(
+  'INVALID_PEMINDAHBUKUAN_DESTINATION_ERROR',
+  400,
+) {
+  constructor() {
+    super('Anggota tujuan wajib kosong hanya untuk pembelian kembali saham')
+  }
+}
+
+export class InvalidBuybackAmountError extends HTTPError.id('INVALID_BUYBACK_AMOUNT_ERROR', 400) {
+  constructor() {
+    super('Nilai pembelian kembali saham harus berupa rupiah bulat dan tidak melebihi batas nominal transaksi')
+  }
+}
+
 export class InvalidTransferDestinationError extends HTTPError.id('INVALID_TRANSFER_DESTINATION_ERROR', 400) {
   constructor() {
     super('Pemindahbukuan sejenis harus dilakukan ke anggota lain')
