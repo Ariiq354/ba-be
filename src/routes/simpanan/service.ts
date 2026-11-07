@@ -6,7 +6,7 @@ import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { kelompok } from '#/libs/database/schema/kelompok'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
-import { mutasiSimpanan, saldoSimpanan } from '#/libs/database/schema/simpanan'
+import { simpananRiwayat, simpananSaldo } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
 import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
@@ -36,14 +36,14 @@ export const SimpananService = {
         nama: user.name,
         noAnggota: userProfile.noAnggota,
         namaKelompok: kelompok.namaKelompok,
-        saldoTabungan: sql`coalesce(${saldoSimpanan.saldoTabungan}, 0)`.mapWith(Number),
-        jumlahSaham: sql`coalesce(${saldoSimpanan.jumlahSaham}, 0)`.mapWith(Number),
-        totalSaham: sql`(select coalesce(sum(${saldoSimpanan.jumlahSaham}), 0) from ${saldoSimpanan})`.mapWith(Number),
+        saldoTabungan: sql`coalesce(${simpananSaldo.saldoTabungan}, 0)`.mapWith(Number),
+        jumlahSaham: sql`coalesce(${simpananSaldo.jumlahSaham}, 0)`.mapWith(Number),
+        totalSaham: sql`(select coalesce(sum(${simpananSaldo.jumlahSaham}), 0) from ${simpananSaldo})`.mapWith(Number),
       })
       .from(user)
       .innerJoin(kelompok, eq(kelompok.id, user.idKelompok))
       .leftJoin(userProfile, eq(userProfile.idUser, user.id))
-      .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, user.id))
+      .leftJoin(simpananSaldo, eq(simpananSaldo.userId, user.id))
       .where(query.idKelompok === undefined ? undefined : eq(user.idKelompok, query.idKelompok))
       .orderBy(asc(user.name), asc(user.id))
 
@@ -61,11 +61,11 @@ export const SimpananService = {
     const [result] = await db
       .select({
         noAnggota: userProfile.noAnggota,
-        saldoTabungan: saldoSimpanan.saldoTabungan,
-        jumlahSaham: saldoSimpanan.jumlahSaham,
+        saldoTabungan: simpananSaldo.saldoTabungan,
+        jumlahSaham: simpananSaldo.jumlahSaham,
       })
       .from(userProfile)
-      .leftJoin(saldoSimpanan, eq(saldoSimpanan.userId, userProfile.idUser))
+      .leftJoin(simpananSaldo, eq(simpananSaldo.userId, userProfile.idUser))
       .where(eq(userProfile.idUser, userId))
 
     if (!result?.noAnggota?.trim()) {
@@ -88,7 +88,7 @@ export const SimpananService = {
   },
 
   async getPendingCount() {
-    const total = await db.$count(mutasiSimpanan, eq(mutasiSimpanan.statusApproved, 'pending'))
+    const total = await db.$count(simpananRiwayat, eq(simpananRiwayat.statusApproved, 'pending'))
     return { total } satisfies SimpananModel.PendingCountGet['Response'][200]
   },
 
@@ -104,68 +104,68 @@ export const SimpananService = {
     if (accessCondition !== undefined) {
       const accessibleUsers = db.select({ id: user.id }).from(user).where(accessCondition)
 
-      conditions.push(inArray(mutasiSimpanan.userId, accessibleUsers))
+      conditions.push(inArray(simpananRiwayat.userId, accessibleUsers))
     }
 
     if (query.userId !== undefined) {
       await assertPenggunaAccess(db, actorId, query.userId)
-      conditions.push(eq(mutasiSimpanan.userId, query.userId))
+      conditions.push(eq(simpananRiwayat.userId, query.userId))
     }
 
     if (query.status !== 'all') {
-      conditions.push(eq(mutasiSimpanan.statusApproved, query.status))
+      conditions.push(eq(simpananRiwayat.statusApproved, query.status))
     }
 
     if (query.jenisTransaksi !== 'all') {
-      conditions.push(eq(mutasiSimpanan.jenisTransaksi, query.jenisTransaksi))
+      conditions.push(eq(simpananRiwayat.jenisTransaksi, query.jenisTransaksi))
     }
 
     if (query.jenisSimpanan !== 'all') {
-      conditions.push(eq(mutasiSimpanan.jenisSimpanan, query.jenisSimpanan))
+      conditions.push(eq(simpananRiwayat.jenisSimpanan, query.jenisSimpanan))
     }
 
     if (query.search) {
-      conditions.push(ilike(mutasiSimpanan.kodeTransaksi, `%${query.search}%`))
+      conditions.push(ilike(simpananRiwayat.kodeTransaksi, `%${query.search}%`))
     }
 
     const qb = db
       .select({
-        id: mutasiSimpanan.id,
-        kodeTransaksi: mutasiSimpanan.kodeTransaksi,
-        userId: mutasiSimpanan.userId,
-        akunId: mutasiSimpanan.akunId,
-        jenisSimpanan: mutasiSimpanan.jenisSimpanan,
-        jenisTransaksi: mutasiSimpanan.jenisTransaksi,
-        nilaiTransaksi: mutasiSimpanan.nilaiTransaksi,
-        jumlahSaham: mutasiSimpanan.jumlahSaham,
-        hargaPerSaham: mutasiSimpanan.hargaPerSaham,
-        hargaNominalPerSaham: mutasiSimpanan.hargaNominalPerSaham,
-        agioSaham: mutasiSimpanan.agioSaham,
-        saldoSetelahTransaksi: mutasiSimpanan.saldoSetelahTransaksi,
-        jumlahSahamSetelahTransaksi: mutasiSimpanan.jumlahSahamSetelahTransaksi,
-        tanggalTransaksi: mutasiSimpanan.tanggalTransaksi,
-        statusApproved: mutasiSimpanan.statusApproved,
-        alasanPenolakan: mutasiSimpanan.alasanPenolakan,
-        keterangan: mutasiSimpanan.keterangan,
-        createdBy: mutasiSimpanan.createdBy,
-        approvedAt: mutasiSimpanan.approvedAt,
-        createdAt: mutasiSimpanan.createdAt,
+        id: simpananRiwayat.id,
+        kodeTransaksi: simpananRiwayat.kodeTransaksi,
+        userId: simpananRiwayat.userId,
+        akunId: simpananRiwayat.akunId,
+        jenisSimpanan: simpananRiwayat.jenisSimpanan,
+        jenisTransaksi: simpananRiwayat.jenisTransaksi,
+        nilaiTransaksi: simpananRiwayat.nilaiTransaksi,
+        jumlahSaham: simpananRiwayat.jumlahSaham,
+        hargaPerSaham: simpananRiwayat.hargaPerSaham,
+        hargaNominalPerSaham: simpananRiwayat.hargaNominalPerSaham,
+        agioSaham: simpananRiwayat.agioSaham,
+        saldoSetelahTransaksi: simpananRiwayat.saldoSetelahTransaksi,
+        jumlahSahamSetelahTransaksi: simpananRiwayat.jumlahSahamSetelahTransaksi,
+        tanggalTransaksi: simpananRiwayat.tanggalTransaksi,
+        statusApproved: simpananRiwayat.statusApproved,
+        alasanPenolakan: simpananRiwayat.alasanPenolakan,
+        keterangan: simpananRiwayat.keterangan,
+        createdBy: simpananRiwayat.createdBy,
+        approvedAt: simpananRiwayat.approvedAt,
+        createdAt: simpananRiwayat.createdAt,
         memberName: member.name,
         creatorName: creator.name,
         approverName: approver.name,
       })
-      .from(mutasiSimpanan)
-      .innerJoin(member, eq(member.id, mutasiSimpanan.userId))
-      .innerJoin(creator, eq(creator.id, mutasiSimpanan.createdBy))
-      .leftJoin(approver, eq(approver.id, mutasiSimpanan.approvedBy))
+      .from(simpananRiwayat)
+      .innerJoin(member, eq(member.id, simpananRiwayat.userId))
+      .innerJoin(creator, eq(creator.id, simpananRiwayat.createdBy))
+      .leftJoin(approver, eq(approver.id, simpananRiwayat.approvedBy))
       .where(and(...conditions))
       .orderBy(
-        desc(eq(mutasiSimpanan.statusApproved, 'pending')),
-        desc(mutasiSimpanan.createdAt),
-        desc(mutasiSimpanan.id),
+        desc(eq(simpananRiwayat.statusApproved, 'pending')),
+        desc(simpananRiwayat.createdAt),
+        desc(simpananRiwayat.id),
       )
 
-    const total = await db.$count(mutasiSimpanan, and(...conditions))
+    const total = await db.$count(simpananRiwayat, and(...conditions))
     const rows = await qb.limit(query.limit).offset((query.page - 1) * query.limit)
     const data: SimpananModel.MutasiGet['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
       ...row,
@@ -184,13 +184,13 @@ export const SimpananService = {
     await db.transaction(async (tx) => {
       await assertPenggunaAccess(tx, actorId, userId)
       await assertMember(tx, userId)
-      await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
+      await tx.insert(simpananSaldo).values({ userId }).onConflictDoNothing()
       await assertPaymentAccount(tx, akunId)
 
       const tanggalTransaksi = getJakartaDate()
       const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
 
-      await tx.insert(mutasiSimpanan).values({
+      await tx.insert(simpananRiwayat).values({
         kodeTransaksi,
         userId,
         akunId,
@@ -223,7 +223,7 @@ export const SimpananService = {
     await db.transaction(async (tx) => {
       await assertPenggunaAccess(tx, actorId, userId)
       await assertMember(tx, userId)
-      await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
+      await tx.insert(simpananSaldo).values({ userId }).onConflictDoNothing()
       await assertPaymentAccount(tx, akunId)
 
       const [latestPrice] = await tx
@@ -243,7 +243,7 @@ export const SimpananService = {
       const tanggalTransaksi = getJakartaDate()
       const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
 
-      await tx.insert(mutasiSimpanan).values({
+      await tx.insert(simpananRiwayat).values({
         kodeTransaksi,
         userId,
         akunId,
@@ -274,11 +274,11 @@ export const SimpananService = {
       await assertPenggunaAccess(tx, actorId, userId)
       await assertMember(tx, userId)
 
-      await tx.insert(saldoSimpanan).values({ userId }).onConflictDoNothing()
+      await tx.insert(simpananSaldo).values({ userId }).onConflictDoNothing()
       const [balance] = await tx
-        .select({ saldoTabungan: saldoSimpanan.saldoTabungan })
-        .from(saldoSimpanan)
-        .where(eq(saldoSimpanan.userId, userId))
+        .select({ saldoTabungan: simpananSaldo.saldoTabungan })
+        .from(simpananSaldo)
+        .where(eq(simpananSaldo.userId, userId))
         .for('update')
 
       await assertPaymentAccount(tx, akunId)
@@ -293,7 +293,7 @@ export const SimpananService = {
       const tanggalTransaksi = getJakartaDate()
       const kodeTransaksi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
 
-      await tx.insert(mutasiSimpanan).values({
+      await tx.insert(simpananRiwayat).values({
         kodeTransaksi,
         userId,
         akunId,
@@ -320,17 +320,17 @@ export const SimpananService = {
       const accessibleUsers = tx.select({ id: user.id }).from(user).where(accessCondition)
 
       const deleted = await tx
-        .delete(mutasiSimpanan)
+        .delete(simpananRiwayat)
         .where(
           and(
-            inArray(mutasiSimpanan.id, ids),
-            or(eq(mutasiSimpanan.userId, actorId), eq(mutasiSimpanan.createdBy, actorId)),
-            inArray(mutasiSimpanan.userId, accessibleUsers),
-            eq(mutasiSimpanan.statusApproved, 'pending'),
+            inArray(simpananRiwayat.id, ids),
+            or(eq(simpananRiwayat.userId, actorId), eq(simpananRiwayat.createdBy, actorId)),
+            inArray(simpananRiwayat.userId, accessibleUsers),
+            eq(simpananRiwayat.statusApproved, 'pending'),
           ),
         )
         .returning({
-          id: mutasiSimpanan.id,
+          id: simpananRiwayat.id,
         })
 
       const deletedIds = new Set(deleted.map((item) => item.id))
@@ -344,7 +344,7 @@ export const SimpananService = {
 
   async approveMutasi(id: SimpananModel.MutasiByIdApprovePatch['Params']['id'], adminId: number) {
     await db.transaction(async (tx) => {
-      const [target] = await tx.select().from(mutasiSimpanan).where(eq(mutasiSimpanan.id, id)).for('update')
+      const [target] = await tx.select().from(simpananRiwayat).where(eq(simpananRiwayat.id, id)).for('update')
 
       if (!target) {
         throw new MutasiSimpananNotFoundError({ id })
@@ -354,14 +354,14 @@ export const SimpananService = {
         throw new MutasiSimpananAlreadyProcessedError({ id })
       }
 
-      await tx.insert(saldoSimpanan).values({ userId: target.userId }).onConflictDoNothing()
+      await tx.insert(simpananSaldo).values({ userId: target.userId }).onConflictDoNothing()
       const [balance] = await tx
         .select({
-          saldoTabungan: saldoSimpanan.saldoTabungan,
-          jumlahSaham: saldoSimpanan.jumlahSaham,
+          saldoTabungan: simpananSaldo.saldoTabungan,
+          jumlahSaham: simpananSaldo.jumlahSaham,
         })
-        .from(saldoSimpanan)
-        .where(eq(saldoSimpanan.userId, target.userId))
+        .from(simpananSaldo)
+        .where(eq(simpananSaldo.userId, target.userId))
         .for('update')
 
       let saldoSetelahTransaksi: number | null = null
@@ -384,15 +384,15 @@ export const SimpananService = {
         }
         saldoSetelahTransaksi = nextSaldo
 
-        await tx.update(saldoSimpanan).set({ saldoTabungan: nextSaldo }).where(eq(saldoSimpanan.userId, target.userId))
+        await tx.update(simpananSaldo).set({ saldoTabungan: nextSaldo }).where(eq(simpananSaldo.userId, target.userId))
       } else {
         const nextJumlahSaham = (balance?.jumlahSaham ?? 0) + target.jumlahSaham
         jumlahSahamSetelahTransaksi = nextJumlahSaham
 
         await tx
-          .update(saldoSimpanan)
+          .update(simpananSaldo)
           .set({ jumlahSaham: nextJumlahSaham })
-          .where(eq(saldoSimpanan.userId, target.userId))
+          .where(eq(simpananSaldo.userId, target.userId))
       }
 
       const tanggalJurnal = target.tanggalTransaksi
@@ -481,7 +481,7 @@ export const SimpananService = {
       }
 
       await tx
-        .update(mutasiSimpanan)
+        .update(simpananRiwayat)
         .set({
           statusApproved: 'approved',
           alasanPenolakan: null,
@@ -490,7 +490,7 @@ export const SimpananService = {
           saldoSetelahTransaksi,
           jumlahSahamSetelahTransaksi,
         })
-        .where(eq(mutasiSimpanan.id, id))
+        .where(eq(simpananRiwayat.id, id))
     })
   },
 
@@ -507,9 +507,9 @@ export const SimpananService = {
 
     await db.transaction(async (tx) => {
       const [target] = await tx
-        .select({ statusApproved: mutasiSimpanan.statusApproved })
-        .from(mutasiSimpanan)
-        .where(eq(mutasiSimpanan.id, id))
+        .select({ statusApproved: simpananRiwayat.statusApproved })
+        .from(simpananRiwayat)
+        .where(eq(simpananRiwayat.id, id))
         .for('update')
 
       if (!target) {
@@ -521,14 +521,14 @@ export const SimpananService = {
       }
 
       await tx
-        .update(mutasiSimpanan)
+        .update(simpananRiwayat)
         .set({
           statusApproved: 'rejected',
           alasanPenolakan: rejectionReason,
           approvedBy: adminId,
           approvedAt: new Date(),
         })
-        .where(eq(mutasiSimpanan.id, id))
+        .where(eq(simpananRiwayat.id, id))
     })
   },
 }

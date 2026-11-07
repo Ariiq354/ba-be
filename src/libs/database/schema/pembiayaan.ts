@@ -1,6 +1,6 @@
 import { date, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
-import { akun } from './akun'
+import { akunKeuangan } from './akun'
 import { user } from './auth'
 import { createdUpdated } from './common'
 import { approvedStatusEnum } from './simpanan'
@@ -19,7 +19,7 @@ export const pembiayaan = snakeCase.table(
     biayaAkad: integer().notNull(),
     akunId: integer()
       .notNull()
-      .references(() => akun.id),
+      .references(() => akunKeuangan.id),
     tanggalPengajuan: date().notNull(),
     tanggalTransfer: date(),
     transferredBy: integer().references(() => user.id),
@@ -56,7 +56,7 @@ export const angsuran = snakeCase.table(
     jumlahMargin: integer().notNull().default(0),
     akunId: integer()
       .notNull()
-      .references(() => akun.id),
+      .references(() => akunKeuangan.id),
     statusApproved: approvedStatusEnum().notNull().default('pending'),
     alasanPenolakan: text(),
     keterangan: text(),

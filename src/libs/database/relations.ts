@@ -1,6 +1,6 @@
 import { defineRelations } from 'drizzle-orm'
 
-import * as akunSchema from './schema/akun'
+import * as akunKeuanganSchema from './schema/akun'
 import * as authSchema from './schema/auth'
 import * as filesSchema from './schema/files'
 import * as jurnalSchema from './schema/jurnal'
@@ -14,7 +14,7 @@ import * as wilayahSchema from './schema/wilayah'
 
 export const relations = defineRelations(
   {
-    ...akunSchema,
+    ...akunKeuanganSchema,
     ...authSchema,
     ...filesSchema,
     ...jurnalSchema,
@@ -48,25 +48,25 @@ export const relations = defineRelations(
         from: r.user.id,
         to: r.jurnalDetail.userId,
       }),
-      saldoSimpanan: r.one.saldoSimpanan({
+      simpananSaldo: r.one.simpananSaldo({
         from: r.user.id,
-        to: r.saldoSimpanan.userId,
+        to: r.simpananSaldo.userId,
       }),
       shu: r.many.shu({
         from: r.user.id,
         to: r.shu.idUser,
       }),
-      mutasiSimpanan: r.many.mutasiSimpanan({
+      simpananRiwayat: r.many.simpananRiwayat({
         from: r.user.id,
-        to: r.mutasiSimpanan.userId,
+        to: r.simpananRiwayat.userId,
       }),
-      mutasiSimpananCreated: r.many.mutasiSimpanan({
+      simpananRiwayatCreated: r.many.simpananRiwayat({
         from: r.user.id,
-        to: r.mutasiSimpanan.createdBy,
+        to: r.simpananRiwayat.createdBy,
       }),
-      mutasiSimpananApproved: r.many.mutasiSimpanan({
+      simpananRiwayatApproved: r.many.simpananRiwayat({
         from: r.user.id,
-        to: r.mutasiSimpanan.approvedBy,
+        to: r.simpananRiwayat.approvedBy,
       }),
       pemindahbukuanSumber: r.many.pemindahbukuan({
         from: r.user.id,
@@ -153,48 +153,48 @@ export const relations = defineRelations(
         to: r.user.idKelompok,
       }),
     },
-    akun: {
-      templateDebit: r.many.masterInputTransaksi({
-        from: r.akun.id,
-        to: r.masterInputTransaksi.akunDebitId,
+    akunKeuangan: {
+      templateDebit: r.many.templateTransaksi({
+        from: r.akunKeuangan.id,
+        to: r.templateTransaksi.akunDebitId,
       }),
-      templateKredit: r.many.masterInputTransaksi({
-        from: r.akun.id,
-        to: r.masterInputTransaksi.akunKreditId,
+      templateKredit: r.many.templateTransaksi({
+        from: r.akunKeuangan.id,
+        to: r.templateTransaksi.akunKreditId,
       }),
       jurnalDetails: r.many.jurnalDetail({
-        from: r.akun.id,
+        from: r.akunKeuangan.id,
         to: r.jurnalDetail.akunId,
       }),
-      mutasiSimpanan: r.many.mutasiSimpanan({
-        from: r.akun.id,
-        to: r.mutasiSimpanan.akunId,
+      simpananRiwayat: r.many.simpananRiwayat({
+        from: r.akunKeuangan.id,
+        to: r.simpananRiwayat.akunId,
       }),
       pemindahbukuanSumber: r.many.pemindahbukuan({
-        from: r.akun.id,
+        from: r.akunKeuangan.id,
         to: r.pemindahbukuan.akunIdSumber,
       }),
       pemindahbukuanTujuan: r.many.pemindahbukuan({
-        from: r.akun.id,
+        from: r.akunKeuangan.id,
         to: r.pemindahbukuan.akunIdTujuan,
       }),
       pembiayaan: r.many.pembiayaan({
-        from: r.akun.id,
+        from: r.akunKeuangan.id,
         to: r.pembiayaan.akunId,
       }),
       angsuran: r.many.angsuran({
-        from: r.akun.id,
+        from: r.akunKeuangan.id,
         to: r.angsuran.akunId,
       }),
     },
-    masterInputTransaksi: {
-      akunDebit: r.one.akun({
-        from: r.masterInputTransaksi.akunDebitId,
-        to: r.akun.id,
+    templateTransaksi: {
+      akunDebit: r.one.akunKeuangan({
+        from: r.templateTransaksi.akunDebitId,
+        to: r.akunKeuangan.id,
       }),
-      akunKredit: r.one.akun({
-        from: r.masterInputTransaksi.akunKreditId,
-        to: r.akun.id,
+      akunKredit: r.one.akunKeuangan({
+        from: r.templateTransaksi.akunKreditId,
+        to: r.akunKeuangan.id,
       }),
     },
     jurnal: {
@@ -212,9 +212,9 @@ export const relations = defineRelations(
         from: r.jurnalDetail.jurnalId,
         to: r.jurnal.id,
       }),
-      akun: r.one.akun({
+      akunKeuangan: r.one.akunKeuangan({
         from: r.jurnalDetail.akunId,
-        to: r.akun.id,
+        to: r.akunKeuangan.id,
       }),
     },
     shu: {
@@ -223,27 +223,27 @@ export const relations = defineRelations(
         to: r.user.id,
       }),
     },
-    saldoSimpanan: {
+    simpananSaldo: {
       user: r.one.user({
-        from: r.saldoSimpanan.userId,
+        from: r.simpananSaldo.userId,
         to: r.user.id,
       }),
     },
-    mutasiSimpanan: {
+    simpananRiwayat: {
       user: r.one.user({
-        from: r.mutasiSimpanan.userId,
+        from: r.simpananRiwayat.userId,
         to: r.user.id,
       }),
-      akun: r.one.akun({
-        from: r.mutasiSimpanan.akunId,
-        to: r.akun.id,
+      akunKeuangan: r.one.akunKeuangan({
+        from: r.simpananRiwayat.akunId,
+        to: r.akunKeuangan.id,
       }),
       creator: r.one.user({
-        from: r.mutasiSimpanan.createdBy,
+        from: r.simpananRiwayat.createdBy,
         to: r.user.id,
       }),
       approver: r.one.user({
-        from: r.mutasiSimpanan.approvedBy,
+        from: r.simpananRiwayat.approvedBy,
         to: r.user.id,
       }),
     },
@@ -252,17 +252,17 @@ export const relations = defineRelations(
         from: r.pemindahbukuan.idUserSumber,
         to: r.user.id,
       }),
-      akunSumber: r.one.akun({
+      akunSumber: r.one.akunKeuangan({
         from: r.pemindahbukuan.akunIdSumber,
-        to: r.akun.id,
+        to: r.akunKeuangan.id,
       }),
       userTujuan: r.one.user({
         from: r.pemindahbukuan.idUserTujuan,
         to: r.user.id,
       }),
-      akunTujuan: r.one.akun({
+      akunTujuan: r.one.akunKeuangan({
         from: r.pemindahbukuan.akunIdTujuan,
-        to: r.akun.id,
+        to: r.akunKeuangan.id,
       }),
       creator: r.one.user({
         from: r.pemindahbukuan.createdBy,
@@ -274,9 +274,9 @@ export const relations = defineRelations(
       }),
     },
     pembiayaan: {
-      akun: r.one.akun({
+      akunKeuangan: r.one.akunKeuangan({
         from: r.pembiayaan.akunId,
-        to: r.akun.id,
+        to: r.akunKeuangan.id,
       }),
       user: r.one.user({
         from: r.pembiayaan.userId,
@@ -300,9 +300,9 @@ export const relations = defineRelations(
       }),
     },
     angsuran: {
-      akun: r.one.akun({
+      akunKeuangan: r.one.akunKeuangan({
         from: r.angsuran.akunId,
-        to: r.akun.id,
+        to: r.akunKeuangan.id,
       }),
       pembiayaan: r.one.pembiayaan({
         from: r.angsuran.pembiayaanId,

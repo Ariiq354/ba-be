@@ -2,11 +2,11 @@ import { desc, eq, lte, sql } from 'drizzle-orm'
 
 import { AkunId, HARGA_NOMINAL_SAHAM } from '#/libs/config'
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
+import { akunKeuangan } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
-import { saldoSimpanan } from '#/libs/database/schema/simpanan'
+import { simpananSaldo } from '#/libs/database/schema/simpanan'
 import { getJakartaDate } from '#/libs/date'
 
 import type * as MasterSahamModel from './model'
@@ -44,8 +44,8 @@ export const MasterSahamService = {
     const awalTahun = `${tanggal.slice(0, 4)}-01-01`
 
     const [saldo] = await db
-      .select({ jumlahSaham: sql`coalesce(sum(${saldoSimpanan.jumlahSaham}), 0)`.mapWith(Number) })
-      .from(saldoSimpanan)
+      .select({ jumlahSaham: sql`coalesce(sum(${simpananSaldo.jumlahSaham}), 0)`.mapWith(Number) })
+      .from(simpananSaldo)
 
     const jumlahSaham = saldo?.jumlahSaham ?? 0
     if (jumlahSaham === 0) {
@@ -63,13 +63,13 @@ export const MasterSahamService = {
             Number,
           ),
         labaBerjalan:
-          sql`coalesce(sum(case when ${akun.kategori} in ('pendapatan', 'biaya') and ${jurnal.tanggalTransaksi} >= ${awalTahun} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
+          sql`coalesce(sum(case when ${akunKeuangan.kategori} in ('pendapatan', 'biaya') and ${jurnal.tanggalTransaksi} >= ${awalTahun} then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
             Number,
           ),
       })
       .from(jurnalDetail)
       .innerJoin(jurnal, eq(jurnal.id, jurnalDetail.jurnalId))
-      .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
+      .innerJoin(akunKeuangan, eq(akunKeuangan.id, jurnalDetail.akunId))
       .where(lte(jurnal.tanggalTransaksi, tanggal))
 
     const modalNominal = jumlahSaham * HARGA_NOMINAL_SAHAM

@@ -4,12 +4,12 @@ import type { Transaction } from '#/libs/database'
 
 import { jurnal } from '#/libs/database/schema/jurnal'
 import { angsuran, pembiayaan } from '#/libs/database/schema/pembiayaan'
-import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
+import { pemindahbukuan, simpananRiwayat } from '#/libs/database/schema/simpanan'
 
 type TransactionKind = 'simpanan' | 'jurnal' | 'pemindahbukuan' | 'pembiayaan' | 'angsuran' | 'shu'
 
 const transactionSources = {
-  simpanan: { prefix: 'STR', table: mutasiSimpanan },
+  simpanan: { prefix: 'STR', table: simpananRiwayat },
   jurnal: { prefix: 'TRX', table: jurnal },
   pemindahbukuan: { prefix: 'PBK', table: pemindahbukuan },
   pembiayaan: { prefix: 'PEMB', table: pembiayaan },

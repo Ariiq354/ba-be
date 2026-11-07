@@ -2,7 +2,7 @@ import { asc, inArray } from 'drizzle-orm'
 
 import type { Transaction } from '#/libs/database'
 
-import { akun } from '#/libs/database/schema/akun'
+import { akunKeuangan } from '#/libs/database/schema/akun'
 import { ItemsNotFoundError } from '#/libs/errors'
 
 import { InactiveAkunError } from './errors'
@@ -10,10 +10,10 @@ import { InactiveAkunError } from './errors'
 export async function validateTemplateAkun(tx: Transaction, akunDebitId: number, akunKreditId: number) {
   const ids = [...new Set([akunDebitId, akunKreditId])]
   const rows = await tx
-    .select({ id: akun.id, isActive: akun.isActive })
-    .from(akun)
-    .where(inArray(akun.id, ids))
-    .orderBy(asc(akun.id))
+    .select({ id: akunKeuangan.id, isActive: akunKeuangan.isActive })
+    .from(akunKeuangan)
+    .where(inArray(akunKeuangan.id, ids))
+    .orderBy(asc(akunKeuangan.id))
 
   const existingIds = new Set(rows.map((row) => row.id))
   const missingIds = ids.filter((id) => !existingIds.has(id))

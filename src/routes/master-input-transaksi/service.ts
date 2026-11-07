@@ -2,8 +2,8 @@ import { and, asc, eq, ilike, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
-import { masterInputTransaksi } from '#/libs/database/schema/master'
+import { akunKeuangan } from '#/libs/database/schema/akun'
+import { templateTransaksi } from '#/libs/database/schema/master'
 import { ItemNotFoundError, ItemsNotFoundError } from '#/libs/errors'
 
 import type * as MasterInputTransaksiModel from './model'
@@ -15,12 +15,12 @@ export const MasterInputTransaksiService = {
   async getTemplateOptions() {
     const data = await db
       .select({
-        id: masterInputTransaksi.id,
-        nama: masterInputTransaksi.nama,
+        id: templateTransaksi.id,
+        nama: templateTransaksi.nama,
       })
-      .from(masterInputTransaksi)
-      .where(eq(masterInputTransaksi.isActive, true))
-      .orderBy(asc(masterInputTransaksi.nama), asc(masterInputTransaksi.id))
+      .from(templateTransaksi)
+      .where(eq(templateTransaksi.isActive, true))
+      .orderBy(asc(templateTransaksi.nama), asc(templateTransaksi.id))
 
     return { data } satisfies MasterInputTransaksiModel.OptionsGet['Response'][200]
   },
@@ -28,34 +28,34 @@ export const MasterInputTransaksiService = {
   async getPaginatedTemplate(query: MasterInputTransaksiModel.Get['Query']) {
     const conditions = []
     if (query.search) {
-      conditions.push(ilike(masterInputTransaksi.nama, `%${query.search}%`))
+      conditions.push(ilike(templateTransaksi.nama, `%${query.search}%`))
     }
     if (query.isActive !== undefined) {
-      conditions.push(eq(masterInputTransaksi.isActive, query.isActive))
+      conditions.push(eq(templateTransaksi.isActive, query.isActive))
     }
 
     const condition = and(...conditions)
-    const akunDebit = alias(akun, 'akun_debit')
-    const akunKredit = alias(akun, 'akun_kredit')
+    const akunDebit = alias(akunKeuangan, 'akun_debit')
+    const akunKredit = alias(akunKeuangan, 'akun_kredit')
     const [total, data] = await Promise.all([
-      db.$count(masterInputTransaksi, condition),
+      db.$count(templateTransaksi, condition),
       db
         .select({
-          id: masterInputTransaksi.id,
-          nama: masterInputTransaksi.nama,
-          akunDebitId: masterInputTransaksi.akunDebitId,
+          id: templateTransaksi.id,
+          nama: templateTransaksi.nama,
+          akunDebitId: templateTransaksi.akunDebitId,
           kodeAkunDebit: akunDebit.kodeAkun,
           namaAkunDebit: akunDebit.namaAkun,
-          akunKreditId: masterInputTransaksi.akunKreditId,
+          akunKreditId: templateTransaksi.akunKreditId,
           kodeAkunKredit: akunKredit.kodeAkun,
           namaAkunKredit: akunKredit.namaAkun,
-          isActive: masterInputTransaksi.isActive,
+          isActive: templateTransaksi.isActive,
         })
-        .from(masterInputTransaksi)
-        .innerJoin(akunDebit, eq(akunDebit.id, masterInputTransaksi.akunDebitId))
-        .innerJoin(akunKredit, eq(akunKredit.id, masterInputTransaksi.akunKreditId))
+        .from(templateTransaksi)
+        .innerJoin(akunDebit, eq(akunDebit.id, templateTransaksi.akunDebitId))
+        .innerJoin(akunKredit, eq(akunKredit.id, templateTransaksi.akunKreditId))
         .where(condition)
-        .orderBy(asc(masterInputTransaksi.nama), asc(masterInputTransaksi.id))
+        .orderBy(asc(templateTransaksi.nama), asc(templateTransaksi.id))
         .limit(query.limit)
         .offset((query.page - 1) * query.limit),
     ])
@@ -71,7 +71,7 @@ export const MasterInputTransaksiService = {
 
     await db.transaction(async (tx) => {
       await validateTemplateAkun(tx, data.akunDebitId, data.akunKreditId)
-      await tx.insert(masterInputTransaksi).values({ ...data, nama })
+      await tx.insert(templateTransaksi).values({ ...data, nama })
     })
   },
 
@@ -85,11 +85,7 @@ export const MasterInputTransaksiService = {
     }
 
     await db.transaction(async (tx) => {
-      const [existing] = await tx
-        .select()
-        .from(masterInputTransaksi)
-        .where(eq(masterInputTransaksi.id, id))
-        .for('update')
+      const [existing] = await tx.select().from(templateTransaksi).where(eq(templateTransaksi.id, id)).for('update')
 
       if (!existing) {
         throw new ItemNotFoundError({ id, message: `Template transaksi dengan ID '${id}' tidak ditemukan` })
@@ -102,9 +98,9 @@ export const MasterInputTransaksiService = {
       }
 
       await tx
-        .update(masterInputTransaksi)
+        .update(templateTransaksi)
         .set({ ...data, nama })
-        .where(eq(masterInputTransaksi.id, id))
+        .where(eq(templateTransaksi.id, id))
     })
   },
 
@@ -112,10 +108,10 @@ export const MasterInputTransaksiService = {
     const uniqueIds = [...new Set(ids)]
     await db.transaction(async (tx) => {
       const rows = await tx
-        .select({ id: masterInputTransaksi.id })
-        .from(masterInputTransaksi)
-        .where(inArray(masterInputTransaksi.id, uniqueIds))
-        .orderBy(asc(masterInputTransaksi.id))
+        .select({ id: templateTransaksi.id })
+        .from(templateTransaksi)
+        .where(inArray(templateTransaksi.id, uniqueIds))
+        .orderBy(asc(templateTransaksi.id))
         .for('update')
 
       const existingIds = new Set(rows.map((row) => row.id))
@@ -127,7 +123,7 @@ export const MasterInputTransaksiService = {
         })
       }
 
-      await tx.delete(masterInputTransaksi).where(inArray(masterInputTransaksi.id, uniqueIds))
+      await tx.delete(templateTransaksi).where(inArray(templateTransaksi.id, uniqueIds))
     })
   },
 }

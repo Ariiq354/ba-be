@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
+import { akunKeuangan } from '#/libs/database/schema/akun'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { saham } from '#/libs/database/schema/master'
 import { pembiayaan } from '#/libs/database/schema/pembiayaan'
@@ -49,22 +49,22 @@ export const DashboardService = {
       .select({
         tahun: tahunTransaksi.mapWith(Number),
         pendapatan:
-          sql`coalesce(sum(case when ${akun.kategori} = 'pendapatan' then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
+          sql`coalesce(sum(case when ${akunKeuangan.kategori} = 'pendapatan' then ${jurnalDetail.kredit}::bigint - ${jurnalDetail.debit}::bigint else 0 end), 0)`.mapWith(
             Number,
           ),
         biaya:
-          sql`coalesce(sum(case when ${akun.kategori} = 'biaya' then ${jurnalDetail.debit}::bigint - ${jurnalDetail.kredit}::bigint else 0 end), 0)`.mapWith(
+          sql`coalesce(sum(case when ${akunKeuangan.kategori} = 'biaya' then ${jurnalDetail.debit}::bigint - ${jurnalDetail.kredit}::bigint else 0 end), 0)`.mapWith(
             Number,
           ),
       })
       .from(jurnalDetail)
       .innerJoin(jurnal, eq(jurnal.id, jurnalDetail.jurnalId))
-      .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
+      .innerJoin(akunKeuangan, eq(akunKeuangan.id, jurnalDetail.akunId))
       .where(
         and(
           gte(jurnal.tanggalTransaksi, awalGrafik),
           lte(jurnal.tanggalTransaksi, tanggal),
-          inArray(akun.kategori, ['pendapatan', 'biaya']),
+          inArray(akunKeuangan.kategori, ['pendapatan', 'biaya']),
         ),
       )
       .groupBy(tahunTransaksi)

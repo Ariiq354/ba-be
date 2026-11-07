@@ -1,6 +1,6 @@
 import { date, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
-import { akun } from './akun'
+import { akunKeuangan } from './akun'
 import { user } from './auth'
 
 export const jurnal = snakeCase.table(
@@ -29,7 +29,7 @@ export const jurnalDetail = snakeCase.table(
       }),
     akunId: integer()
       .notNull()
-      .references(() => akun.id),
+      .references(() => akunKeuangan.id),
     userId: integer()
       .notNull()
       .references(() => user.id),

@@ -2,7 +2,7 @@ import { and, eq, ne, sql } from 'drizzle-orm'
 
 import type { db, Transaction } from '#/libs/database'
 
-import { mutasiSimpanan, pemindahbukuan } from '#/libs/database/schema/simpanan'
+import { pemindahbukuan, simpananRiwayat } from '#/libs/database/schema/simpanan'
 
 // Call after locking the source balance when reserving or spending funds.
 export async function getPendingSimpanan(
@@ -13,16 +13,16 @@ export async function getPendingSimpanan(
   const [[withdrawals], [transfers]] = await Promise.all([
     connection
       .select({
-        total: sql`coalesce(sum(${mutasiSimpanan.nilaiTransaksi}), 0)`.mapWith(Number),
+        total: sql`coalesce(sum(${simpananRiwayat.nilaiTransaksi}), 0)`.mapWith(Number),
       })
-      .from(mutasiSimpanan)
+      .from(simpananRiwayat)
       .where(
         and(
-          eq(mutasiSimpanan.userId, userId),
-          eq(mutasiSimpanan.jenisSimpanan, 'tabungan'),
-          eq(mutasiSimpanan.jenisTransaksi, 'penarikan'),
-          eq(mutasiSimpanan.statusApproved, 'pending'),
-          exclude.mutasiId === undefined ? undefined : ne(mutasiSimpanan.id, exclude.mutasiId),
+          eq(simpananRiwayat.userId, userId),
+          eq(simpananRiwayat.jenisSimpanan, 'tabungan'),
+          eq(simpananRiwayat.jenisTransaksi, 'penarikan'),
+          eq(simpananRiwayat.statusApproved, 'pending'),
+          exclude.mutasiId === undefined ? undefined : ne(simpananRiwayat.id, exclude.mutasiId),
         ),
       ),
     connection

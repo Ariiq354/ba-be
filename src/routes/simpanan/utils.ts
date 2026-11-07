@@ -3,7 +3,7 @@ import { alias } from 'drizzle-orm/pg-core'
 
 import type { db, Transaction } from '#/libs/database'
 
-import { akun } from '#/libs/database/schema/akun'
+import { akunKeuangan } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { userProfile } from '#/libs/database/schema/users'
 
@@ -26,9 +26,9 @@ export async function assertMember(connection: typeof db | Transaction, userId: 
 
 export async function assertPaymentAccount(tx: Transaction, akunId: number) {
   const [paymentAccount] = await tx
-    .select({ id: akun.id, isActive: akun.isActive })
-    .from(akun)
-    .where(eq(akun.id, akunId))
+    .select({ id: akunKeuangan.id, isActive: akunKeuangan.isActive })
+    .from(akunKeuangan)
+    .where(eq(akunKeuangan.id, akunId))
 
   if (!paymentAccount?.isActive) {
     throw new InvalidAccountError({ akunId })
@@ -37,9 +37,9 @@ export async function assertPaymentAccount(tx: Transaction, akunId: number) {
 
 export async function assertActiveAccounts(tx: Transaction, accountIds: number[]) {
   const accounts = await tx
-    .select({ id: akun.id, isActive: akun.isActive })
-    .from(akun)
-    .where(inArray(akun.id, accountIds))
+    .select({ id: akunKeuangan.id, isActive: akunKeuangan.isActive })
+    .from(akunKeuangan)
+    .where(inArray(akunKeuangan.id, accountIds))
   const activeIds = new Set(accounts.filter((account) => account.isActive).map((account) => account.id))
   const invalidId = accountIds.find((id) => !activeIds.has(id))
 

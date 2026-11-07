@@ -5,7 +5,7 @@ import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { shu } from '#/libs/database/schema/shu'
-import { mutasiSimpanan, pemindahbukuan, saldoSimpanan } from '#/libs/database/schema/simpanan'
+import { pemindahbukuan, simpananRiwayat, simpananSaldo } from '#/libs/database/schema/simpanan'
 import { userProfile } from '#/libs/database/schema/users'
 import { getJakartaDate } from '#/libs/date'
 import { ForbiddenError } from '#/libs/errors'
@@ -102,11 +102,11 @@ export const ShuService = {
         // Keep missing approval dates so calculation rejects corrupt history.
         const mutations = await tx
           .select()
-          .from(mutasiSimpanan)
+          .from(simpananRiwayat)
           .where(
             and(
-              eq(mutasiSimpanan.statusApproved, 'approved'),
-              or(isNull(mutasiSimpanan.approvedAt), lt(mutasiSimpanan.approvedAt, end)),
+              eq(simpananRiwayat.statusApproved, 'approved'),
+              or(isNull(simpananRiwayat.approvedAt), lt(simpananRiwayat.approvedAt, end)),
             ),
           )
         const transfers = await tx
@@ -228,7 +228,7 @@ export const ShuService = {
         const balance = balances.get(entry.idUser)!
         const saldoSetelahTransaksi = balance.saldoTabungan + nominal
         const kodeMutasi = await allocateTransactionCode(tx, 'simpanan', tanggalTransaksi)
-        await tx.insert(mutasiSimpanan).values({
+        await tx.insert(simpananRiwayat).values({
           kodeTransaksi: kodeMutasi,
           userId: entry.idUser,
           akunId: AkunId.LABARUGITAHUNBERJALAN,
@@ -245,9 +245,9 @@ export const ShuService = {
         })
 
         await tx
-          .update(saldoSimpanan)
+          .update(simpananSaldo)
           .set({ saldoTabungan: saldoSetelahTransaksi })
-          .where(eq(saldoSimpanan.userId, entry.idUser))
+          .where(eq(simpananSaldo.userId, entry.idUser))
 
         details.push({
           jurnalId: createdJournal.id,

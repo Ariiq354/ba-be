@@ -4,7 +4,7 @@ export const kategoriAkunEnum = pgEnum('kategori_akun', ['aktiva', 'pasiva', 'pe
 
 export const normalBalanceEnum = pgEnum('normal_balance', ['debit', 'kredit'])
 
-export const akun = snakeCase.table('akun', {
+export const akunKeuangan = snakeCase.table('akun_keuangan', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   kodeAkun: text().notNull().unique(),
   namaAkun: text().notNull(),

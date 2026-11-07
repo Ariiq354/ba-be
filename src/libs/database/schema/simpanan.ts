@@ -1,6 +1,6 @@
 import { date, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 
-import { akun } from './akun'
+import { akunKeuangan } from './akun'
 import { user } from './auth'
 import { createdUpdated } from './common'
 
@@ -13,7 +13,7 @@ export const jenisPemindahbukuanEnum = pgEnum('jenis_pemindahbukuan', [
 ])
 export const jenisSimpananEnum = pgEnum('jenis_simpanan', ['tabungan', 'saham'])
 
-export const saldoSimpanan = snakeCase.table('saldo_simpanan', {
+export const simpananSaldo = snakeCase.table('simpanan_saldo', {
   id: integer().primaryKey().generatedByDefaultAsIdentity(),
   userId: integer()
     .notNull()
@@ -24,8 +24,8 @@ export const saldoSimpanan = snakeCase.table('saldo_simpanan', {
   ...createdUpdated,
 })
 
-export const mutasiSimpanan = snakeCase.table(
-  'mutasi_simpanan',
+export const simpananRiwayat = snakeCase.table(
+  'simpanan_riwayat',
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     kodeTransaksi: text().notNull().unique(),
@@ -34,7 +34,7 @@ export const mutasiSimpanan = snakeCase.table(
       .references(() => user.id),
     akunId: integer()
       .notNull()
-      .references(() => akun.id),
+      .references(() => akunKeuangan.id),
     jenisTransaksi: jenisTransaksiEnum().notNull(),
     jenisSimpanan: jenisSimpananEnum().notNull(),
     nilaiTransaksi: integer().notNull(),
@@ -56,9 +56,9 @@ export const mutasiSimpanan = snakeCase.table(
     ...createdUpdated,
   },
   (table) => [
-    index('mutasi_simpanan_user_id_idx').on(table.userId),
-    index('mutasi_simpanan_akun_id_idx').on(table.akunId),
-    index('mutasi_simpanan_tanggal_transaksi_idx').on(table.tanggalTransaksi),
+    index('simpanan_riwayat_user_id_idx').on(table.userId),
+    index('simpanan_riwayat_akun_id_idx').on(table.akunId),
+    index('simpanan_riwayat_tanggal_transaksi_idx').on(table.tanggalTransaksi),
   ],
 )
 
@@ -72,13 +72,13 @@ export const pemindahbukuan = snakeCase.table(
       .references(() => user.id),
     akunIdSumber: integer()
       .notNull()
-      .references(() => akun.id),
+      .references(() => akunKeuangan.id),
     idUserTujuan: integer()
       .notNull()
       .references(() => user.id),
     akunIdTujuan: integer()
       .notNull()
-      .references(() => akun.id),
+      .references(() => akunKeuangan.id),
     nominal: integer().notNull(),
     jumlahSaham: integer().notNull().default(0),
     hargaPerSaham: integer().notNull().default(0),

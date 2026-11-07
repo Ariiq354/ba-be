@@ -5,7 +5,7 @@ import { db } from '#/libs/database'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { saham as hargaSaham } from '#/libs/database/schema/master'
-import { pemindahbukuan, saldoSimpanan } from '#/libs/database/schema/simpanan'
+import { pemindahbukuan, simpananSaldo } from '#/libs/database/schema/simpanan'
 import { getJakartaDate } from '#/libs/date'
 import { assertPenggunaAccess, getPenggunaAccessCondition } from '#/libs/penggunaAccess'
 import { calculateSahamAmounts } from '#/libs/saham'
@@ -239,34 +239,34 @@ export const PemindahbukuanService = {
 
       if (target.tipePemindahbukuan === 'saham_ke_saham') {
         await tx
-          .update(saldoSimpanan)
+          .update(simpananSaldo)
           .set({
             jumlahSaham: source.jumlahSaham - target.jumlahSaham,
           })
-          .where(eq(saldoSimpanan.userId, target.idUserSumber))
+          .where(eq(simpananSaldo.userId, target.idUserSumber))
       } else {
         await tx
-          .update(saldoSimpanan)
+          .update(simpananSaldo)
           .set({
             saldoTabungan: source.saldoTabungan - target.nominal,
           })
-          .where(eq(saldoSimpanan.userId, target.idUserSumber))
+          .where(eq(simpananSaldo.userId, target.idUserSumber))
       }
 
       if (target.tipePemindahbukuan === 'tabungan_ke_tabungan') {
         await tx
-          .update(saldoSimpanan)
+          .update(simpananSaldo)
           .set({
             saldoTabungan: destination.saldoTabungan + target.nominal,
           })
-          .where(eq(saldoSimpanan.userId, target.idUserTujuan))
+          .where(eq(simpananSaldo.userId, target.idUserTujuan))
       } else {
         await tx
-          .update(saldoSimpanan)
+          .update(simpananSaldo)
           .set({
             jumlahSaham: destination.jumlahSaham + target.jumlahSaham,
           })
-          .where(eq(saldoSimpanan.userId, target.idUserTujuan))
+          .where(eq(simpananSaldo.userId, target.idUserTujuan))
       }
 
       const [createdJournal] = await tx

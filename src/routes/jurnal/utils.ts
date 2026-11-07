@@ -3,7 +3,7 @@ import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import type { Transaction } from '#/libs/database'
 
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
+import { akunKeuangan } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
 import { allocateTransactionCode } from '#/libs/transaction'
@@ -21,8 +21,8 @@ export const jurnalHeaderSelection = {
 
 export const jurnalDetailSelection = {
   jurnalId: jurnalDetail.jurnalId,
-  kodeAkun: akun.kodeAkun,
-  namaAkun: akun.namaAkun,
+  kodeAkun: akunKeuangan.kodeAkun,
+  namaAkun: akunKeuangan.namaAkun,
   userId: jurnalDetail.userId,
   userName: user.name,
   debit: jurnalDetail.debit,
@@ -31,7 +31,10 @@ export const jurnalDetailSelection = {
 
 export async function insertJurnal(tx: Transaction, userId: number, data: JurnalModel.Post['Body']) {
   const akunIds = [...new Set(data.details.map((detail) => detail.akunId))]
-  const accounts = await tx.select({ id: akun.id, isActive: akun.isActive }).from(akun).where(inArray(akun.id, akunIds))
+  const accounts = await tx
+    .select({ id: akunKeuangan.id, isActive: akunKeuangan.isActive })
+    .from(akunKeuangan)
+    .where(inArray(akunKeuangan.id, akunIds))
   const accountsById = new Map(accounts.map((account) => [account.id, account]))
   const missingIds = akunIds.filter((id) => !accountsById.has(id))
   if (missingIds.length > 0) {
@@ -70,7 +73,7 @@ export async function insertJurnal(tx: Transaction, userId: number, data: Jurnal
 
 export async function getMutasiBulanan(
   tahun: number,
-  kategori: Array<typeof akun.$inferSelect.kategori>,
+  kategori: Array<typeof akunKeuangan.$inferSelect.kategori>,
   connection: typeof db | Transaction = db,
 ) {
   const year = String(tahun).padStart(4, '0')
@@ -92,16 +95,16 @@ export async function getMutasiBulanan(
   // Keep active accounts even when they have no transactions in the selected year.
   return connection
     .select({
-      id: akun.id,
-      namaAkun: akun.namaAkun,
-      kategori: akun.kategori,
+      id: akunKeuangan.id,
+      namaAkun: akunKeuangan.namaAkun,
+      kategori: akunKeuangan.kategori,
       bulan: mutasiBulanan.bulan,
       jumlah: mutasiBulanan.jumlah,
     })
-    .from(akun)
-    .leftJoin(mutasiBulanan, eq(mutasiBulanan.akunId, akun.id))
-    .where(and(inArray(akun.kategori, kategori), eq(akun.isActive, true)))
-    .orderBy(asc(akun.kodeAkun), asc(mutasiBulanan.bulan))
+    .from(akunKeuangan)
+    .leftJoin(mutasiBulanan, eq(mutasiBulanan.akunId, akunKeuangan.id))
+    .where(and(inArray(akunKeuangan.kategori, kategori), eq(akunKeuangan.isActive, true)))
+    .orderBy(asc(akunKeuangan.kodeAkun), asc(mutasiBulanan.bulan))
 }
 
 type KategoriAkun = 'aktiva' | 'pasiva' | 'pendapatan' | 'biaya'

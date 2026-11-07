@@ -2,10 +2,10 @@ import { asc, desc, eq, ilike, inArray } from 'drizzle-orm'
 
 import { AkunId } from '#/libs/config'
 import { db } from '#/libs/database'
-import { akun } from '#/libs/database/schema/akun'
+import { akunKeuangan } from '#/libs/database/schema/akun'
 import { user } from '#/libs/database/schema/auth'
 import { jurnal, jurnalDetail } from '#/libs/database/schema/jurnal'
-import { masterInputTransaksi } from '#/libs/database/schema/master'
+import { templateTransaksi } from '#/libs/database/schema/master'
 import { ItemNotFoundError } from '#/libs/errors'
 
 import type * as JurnalModel from './model'
@@ -90,7 +90,7 @@ export const JurnalService = {
     const details = await db
       .select(jurnalDetailSelection)
       .from(jurnalDetail)
-      .innerJoin(akun, eq(akun.id, jurnalDetail.akunId))
+      .innerJoin(akunKeuangan, eq(akunKeuangan.id, jurnalDetail.akunId))
       .innerJoin(user, eq(user.id, jurnalDetail.userId))
       .where(
         inArray(
@@ -122,8 +122,8 @@ export const JurnalService = {
     await db.transaction(async (tx) => {
       const [template] = await tx
         .select()
-        .from(masterInputTransaksi)
-        .where(eq(masterInputTransaksi.id, data.masterInputTransaksiId))
+        .from(templateTransaksi)
+        .where(eq(templateTransaksi.id, data.masterInputTransaksiId))
 
       if (!template) {
         throw new ItemNotFoundError({
