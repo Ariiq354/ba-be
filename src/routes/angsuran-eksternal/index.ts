@@ -15,7 +15,7 @@ export const AngsuranEksternalRoutes = new Elysia({ prefix: 'angsuran-eksternal'
       response: AngsuranEksternalModel.Get.Response,
       detail: {
         description:
-          'Riwayat pembayaran utang koperasi, khusus admin. Mendukung filter pembiayaanEksternalId dan pencarian kode angsuran, kode pembiayaan, atau pemberi pembiayaan. Semua pembayaran langsung dibukukan tanpa approval.',
+          'Riwayat pembayaran utang koperasi, khusus admin. Mendukung filter pembiayaanEksternalId dan pencarian kode angsuran atau kode pembiayaan. Semua pembayaran langsung dibukukan tanpa approval.',
       },
     },
     ({ query }) => AngsuranEksternalService.getAngsuran(query),
@@ -28,7 +28,7 @@ export const AngsuranEksternalRoutes = new Elysia({ prefix: 'angsuran-eksternal'
       response: AngsuranEksternalModel.Post.Response,
       detail: {
         description:
-          'Langsung membukukan pembayaran utang eksternal tanpa approval. jumlahPembayaran mencakup pokok dan jumlahMargin yang diisi sesuai tagihan pihak luar, bukan rasio otomatis. Debit Hutang Pembiayaan sebesar bagian pokok dan Biaya Margin Pembiayaan sebesar margin; kredit Kas (Tunai) atau BSI (Transfer) sebesar total. Pokok dan margin masing-masing tidak boleh melebihi sisanya. Tanggal default hari ini Jakarta, tidak boleh sebelum pembiayaan atau di masa depan. Mengunci kontrak untuk mencegah pembayaran bersamaan melebihi saldo. Pembayaran dan jurnal atomik, userId jurnal adalah admin pencatat. Tidak menyediakan edit/hapus.',
+          'Langsung membukukan pembayaran utang eksternal tanpa approval. jumlahPembayaran mencakup pokok dan jumlahMargin yang diisi sesuai tagihan pihak luar, bukan rasio otomatis. Mengikuti sistem lama: debit Hutang Pembiayaan dan kredit Kas (Tunai) atau BSI (Transfer) sebesar total pembayaran. Jika ada margin, tambahkan debit Biaya Margin Pembiayaan dan kredit Hutang Margin Pembiayaan sebesar margin dalam jurnal yang sama. Pokok dan margin masing-masing tidak boleh melebihi sisanya. Tanggal default hari ini Jakarta, tidak boleh sebelum pembiayaan atau di masa depan. Mengunci kontrak untuk mencegah pembayaran bersamaan melebihi saldo. Pembayaran dan jurnal atomik, userId jurnal adalah admin pencatat. Tidak menyediakan edit/hapus.',
       },
     },
     async ({ user, body }) => {

@@ -27,7 +27,6 @@ export const AngsuranEksternalService = {
         or(
           ilike(angsuranEksternal.kodeTransaksi, `%${query.search}%`),
           ilike(pembiayaanEksternal.kodeTransaksi, `%${query.search}%`),
-          ilike(pembiayaanEksternal.pemberiPembiayaan, `%${query.search}%`),
         ),
       )
     }
@@ -44,7 +43,6 @@ export const AngsuranEksternalService = {
         id: angsuranEksternal.id,
         pembiayaanEksternalId: angsuranEksternal.pembiayaanEksternalId,
         kodePembiayaan: pembiayaanEksternal.kodeTransaksi,
-        pemberiPembiayaan: pembiayaanEksternal.pemberiPembiayaan,
         kodeTransaksi: angsuranEksternal.kodeTransaksi,
         tanggalTransaksi: angsuranEksternal.tanggalTransaksi,
         jumlahPembayaran: angsuranEksternal.jumlahPembayaran,
@@ -121,13 +119,14 @@ export const AngsuranEksternalService = {
         createdBy: adminId,
       })
       const details: Array<{ akunId: number; debit: number; kredit: number }> = [
+        { akunId: AkunId.HUTANGPEMBIAYAAN, debit: data.jumlahPembayaran, kredit: 0 },
         { akunId, debit: 0, kredit: data.jumlahPembayaran },
       ]
-      if (jumlahPokok > 0) {
-        details.push({ akunId: AkunId.HUTANGPEMBIAYAAN, debit: jumlahPokok, kredit: 0 })
-      }
       if (data.jumlahMargin > 0) {
-        details.push({ akunId: AkunId.BIAYAMARGINPEMBIAYAAN, debit: data.jumlahMargin, kredit: 0 })
+        details.push(
+          { akunId: AkunId.HUTANGMARGINPEMBIAYAAN, debit: 0, kredit: data.jumlahMargin },
+          { akunId: AkunId.BIAYAMARGINPEMBIAYAAN, debit: data.jumlahMargin, kredit: 0 },
+        )
       }
       await recordExternalJournal(tx, adminId, { kodeTransaksi, tanggalTransaksi, keterangan }, details)
     })

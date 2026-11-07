@@ -33,7 +33,6 @@ export const Get = {
           id: t.Integer(),
           pembiayaanEksternalId: t.Integer(),
           kodePembiayaan: t.String(),
-          pemberiPembiayaan: t.String(),
           kodeTransaksi: t.String(),
           tanggalTransaksi: t.String({ format: 'date' }),
           jumlahPembayaran: t.Integer(),
@@ -59,7 +58,7 @@ export const Post = {
     jumlahPembayaran: t.Integer({ minimum: 1 }),
     jumlahMargin: t.Integer({
       minimum: 0,
-      description: 'Bagian margin dari jumlahPembayaran sesuai tagihan pemberi pembiayaan; isi nol untuk pokok saja.',
+      description: 'Bagian margin dari jumlahPembayaran sesuai tagihan; isi nol untuk pokok saja.',
     }),
     metodePembayaran: paymentMethodSchema,
     tanggalTransaksi: t.Optional(t.String({ format: 'date' })),

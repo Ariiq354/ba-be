@@ -24,7 +24,6 @@ export const PembiayaanEksternalService = {
       conditions.push(
         or(
           ilike(pembiayaanEksternal.kodeTransaksi, `%${query.search}%`),
-          ilike(pembiayaanEksternal.pemberiPembiayaan, `%${query.search}%`),
           ilike(pembiayaanEksternal.nomorAkad, `%${query.search}%`),
           ilike(pembiayaanEksternal.tujuan, `%${query.search}%`),
         ),
@@ -56,30 +55,28 @@ export const PembiayaanEksternalService = {
       .orderBy(desc(pembiayaanEksternal.tanggalPembiayaan), desc(pembiayaanEksternal.id))
     return {
       data: rows.map((row) => {
-        const { id, kodeTransaksi, pemberiPembiayaan, tujuan, sisaPokok, sisaMargin, sisaPembiayaan } =
-          serializePembiayaan(row)
-        return { id, kodeTransaksi, pemberiPembiayaan, tujuan, sisaPokok, sisaMargin, sisaPembiayaan }
+        const { id, kodeTransaksi, tujuan, sisaPokok, sisaMargin, sisaPembiayaan } = serializePembiayaan(row)
+        return { id, kodeTransaksi, tujuan, sisaPokok, sisaMargin, sisaPembiayaan }
       }),
     } satisfies PembiayaanEksternalModel.OptionsGet['Response'][200]
   },
 
   async createPembiayaan(adminId: number, data: PembiayaanEksternalModel.Post['Body']) {
-    const pemberiPembiayaan = data.pemberiPembiayaan.trim()
     const tujuan = data.tujuan.trim()
-    if (!pemberiPembiayaan || !tujuan) {
-      throw new InvalidPembiayaanEksternalError('Pemberi pembiayaan dan tujuan wajib diisi')
+    if (!tujuan) {
+      throw new InvalidPembiayaanEksternalError('Tujuan pembiayaan wajib diisi')
     }
     const tanggalPembiayaan = getTransactionDate(data.tanggalPembiayaan)
+    const akunId = AkunId.BANKBSI
     await db.transaction(async (tx) => {
-      await assertExternalAccounts(tx, data.akunId, 0)
+      await assertExternalAccounts(tx, akunId, data.jumlahMargin)
       const kodeTransaksi = await allocateTransactionCode(tx, 'pembiayaanEksternal', tanggalPembiayaan)
       await tx.insert(pembiayaanEksternal).values({
         kodeTransaksi,
-        pemberiPembiayaan,
         nomorAkad: data.nomorAkad?.trim() || null,
         jumlahPokok: data.jumlahPokok,
         jumlahMargin: data.jumlahMargin,
-        akunId: data.akunId,
+        akunId,
         tanggalPembiayaan,
         jangkaWaktuBulan: data.jangkaWaktuBulan,
         tujuan,
@@ -90,10 +87,25 @@ export const PembiayaanEksternalService = {
         adminId,
         { kodeTransaksi, tanggalTransaksi: tanggalPembiayaan, keterangan: tujuan },
         [
-          { akunId: data.akunId, debit: data.jumlahPokok, kredit: 0 },
+          { akunId, debit: data.jumlahPokok, kredit: 0 },
           { akunId: AkunId.HUTANGPEMBIAYAAN, debit: 0, kredit: data.jumlahPokok },
         ],
       )
+      if (data.jumlahMargin > 0) {
+        await recordExternalJournal(
+          tx,
+          adminId,
+          {
+            kodeTransaksi,
+            tanggalTransaksi: tanggalPembiayaan,
+            keterangan: 'Akad pembiayaan eksternal',
+          },
+          [
+            { akunId: AkunId.HUTANGMARGINPEMBIAYAAN, debit: data.jumlahMargin, kredit: 0 },
+            { akunId: AkunId.HUTANGPEMBIAYAAN, debit: 0, kredit: data.jumlahMargin },
+          ],
+        )
+      }
     })
   },
 }

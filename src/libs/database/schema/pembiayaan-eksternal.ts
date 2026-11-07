@@ -10,7 +10,6 @@ export const pembiayaanEksternal = snakeCase.table(
   {
     id: integer().primaryKey().generatedByDefaultAsIdentity(),
     kodeTransaksi: text().notNull().unique(),
-    pemberiPembiayaan: text().notNull(),
     nomorAkad: text(),
     jumlahPokok: integer().notNull(),
     jumlahMargin: integer().notNull().default(0),

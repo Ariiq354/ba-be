@@ -79,7 +79,12 @@ export async function assertExternalAccounts(tx: Transaction, akunId: number, ju
   const required = [
     { id: akunId, kategori: 'aktiva', normalBalance: 'debit' },
     { id: AkunId.HUTANGPEMBIAYAAN, kategori: 'pasiva', normalBalance: 'kredit' },
-    ...(jumlahMargin > 0 ? [{ id: AkunId.BIAYAMARGINPEMBIAYAAN, kategori: 'biaya', normalBalance: 'debit' }] : []),
+    ...(jumlahMargin > 0
+      ? [
+          { id: AkunId.HUTANGMARGINPEMBIAYAAN, kategori: 'pasiva', normalBalance: 'kredit' },
+          { id: AkunId.BIAYAMARGINPEMBIAYAAN, kategori: 'biaya', normalBalance: 'debit' },
+        ]
+      : []),
   ]
   const accounts = await tx
     .select()
