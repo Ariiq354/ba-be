@@ -9,9 +9,9 @@ import { allocateTransactionCode } from '#/libs/transaction'
 
 import type * as AngsuranEksternalModel from './model'
 
+import { roundProportion } from '../angsuran/utils'
 import { PembiayaanEksternalNotFoundError } from '../pembiayaan-eksternal/errors'
 import { assertExternalAccounts, getTransactionDate, recordExternalJournal } from '../pembiayaan-eksternal/utils'
-import { PAYMENT_ACCOUNTS } from '../simpanan/constants'
 import { AngsuranEksternalExceedsRemainingError, InvalidAngsuranEksternalError } from './errors'
 
 const creator = alias(user, 'external_payment_creator')
@@ -47,7 +47,6 @@ export const AngsuranEksternalService = {
         tanggalTransaksi: angsuranEksternal.tanggalTransaksi,
         jumlahPembayaran: angsuranEksternal.jumlahPembayaran,
         jumlahMargin: angsuranEksternal.jumlahMargin,
-        akunId: angsuranEksternal.akunId,
         keterangan: angsuranEksternal.keterangan,
         createdBy: angsuranEksternal.createdBy,
         creatorName: creator.name,
@@ -60,22 +59,17 @@ export const AngsuranEksternalService = {
       .orderBy(desc(angsuranEksternal.tanggalTransaksi), desc(angsuranEksternal.id))
       .limit(query.limit)
       .offset((query.page - 1) * query.limit)
-    const data: AngsuranEksternalModel.Get['Response'][200]['data'] = rows.map(({ akunId, ...row }) => ({
+    const data: AngsuranEksternalModel.Get['Response'][200]['data'] = rows.map((row) => ({
       ...row,
       jumlahPokok: row.jumlahPembayaran - row.jumlahMargin,
-      metodePembayaran: akunId === AkunId.KAS ? 'Tunai' : 'Transfer',
       createdAt: row.createdAt.toISOString(),
     }))
     return { total, data } satisfies AngsuranEksternalModel.Get['Response'][200]
   },
 
   async createAngsuran(adminId: number, data: AngsuranEksternalModel.Post['Body']) {
-    if (data.jumlahMargin > data.jumlahPembayaran) {
-      throw new InvalidAngsuranEksternalError('Bagian margin tidak boleh melebihi total pembayaran')
-    }
-    const jumlahPokok = data.jumlahPembayaran - data.jumlahMargin
     const tanggalTransaksi = getTransactionDate(data.tanggalTransaksi)
-    const akunId = PAYMENT_ACCOUNTS[data.metodePembayaran]
+    const akunId = AkunId.BANKBSI
     await db.transaction(async (tx) => {
       // Lock the contract before checking balances so concurrent payments cannot overpay it.
       const [target] = await tx
@@ -91,21 +85,21 @@ export const AngsuranEksternalService = {
       }
       const [totals] = await tx
         .select({
-          totalPokok:
-            sql<number>`coalesce(sum(${angsuranEksternal.jumlahPembayaran} - ${angsuranEksternal.jumlahMargin}), 0)`.mapWith(
-              Number,
-            ),
+          totalPembayaran: sql<number>`coalesce(sum(${angsuranEksternal.jumlahPembayaran}), 0)`.mapWith(Number),
           totalMargin: sql<number>`coalesce(sum(${angsuranEksternal.jumlahMargin}), 0)`.mapWith(Number),
         })
         .from(angsuranEksternal)
         .where(eq(angsuranEksternal.pembiayaanEksternalId, target.id))
-      if (
-        jumlahPokok > target.jumlahPokok - (totals?.totalPokok ?? 0) ||
-        data.jumlahMargin > target.jumlahMargin - (totals?.totalMargin ?? 0)
-      ) {
+      const totalPembayaran = totals?.totalPembayaran ?? 0
+      const totalMargin = totals?.totalMargin ?? 0
+      const totalPembiayaan = target.jumlahPokok + target.jumlahMargin
+      if (data.jumlahPembayaran > totalPembiayaan - totalPembayaran) {
         throw new AngsuranEksternalExceedsRemainingError()
       }
-      await assertExternalAccounts(tx, akunId, data.jumlahMargin)
+      // Use cumulative rounding so the final payment settles both principal and margin exactly.
+      const jumlahMargin =
+        roundProportion(totalPembayaran + data.jumlahPembayaran, target.jumlahMargin, totalPembiayaan) - totalMargin
+      await assertExternalAccounts(tx, akunId, jumlahMargin)
       const kodeTransaksi = await allocateTransactionCode(tx, 'angsuranEksternal', tanggalTransaksi)
       const keterangan = data.keterangan?.trim() || null
       await tx.insert(angsuranEksternal).values({
@@ -113,7 +107,7 @@ export const AngsuranEksternalService = {
         kodeTransaksi,
         tanggalTransaksi,
         jumlahPembayaran: data.jumlahPembayaran,
-        jumlahMargin: data.jumlahMargin,
+        jumlahMargin,
         akunId,
         keterangan,
         createdBy: adminId,
@@ -122,10 +116,10 @@ export const AngsuranEksternalService = {
         { akunId: AkunId.HUTANGPEMBIAYAAN, debit: data.jumlahPembayaran, kredit: 0 },
         { akunId, debit: 0, kredit: data.jumlahPembayaran },
       ]
-      if (data.jumlahMargin > 0) {
+      if (jumlahMargin > 0) {
         details.push(
-          { akunId: AkunId.HUTANGMARGINPEMBIAYAAN, debit: 0, kredit: data.jumlahMargin },
-          { akunId: AkunId.BIAYAMARGINPEMBIAYAAN, debit: data.jumlahMargin, kredit: 0 },
+          { akunId: AkunId.HUTANGMARGINPEMBIAYAAN, debit: 0, kredit: jumlahMargin },
+          { akunId: AkunId.BIAYAMARGINPEMBIAYAAN, debit: jumlahMargin, kredit: 0 },
         )
       }
       await recordExternalJournal(tx, adminId, { kodeTransaksi, tanggalTransaksi, keterangan }, details)

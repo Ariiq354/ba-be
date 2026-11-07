@@ -5,10 +5,7 @@ import { t } from 'elysia'
 import { ErrorSchema, ForbiddenSchema, SuccessSchema, UnauthorizedSchema, ValidationErrorSchema } from '#/libs/errors'
 import { searchSchema } from '#/libs/schema'
 
-import { PAYMENT_METHODS } from '../simpanan/constants'
-
 const databaseIdSchema = t.Integer({ minimum: 1 })
-const paymentMethodSchema = t.UnionEnum(PAYMENT_METHODS)
 const errorResponses = {
   400: ErrorSchema,
   401: UnauthorizedSchema,
@@ -38,7 +35,6 @@ export const Get = {
           jumlahPembayaran: t.Integer(),
           jumlahPokok: t.Integer(),
           jumlahMargin: t.Integer(),
-          metodePembayaran: paymentMethodSchema,
           keterangan: t.Nullable(t.String()),
           createdBy: t.Integer(),
           creatorName: t.String(),
@@ -56,11 +52,6 @@ export const Post = {
   Body: t.Object({
     pembiayaanEksternalId: databaseIdSchema,
     jumlahPembayaran: t.Integer({ minimum: 1 }),
-    jumlahMargin: t.Integer({
-      minimum: 0,
-      description: 'Bagian margin dari jumlahPembayaran sesuai tagihan; isi nol untuk pokok saja.',
-    }),
-    metodePembayaran: paymentMethodSchema,
     tanggalTransaksi: t.Optional(t.String({ format: 'date' })),
     keterangan: t.Optional(t.String()),
   }),
