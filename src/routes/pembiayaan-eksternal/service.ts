@@ -24,7 +24,6 @@ export const PembiayaanEksternalService = {
       conditions.push(
         or(
           ilike(pembiayaanEksternal.kodeTransaksi, `%${query.search}%`),
-          ilike(pembiayaanEksternal.nomorAkad, `%${query.search}%`),
           ilike(pembiayaanEksternal.tujuan, `%${query.search}%`),
         ),
       )
@@ -73,7 +72,6 @@ export const PembiayaanEksternalService = {
       const kodeTransaksi = await allocateTransactionCode(tx, 'pembiayaanEksternal', tanggalPembiayaan)
       await tx.insert(pembiayaanEksternal).values({
         kodeTransaksi,
-        nomorAkad: data.nomorAkad?.trim() || null,
         jumlahPokok: data.jumlahPokok,
         jumlahMargin: data.jumlahMargin,
         akunId,

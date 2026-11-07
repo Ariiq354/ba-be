@@ -18,7 +18,7 @@ export const PembiayaanEksternalRoutes = new Elysia({
       response: PembiayaanEksternalModel.Get.Response,
       detail: {
         description:
-          'Daftar utang koperasi kepada pihak luar, khusus admin. Pencarian berdasarkan kode, nomor akad, atau tujuan. Saldo dihitung dari seluruh angsuran eksternal yang langsung dibukukan; tidak ada status approval.',
+          'Daftar utang koperasi kepada pihak luar, khusus admin. Pencarian berdasarkan kode atau tujuan. Saldo dihitung dari seluruh angsuran eksternal yang langsung dibukukan; tidak ada status approval.',
       },
     },
     ({ query }) => PembiayaanEksternalService.getPembiayaan(query),

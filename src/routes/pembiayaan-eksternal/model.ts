@@ -8,7 +8,6 @@ import { searchSchema } from '#/libs/schema'
 const pembiayaanResponseSchema = t.Object({
   id: t.Integer(),
   kodeTransaksi: t.String(),
-  nomorAkad: t.Nullable(t.String()),
   jumlahPokok: t.Integer(),
   jumlahMargin: t.Integer(),
   totalPembiayaan: t.Integer(),
@@ -75,7 +74,6 @@ export type OptionsGet = UnwrapModels<typeof OptionsGet>
 
 export const Post = {
   Body: t.Object({
-    nomorAkad: t.Optional(t.String()),
     jumlahPokok: t.Integer({ minimum: 1 }),
     jumlahMargin: t.Integer({ minimum: 0, default: 0 }),
     tanggalPembiayaan: t.Optional(t.String({ format: 'date' })),
