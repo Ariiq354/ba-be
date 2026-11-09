@@ -29,6 +29,7 @@ export const DashboardService = {
     const pembiayaanTahunan = await db
       .select({
         tahun: tahunPembiayaan.mapWith(Number),
+        totalPokok: sql`coalesce(sum(${pembiayaan.jumlahPokok}::bigint), 0)`.mapWith(Number),
         total: sql`coalesce(sum(${pembiayaan.jumlahPokok}::bigint + ${pembiayaan.jumlahMargin}::bigint), 0)`.mapWith(
           Number,
         ),
@@ -70,10 +71,10 @@ export const DashboardService = {
       .groupBy(tahunTransaksi)
       .orderBy(tahunTransaksi)
 
-    const pembiayaanPerTahun = new Map(pembiayaanTahunan.map((row) => [row.tahun, row.total]))
+    const pembiayaanPerTahun = new Map(pembiayaanTahunan.map((row) => [row.tahun, row]))
     const grafikPembiayaanTahunan = Array.from({ length: tahun - tahunAwalGrafik + 1 }, (_, index) => {
       const tahunGrafik = tahunAwalGrafik + index
-      return { tahun: tahunGrafik, total: pembiayaanPerTahun.get(tahunGrafik) ?? 0 }
+      return { tahun: tahunGrafik, total: pembiayaanPerTahun.get(tahunGrafik)?.totalPokok ?? 0 }
     })
 
     const labaPerTahun = new Map(labaTahunan.map((row) => [row.tahun, row]))
@@ -107,7 +108,7 @@ export const DashboardService = {
       },
       pembiayaanBerjalan: {
         periodeMulai: awalTahun,
-        total: pembiayaanPerTahun.get(tahun) ?? 0,
+        total: pembiayaanPerTahun.get(tahun)?.total ?? 0,
       },
       labaBerjalan: {
         periodeMulai: awalTahun,
