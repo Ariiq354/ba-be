@@ -14,7 +14,6 @@ import { isLegacyPasswordHash, verifyPassword } from './password'
 const roles = {
   ...defaultRoles,
   pj: userAc,
-  wanhat: userAc,
 }
 
 export const auth = betterAuth({
