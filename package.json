@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@better-auth/expo": "^1.7.19",
     "@elysia/cors": "^2.0.0-rc.1",
     "@elysia/cron": "^2.0.0-rc.0",
     "@elysia/openapi": "^2.0.0-rc.1",

@@ -1,4 +1,5 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
+import { expo } from '@better-auth/expo'
 import { betterAuth } from 'better-auth'
 import { createAuthMiddleware, isAPIError } from 'better-auth/api'
 import { hashPassword } from 'better-auth/crypto'
@@ -113,5 +114,5 @@ export const auth = betterAuth({
       partitioned: true,
     },
   },
-  plugins: [openAPI(), username(), adminPlugins({ roles })],
+  plugins: [openAPI(), username(), adminPlugins({ roles }), expo()],
 })
